@@ -549,85 +549,79 @@ export function GymBattlePanel() {
             phaseClasses="transition-all duration-500"
           >
             <div className="relative flex flex-col gap-6 p-6">
-              <div className="grid lg:grid-cols-2 gap-4">
-                {/* Player side */}
-                <div className="space-y-3 order-1 lg:order-none">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-[#a0a0c0] uppercase tracking-wider">Your Pokemon</p>
-                      <p className="font-pixel text-white text-sm">{currentMatchup.player_pokemon_name}</p>
-                    </div>
+                    <p className="text-xs text-[#a0a0c0] uppercase tracking-wider">Your Pokemon</p>
                     <span className="text-xs text-[#606080]">Lv.{currentMatchup.player_level}</span>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="bg-[#1a1a2e]/95 rounded-xl p-3 border-2 border-[#2a2a4a] shadow-lg flex items-center gap-3">
                     <img
                       src={getPokemonSpriteUrl(currentMatchup.player_species_id)}
                       alt={currentMatchup.player_pokemon_name}
-                      className="w-28 h-28 pixelated"
+                      className="w-24 h-24 pixelated"
                     />
                     <div className="flex-1 space-y-2">
-                      <HPBar percent={playerHPPercent} side="player" />
-                      <div className="flex gap-2">
-                        <span className="text-[10px] text-[#a0a0c0]">Type</span>
-                        <span
-                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: TYPE_COLORS[currentMatchup.player_type1] || '#888' }}
-                        >
-                          {currentMatchup.player_type1}
-                        </span>
-                        {currentMatchup.player_type2 && (
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-pixel text-white text-sm">{currentMatchup.player_pokemon_name}</span>
+                        <div className="flex gap-1">
                           <span
-                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                            style={{ backgroundColor: TYPE_COLORS[currentMatchup.player_type2] || '#888' }}
+                            className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
+                            style={{ backgroundColor: TYPE_COLORS[currentMatchup.player_type1.toLowerCase()]?.bg || '#888' }}
                           >
-                            {currentMatchup.player_type2}
+                            {currentMatchup.player_type1}
                           </span>
-                        )}
+                          {currentMatchup.player_type2 && (
+                            <span
+                              className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
+                              style={{ backgroundColor: TYPE_COLORS[currentMatchup.player_type2.toLowerCase()]?.bg || '#888' }}
+                            >
+                              {currentMatchup.player_type2}
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      <HPBar percent={playerHPPercent} side="player" />
                     </div>
                   </div>
                 </div>
-
-                {/* Gym side */}
-                <div className="space-y-3 order-2">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-[#a0a0c0] uppercase tracking-wider">Gym Pokemon</p>
-                      <p className="font-pixel text-white text-sm">{currentMatchup.gym_pokemon_name}</p>
-                    </div>
+                    <p className="text-xs text-[#a0a0c0] uppercase tracking-wider">Gym Pokemon</p>
                     <span className="text-xs text-[#606080]">Lv.{currentMatchup.gym_level}</span>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="bg-[#1a1a2e]/95 rounded-xl p-3 border-2 border-[#2a2a4a] shadow-lg flex items-center gap-3 justify-end">
                     <div className="flex-1 space-y-2">
-                      <HPBar percent={gymHPPercent} side="gym" />
-                      <div className="flex gap-2">
-                        <span className="text-[10px] text-[#a0a0c0]">Type</span>
-                        <span
-                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: TYPE_COLORS[currentMatchup.gym_type1] || '#888' }}
-                        >
-                          {currentMatchup.gym_type1}
-                        </span>
-                        {currentMatchup.gym_type2 && (
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-pixel text-white text-sm">{currentMatchup.gym_pokemon_name}</span>
+                        <div className="flex gap-1">
                           <span
-                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                            style={{ backgroundColor: TYPE_COLORS[currentMatchup.gym_type2] || '#888' }}
+                            className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
+                            style={{ backgroundColor: TYPE_COLORS[currentMatchup.gym_type1.toLowerCase()]?.bg || '#888' }}
                           >
-                            {currentMatchup.gym_type2}
+                            {currentMatchup.gym_type1}
                           </span>
-                        )}
+                          {currentMatchup.gym_type2 && (
+                            <span
+                              className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
+                              style={{ backgroundColor: TYPE_COLORS[currentMatchup.gym_type2.toLowerCase()]?.bg || '#888' }}
+                            >
+                              {currentMatchup.gym_type2}
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      <HPBar percent={gymHPPercent} side="gym" />
                     </div>
                     <img
                       src={getPokemonSpriteUrl(currentMatchup.gym_species_id)}
                       alt={currentMatchup.gym_pokemon_name}
-                      className="w-28 h-28 pixelated -scale-x-100"
+                      className="w-24 h-24 pixelated -scale-x-100"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Move / message area */}
               <div className="bg-[#111322] border border-[#2a2a4a] rounded-xl p-4 relative overflow-hidden">
                 {currentTurn && (
                   <div className="flex flex-wrap items-center gap-2 mb-2 text-xs uppercase tracking-wide">
