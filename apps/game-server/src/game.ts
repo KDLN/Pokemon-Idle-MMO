@@ -864,6 +864,10 @@ function simulateGymMatchup(
         defender_hp_after: playerHP,
         attacker_max_hp: gymMaxHP,
         defender_max_hp: playerMaxHP
+        ,
+        move_name: gymMove.name,
+        move_type: gymMove.type,
+        status_effect: applyStatusEffect(gymMove)
       })
     }
 
