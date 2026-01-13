@@ -1,6 +1,7 @@
 export { ChatSidebar } from './ChatSidebar'
 export { ChatTabs } from './ChatTabs'
-export { ChatMessage, type ChatMessageData, type ChatChannel } from './ChatMessage'
+export { ChatMessage } from './ChatMessage'
+export type { ChatMessageData, ChatChannel } from '@/types/chat'
 export { ChatInput } from './ChatInput'
 export { WorldEventsTicker, type WorldEvent } from './WorldEventsTicker'
 export { QuickInspect, type PublicPlayerInfo } from './QuickInspect'
