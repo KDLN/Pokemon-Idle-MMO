@@ -1,7 +1,7 @@
 import { WebSocket, WebSocketServer } from 'ws'
 import { createRemoteJWKSet, jwtVerify } from 'jose'
 import type { IncomingMessage } from 'http'
-import type { PlayerSession, WSMessage, PokemonSpecies, Zone, Pokemon } from './types.js'
+import type { PlayerSession, WSMessage, PokemonSpecies, Zone, Pokemon, ChatChannel } from './types.js'
 import {
   getPlayerByUserId,
   getPlayerParty,
@@ -26,7 +26,9 @@ import {
   getGymLeaderByZone,
   hasPlayerDefeatedGym,
   recordGymVictory,
-  addBadgeToPlayer
+  addBadgeToPlayer,
+  getRecentChatMessages,
+  saveChatMessage
 } from './db.js'
 import { processTick, simulateGymBattle } from './game.js'
 
@@ -35,6 +37,9 @@ interface Client {
   userId: string
   session: PlayerSession | null
 }
+
+const CHAT_CHANNELS: ChatChannel[] = ['global', 'trade', 'guild', 'system']
+const MAX_CHAT_LENGTH = 280
 
 // Create JWKS client for Supabase ES256 tokens
 const SUPABASE_URL = process.env.SUPABASE_URL || ''
@@ -94,7 +99,8 @@ export class GameHub {
     // Load session
     try {
       await this.loadSession(client)
-      this.sendGameState(client)
+      await this.sendGameState(client)
+      await this.sendChatHistory(client)
     } catch (err) {
       console.error('Failed to load session:', err)
       ws.close(4003, 'Failed to load session')
@@ -198,6 +204,9 @@ export class GameHub {
         case 'get_state':
           this.sendGameState(client)
           break
+        case 'chat_message':
+          this.handleChatMessage(client, msg.payload as { channel: ChatChannel; content: string })
+          break
         default:
           console.log('Unknown message type:', msg.type)
       }
@@ -209,6 +218,53 @@ export class GameHub {
   private handleDisconnect(client: Client) {
     console.log(`Client disconnected: ${client.userId}`)
     this.clients.delete(client.ws)
+  }
+
+  private isValidChatChannel(channel: unknown): channel is ChatChannel {
+    return typeof channel === 'string' && CHAT_CHANNELS.includes(channel as ChatChannel)
+  }
+
+  private async handleChatMessage(client: Client, payload: { channel?: ChatChannel; content?: string }) {
+    if (!client.session) return
+
+    const { channel, content } = payload || {}
+    if (!channel || !this.isValidChatChannel(channel) || channel === 'system') {
+      this.sendError(client, 'Invalid chat channel')
+      return
+    }
+
+    const trimmedContent = (content ?? '').trim()
+    if (!trimmedContent) {
+      this.sendError(client, 'Message cannot be empty')
+      return
+    }
+
+    const safeContent = trimmedContent.slice(0, MAX_CHAT_LENGTH)
+    const message = await saveChatMessage(client.session.player.id, channel, safeContent)
+
+    if (!message) {
+      this.sendError(client, 'Unable to send message')
+      return
+    }
+
+    const payloadToSend = {
+      ...message,
+      player_name: message.player_name || client.session.player.username,
+    }
+
+    this.broadcast('chat_message', payloadToSend)
+  }
+
+  private broadcast(type: string, payload: unknown) {
+    for (const [, client] of this.clients) {
+      this.send(client, type, payload)
+    }
+  }
+
+  private async sendChatHistory(client: Client) {
+    const messages = await getRecentChatMessages(50)
+    const ordered = [...messages].reverse()
+    this.send(client, 'chat_history', { messages: ordered })
   }
 
   private async handleMoveZone(client: Client, payload: { zone_id: number }) {

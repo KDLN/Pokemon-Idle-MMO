@@ -1,6 +1,6 @@
 'use client'
 
-import type { ChatChannel } from './ChatMessage'
+import type { ChatChannel } from '@/types/chat'
 
 interface ChatTabsProps {
   activeChannel: ChatChannel

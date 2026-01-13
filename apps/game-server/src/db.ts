@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies } from './types.js'
+import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry } from './types.js'
 
 let supabase: SupabaseClient
 
@@ -379,6 +379,82 @@ export async function getPlayerInventory(playerId: string): Promise<Record<strin
     inventory[item.item_id] = item.quantity
   }
   return inventory
+}
+
+interface ChatMessageRow {
+  id: string
+  player_id: string
+  channel: ChatChannel
+  content: string
+  created_at: string
+  player?: { username: string }
+}
+
+export async function getRecentChatMessages(limit = 50): Promise<ChatMessageEntry[]> {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select(`
+      id,
+      player_id,
+      channel,
+      content,
+      created_at,
+      player:players(username)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error('Failed to load chat messages:', error)
+    return []
+  }
+
+  const rows: ChatMessageRow[] = data || []
+  return rows.map((row) => ({
+    id: row.id,
+    player_id: row.player_id,
+    player_name: row.player?.username || 'System',
+    channel: row.channel,
+    content: row.content,
+    created_at: row.created_at,
+  }))
+}
+
+export async function saveChatMessage(
+  playerId: string,
+  channel: ChatChannel,
+  content: string
+): Promise<ChatMessageEntry | null> {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .insert({
+      player_id: playerId,
+      channel,
+      content,
+    })
+    .select(`
+      id,
+      player_id,
+      channel,
+      content,
+      created_at,
+      player:players(username)
+    `)
+    .single()
+
+  if (error) {
+    console.error('Failed to save chat message:', error)
+    return null
+  }
+
+  return {
+    id: data.id,
+    player_id: data.player_id,
+    player_name: data.player?.username || 'System',
+    channel: data.channel,
+    content: data.content,
+    created_at: data.created_at,
+  }
 }
 
 // ============================================

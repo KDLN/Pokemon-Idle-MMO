@@ -1,8 +1,20 @@
 import { useGameStore } from '@/stores/gameStore'
 import type { TickResult, GameState, Zone, Pokemon, ShopItem } from '@/types/game'
 import type { GymLeader, GymBattleResult } from '@/components/game/GymBattlePanel'
+import type { ChatMessageData, ChatChannel } from '@/types/chat'
 
 type MessageHandler = (payload: unknown) => void
+
+type ChatPayload = {
+  id: string
+  player_id: string
+  player_name: string
+  channel: ChatChannel
+  content: string
+  created_at: string
+}
+
+const CHAT_CHANNELS: ChatChannel[] = ['global', 'trade', 'guild', 'system']
 
 class GameSocket {
   private ws: WebSocket | null = null
@@ -22,6 +34,8 @@ class GameSocket {
     this.handlers.set('shop_purchase', this.handleShopPurchase)
     this.handlers.set('gym_data', this.handleGymData)
     this.handlers.set('gym_battle_result', this.handleGymBattleResult)
+    this.handlers.set('chat_history', this.handleChatHistory)
+    this.handlers.set('chat_message', this.handleChatMessage)
     this.handlers.set('error', this.handleError)
   }
 
@@ -146,6 +160,11 @@ class GameSocket {
   // Challenge a gym leader
   challengeGym(gymLeaderId: string) {
     this.send('challenge_gym', { gym_leader_id: gymLeaderId })
+  }
+
+  // Send a chat message to the server
+  sendChatMessage(channel: ChatChannel, content: string) {
+    this.send('chat_message', { channel, content })
   }
 
   // Message handlers - using arrow functions to avoid binding issues
@@ -288,6 +307,42 @@ class GameSocket {
     const handler = (window as unknown as { __gymBattleHandler?: (result: GymBattleResult) => void }).__gymBattleHandler
     if (handler) {
       handler(result)
+    }
+  }
+
+  private handleChatHistory = (payload: unknown) => {
+    const { messages } = payload as { messages?: ChatPayload[] }
+    if (!messages) return
+
+    const grouped: Record<ChatChannel, ChatMessageData[]> = {
+      global: [],
+      trade: [],
+      guild: [],
+      system: [],
+    }
+
+    for (const msg of messages) {
+      const chatMessage = this.mapChatPayload(msg)
+      grouped[chatMessage.channel].push(chatMessage)
+    }
+
+    useGameStore.getState().setChatMessages(grouped)
+  }
+
+  private handleChatMessage = (payload: unknown) => {
+    const chatMessage = this.mapChatPayload(payload as ChatPayload)
+    useGameStore.getState().addChatMessage(chatMessage)
+  }
+
+  private mapChatPayload(payload: ChatPayload): ChatMessageData {
+    return {
+      id: payload.id,
+      playerId: payload.player_id,
+      playerName: payload.player_name,
+      channel: payload.channel,
+      content: payload.content,
+      createdAt: new Date(payload.created_at),
+      isSystem: payload.player_id === 'system',
     }
   }
 }

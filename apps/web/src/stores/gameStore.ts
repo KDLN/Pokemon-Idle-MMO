@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Player, Pokemon, Zone, EncounterEvent, LevelUpEvent, ShopItem } from '@/types/game'
-import type { ChatMessageData, ChatChannel } from '@/components/game/social/ChatMessage'
+import type { ChatMessageData, ChatChannel } from '@/types/chat'
 import type { LogEntry } from '@/components/game/interactions/WorldLog'
 import type { WorldEvent } from '@/components/game/social/WorldEventsTicker'
 import type { GymLeader } from '@/components/game/GymBattlePanel'
@@ -26,6 +26,8 @@ interface ChatState {
   messages: Record<ChatChannel, ChatMessageData[]>
   unreadCounts: Record<ChatChannel, number>
 }
+
+const CHAT_CHANNELS: ChatChannel[] = ['global', 'trade', 'guild', 'system']
 
 // World view state interface
 interface WorldViewState {
@@ -108,6 +110,7 @@ interface GameStore {
   setActiveChannel: (channel: ChatChannel) => void
   addChatMessage: (message: ChatMessageData) => void
   markChannelRead: (channel: ChatChannel) => void
+  setChatMessages: (messages: Record<ChatChannel, ChatMessageData[]>) => void
 
   // World log
   worldLog: LogEntry[]
@@ -329,6 +332,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
         },
       },
     })),
+
+  setChatMessages: (messages) =>
+    set((state) => {
+      const unreadCounts = CHAT_CHANNELS.reduce((acc, channel) => {
+        acc[channel] = state.chat.activeChannel === channel ? 0 : state.chat.unreadCounts[channel] ?? 0
+        return acc
+      }, {} as Record<ChatChannel, number>)
+
+      return {
+        chat: {
+          ...state.chat,
+          messages,
+          unreadCounts,
+        },
+      }
+    }),
 
   // World log methods
   addLogEntry: (entry) =>

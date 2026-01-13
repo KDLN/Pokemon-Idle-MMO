@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, KeyboardEvent } from 'react'
-import type { ChatChannel } from './ChatMessage'
+import type { ChatChannel } from '@/types/chat'
 
 interface ChatInputProps {
   channel: ChatChannel

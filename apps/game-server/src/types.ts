@@ -195,3 +195,14 @@ export interface WSMessage {
   type: string
   payload: unknown
 }
+
+export type ChatChannel = 'global' | 'trade' | 'guild' | 'system'
+
+export interface ChatMessageEntry {
+  id: string
+  player_id: string
+  player_name: string
+  channel: ChatChannel
+  content: string
+  created_at: string
+}
