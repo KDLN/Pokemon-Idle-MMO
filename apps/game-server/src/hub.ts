@@ -1,0 +1,414 @@
+import { WebSocket, WebSocketServer } from 'ws'
+import { createRemoteJWKSet, jwtVerify } from 'jose'
+import type { IncomingMessage } from 'http'
+import type { PlayerSession, WSMessage, PokemonSpecies, Zone, Pokemon } from './types.js'
+import {
+  getPlayerByUserId,
+  getPlayerParty,
+  getPlayerPokeballs,
+  getZone,
+  getConnectedZones,
+  getEncounterTable,
+  getPlayerBox,
+  updatePlayerPokeballs,
+  updatePlayerLastOnline,
+  updatePlayerZone,
+  updatePokemonStats,
+  saveCaughtPokemon,
+  updatePokedex,
+  swapPartyMember,
+  savePokemonXP,
+  updatePlayerMoney,
+  buyItem,
+  getPlayerInventory,
+  SHOP_ITEMS
+} from './db.js'
+import { processTick } from './game.js'
+
+interface Client {
+  ws: WebSocket
+  userId: string
+  session: PlayerSession | null
+}
+
+// Create JWKS client for Supabase ES256 tokens
+const SUPABASE_URL = process.env.SUPABASE_URL || ''
+const JWKS = createRemoteJWKSet(new URL(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`))
+
+export class GameHub {
+  private wss: WebSocketServer
+  private clients: Map<WebSocket, Client> = new Map()
+  private speciesMap: Map<number, PokemonSpecies> = new Map()
+  private tickInterval: NodeJS.Timeout | null = null
+
+  constructor(port: number) {
+    this.wss = new WebSocketServer({ port })
+
+    this.wss.on('connection', (ws, req) => this.handleConnection(ws, req))
+
+    console.log(`WebSocket server running on port ${port}`)
+  }
+
+  start() {
+    // Start tick loop (1 second)
+    this.tickInterval = setInterval(() => this.processTicks(), 1000)
+
+    // Update presence every 60 seconds
+    setInterval(() => this.updatePresence(), 60000)
+  }
+
+  stop() {
+    if (this.tickInterval) {
+      clearInterval(this.tickInterval)
+    }
+    this.wss.close()
+  }
+
+  private async handleConnection(ws: WebSocket, req: IncomingMessage) {
+    // Get token from query string
+    const url = new URL(req.url || '', `http://${req.headers.host}`)
+    const token = url.searchParams.get('token')
+
+    if (!token) {
+      ws.close(4001, 'Missing token')
+      return
+    }
+
+    // Validate JWT
+    const userId = await this.validateToken(token)
+    if (!userId) {
+      ws.close(4002, 'Invalid token')
+      return
+    }
+
+    const client: Client = { ws, userId, session: null }
+    this.clients.set(ws, client)
+
+    console.log(`Client connected: ${userId}`)
+
+    // Load session
+    try {
+      await this.loadSession(client)
+      this.sendGameState(client)
+    } catch (err) {
+      console.error('Failed to load session:', err)
+      ws.close(4003, 'Failed to load session')
+      return
+    }
+
+    ws.on('message', (data) => this.handleMessage(client, data.toString()))
+    ws.on('close', () => this.handleDisconnect(client))
+    ws.on('error', (err) => console.error('WebSocket error:', err))
+  }
+
+  private async validateToken(token: string): Promise<string | null> {
+    try {
+      // Use jose to verify ES256 tokens with Supabase JWKs
+      const { payload } = await jwtVerify(token, JWKS, {
+        issuer: `${SUPABASE_URL}/auth/v1`,
+      })
+
+      const userId = payload.sub
+      if (!userId) {
+        console.error('Token missing sub claim')
+        return null
+      }
+
+      console.log('Token verified successfully for user:', userId)
+      return userId
+    } catch (err) {
+      console.error('Token validation failed:', err)
+      return null
+    }
+  }
+
+  private async loadSession(client: Client) {
+    const player = await getPlayerByUserId(client.userId)
+    if (!player) {
+      throw new Error('Player not found')
+    }
+
+    const [party, zone, pokeballs, encounterTable] = await Promise.all([
+      getPlayerParty(player.id),
+      getZone(player.current_zone_id),
+      getPlayerPokeballs(player.id),
+      getEncounterTable(player.current_zone_id)
+    ])
+
+    if (!zone) {
+      throw new Error('Zone not found')
+    }
+
+    // Cache species data from encounter table
+    for (const entry of encounterTable) {
+      if (entry.species) {
+        this.speciesMap.set(entry.species_id, entry.species)
+      }
+    }
+
+    // Cache species data from party Pokemon
+    for (const pokemon of party) {
+      if (pokemon?.species) {
+        this.speciesMap.set(pokemon.species_id, pokemon.species)
+      }
+    }
+
+    client.session = {
+      player,
+      party,
+      zone,
+      pokeballs,
+      tickNumber: 0,
+      encounterTable,
+      pokedollars: player.pokedollars
+    }
+  }
+
+  private handleMessage(client: Client, data: string) {
+    try {
+      const msg: WSMessage = JSON.parse(data)
+
+      switch (msg.type) {
+        case 'move_zone':
+          this.handleMoveZone(client, msg.payload as { zone_id: number })
+          break
+        case 'swap_party':
+          this.handleSwapParty(client, msg.payload as { box_pokemon_id: string; party_slot: number })
+          break
+        case 'buy_item':
+          this.handleBuyItem(client, msg.payload as { item_id: string; quantity: number })
+          break
+        case 'get_shop':
+          this.handleGetShop(client)
+          break
+        case 'get_state':
+          this.sendGameState(client)
+          break
+        default:
+          console.log('Unknown message type:', msg.type)
+      }
+    } catch (err) {
+      console.error('Failed to handle message:', err)
+    }
+  }
+
+  private handleDisconnect(client: Client) {
+    console.log(`Client disconnected: ${client.userId}`)
+    this.clients.delete(client.ws)
+  }
+
+  private async handleMoveZone(client: Client, payload: { zone_id: number }) {
+    if (!client.session) return
+
+    const connectedZones = await getConnectedZones(client.session.zone.id)
+    const targetZone = connectedZones.find(z => z.id === payload.zone_id)
+
+    if (!targetZone) {
+      this.sendError(client, 'Cannot move to that zone')
+      return
+    }
+
+    const newZone = await getZone(payload.zone_id)
+    if (!newZone) {
+      this.sendError(client, 'Zone not found')
+      return
+    }
+
+    await updatePlayerZone(client.session.player.id, payload.zone_id)
+
+    client.session.zone = newZone
+    client.session.player.current_zone_id = payload.zone_id
+    client.session.encounterTable = await getEncounterTable(payload.zone_id)
+
+    // Auto-heal in towns
+    if (newZone.zone_type === 'town') {
+      for (const pokemon of client.session.party) {
+        if (pokemon) {
+          pokemon.current_hp = pokemon.max_hp
+        }
+      }
+    }
+
+    const newConnectedZones = await getConnectedZones(payload.zone_id)
+
+    this.send(client, 'zone_update', {
+      zone: newZone,
+      connected_zones: newConnectedZones
+    })
+  }
+
+  private async handleSwapParty(client: Client, payload: { box_pokemon_id: string; party_slot: number }) {
+    if (!client.session) return
+
+    if (payload.party_slot < 1 || payload.party_slot > 6) {
+      this.sendError(client, 'Invalid party slot')
+      return
+    }
+
+    const success = await swapPartyMember(
+      client.session.player.id,
+      payload.box_pokemon_id,
+      payload.party_slot
+    )
+
+    if (!success) {
+      this.sendError(client, 'Failed to swap party member')
+      return
+    }
+
+    // Reload party and box
+    client.session.party = await getPlayerParty(client.session.player.id)
+    const box = await getPlayerBox(client.session.player.id)
+
+    this.send(client, 'party_update', {
+      party: client.session.party,
+      box
+    })
+  }
+
+  private async handleBuyItem(client: Client, payload: { item_id: string; quantity: number }) {
+    if (!client.session) return
+
+    const { item_id, quantity } = payload
+
+    if (quantity < 1 || quantity > 99) {
+      this.sendError(client, 'Invalid quantity')
+      return
+    }
+
+    const result = await buyItem(
+      client.session.player.id,
+      item_id,
+      quantity,
+      client.session.pokedollars
+    )
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Purchase failed')
+      return
+    }
+
+    // Update session money
+    client.session.pokedollars = result.newMoney
+
+    // Update pokeballs in session if bought pokeballs
+    if (item_id === 'pokeball') {
+      client.session.pokeballs = result.newQuantity
+    }
+
+    // Get full inventory
+    const inventory = await getPlayerInventory(client.session.player.id)
+
+    this.send(client, 'shop_purchase', {
+      success: true,
+      item_id,
+      quantity,
+      new_money: result.newMoney,
+      inventory
+    })
+  }
+
+  private async handleGetShop(client: Client) {
+    if (!client.session) return
+
+    const inventory = await getPlayerInventory(client.session.player.id)
+
+    this.send(client, 'shop_data', {
+      items: SHOP_ITEMS,
+      money: client.session.pokedollars,
+      inventory
+    })
+  }
+
+  private async processTicks() {
+    for (const [, client] of this.clients) {
+      if (!client.session) continue
+
+      const result = processTick(client.session, this.speciesMap)
+
+      // Handle caught pokemon
+      if (result.encounter?.catch_result?.success) {
+        const wild = result.encounter.wild_pokemon
+        const pokemon = await saveCaughtPokemon(
+          client.session.player.id,
+          wild.species,
+          wild.level,
+          wild.is_shiny
+        )
+        if (pokemon) {
+          result.encounter.catch_result.pokemon_id = pokemon.id
+          // Add the caught pokemon to the result so the client can add it to their box
+          result.encounter.catch_result.caught_pokemon = {
+            ...pokemon,
+            species: wild.species
+          }
+          await updatePokedex(client.session.player.id, wild.species_id, true)
+        }
+        await updatePlayerPokeballs(client.session.player.id, client.session.pokeballs)
+      } else if (result.encounter) {
+        // Mark as seen in pokedex
+        await updatePokedex(client.session.player.id, result.encounter.wild_pokemon.species_id, false)
+      }
+
+      // Save level ups (stats changed)
+      if (result.level_ups && result.level_ups.length > 0) {
+        for (const pokemon of client.session.party) {
+          if (pokemon) {
+            await updatePokemonStats(pokemon)
+          }
+        }
+      } else if (result.xp_gained) {
+        // Save XP gains to database (even if no level up)
+        for (const pokemon of client.session.party) {
+          if (pokemon && result.xp_gained[pokemon.id]) {
+            await savePokemonXP(pokemon.id, pokemon.xp)
+          }
+        }
+      }
+
+      // Save money earned
+      if (result.money_earned && result.money_earned > 0) {
+        await updatePlayerMoney(client.session.player.id, client.session.pokedollars)
+      }
+
+      this.send(client, 'tick', result)
+    }
+  }
+
+  private async updatePresence() {
+    for (const [, client] of this.clients) {
+      if (client.session) {
+        await updatePlayerLastOnline(client.session.player.id)
+      }
+    }
+  }
+
+  private async sendGameState(client: Client) {
+    if (!client.session) return
+
+    const [connectedZones, box] = await Promise.all([
+      getConnectedZones(client.session.zone.id),
+      getPlayerBox(client.session.player.id)
+    ])
+
+    this.send(client, 'game_state', {
+      player: client.session.player,
+      party: client.session.party,
+      zone: client.session.zone,
+      connected_zones: connectedZones,
+      pokeballs: client.session.pokeballs,
+      pokedollars: client.session.pokedollars,
+      box
+    })
+  }
+
+  private send(client: Client, type: string, payload: unknown) {
+    if (client.ws.readyState === WebSocket.OPEN) {
+      client.ws.send(JSON.stringify({ type, payload }))
+    }
+  }
+
+  private sendError(client: Client, message: string) {
+    this.send(client, 'error', { message })
+  }
+}

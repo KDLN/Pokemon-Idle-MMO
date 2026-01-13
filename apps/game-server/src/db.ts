@@ -1,0 +1,368 @@
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies } from './types.js'
+
+let supabase: SupabaseClient
+
+export function initDatabase() {
+  const url = process.env.SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_KEY
+
+  if (!url || !key) {
+    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_KEY are required')
+  }
+
+  supabase = createClient(url, key)
+  return supabase
+}
+
+export function getSupabase() {
+  return supabase
+}
+
+// Player queries
+export async function getPlayerByUserId(userId: string): Promise<Player | null> {
+  const { data, error } = await supabase
+    .from('players')
+    .select('*')
+    .eq('user_id', userId)
+    .single()
+
+  if (error) {
+    console.error('Failed to get player:', error)
+    return null
+  }
+  return data
+}
+
+export async function getPlayerParty(playerId: string): Promise<(Pokemon | null)[]> {
+  const { data, error } = await supabase
+    .from('pokemon')
+    .select('*, species:pokemon_species(*)')
+    .eq('owner_id', playerId)
+    .not('party_slot', 'is', null)
+    .order('party_slot')
+
+  if (error) {
+    console.error('Failed to get party:', error)
+    return [null, null, null, null, null, null]
+  }
+
+  // Convert to 6-slot array
+  const party: (Pokemon | null)[] = [null, null, null, null, null, null]
+  for (const pokemon of data || []) {
+    if (pokemon.party_slot >= 1 && pokemon.party_slot <= 6) {
+      party[pokemon.party_slot - 1] = pokemon
+    }
+  }
+  return party
+}
+
+export async function getPlayerPokeballs(playerId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('inventory')
+    .select('quantity')
+    .eq('player_id', playerId)
+    .eq('item_id', 'pokeball')
+    .single()
+
+  if (error) return 0
+  return data?.quantity || 0
+}
+
+export async function updatePlayerPokeballs(playerId: string, quantity: number): Promise<void> {
+  await supabase
+    .from('inventory')
+    .upsert({ player_id: playerId, item_id: 'pokeball', quantity })
+}
+
+export async function updatePlayerLastOnline(playerId: string): Promise<void> {
+  await supabase
+    .from('players')
+    .update({ last_online: new Date().toISOString() })
+    .eq('id', playerId)
+}
+
+export async function updatePlayerZone(playerId: string, zoneId: number): Promise<void> {
+  await supabase
+    .from('players')
+    .update({ current_zone_id: zoneId })
+    .eq('id', playerId)
+}
+
+// Zone queries
+export async function getZone(zoneId: number): Promise<Zone | null> {
+  const { data, error } = await supabase
+    .from('zones')
+    .select('*')
+    .eq('id', zoneId)
+    .single()
+
+  if (error) {
+    console.error('Failed to get zone:', error)
+    return null
+  }
+  return data
+}
+
+export async function getConnectedZones(zoneId: number): Promise<Zone[]> {
+  const { data, error } = await supabase
+    .from('zone_connections')
+    .select('to_zone_id')
+    .eq('from_zone_id', zoneId)
+
+  if (error || !data) return []
+
+  const zoneIds = data.map(c => c.to_zone_id)
+  const { data: zones } = await supabase
+    .from('zones')
+    .select('*')
+    .in('id', zoneIds)
+
+  return zones || []
+}
+
+export async function getEncounterTable(zoneId: number): Promise<EncounterTableEntry[]> {
+  const { data, error } = await supabase
+    .from('encounter_tables')
+    .select(`
+      zone_id,
+      species_id,
+      encounter_rate,
+      species:pokemon_species(*)
+    `)
+    .eq('zone_id', zoneId)
+    .order('encounter_rate', { ascending: false })
+
+  if (error) {
+    console.error('Failed to get encounter table:', error)
+    return []
+  }
+
+  return (data || []).map(entry => ({
+    zone_id: entry.zone_id,
+    species_id: entry.species_id,
+    encounter_rate: entry.encounter_rate,
+    species: entry.species as unknown as PokemonSpecies
+  }))
+}
+
+export async function getSpecies(speciesId: number): Promise<PokemonSpecies | null> {
+  const { data, error } = await supabase
+    .from('pokemon_species')
+    .select('*')
+    .eq('id', speciesId)
+    .single()
+
+  if (error) return null
+  return data
+}
+
+// Pokemon mutations
+export async function saveCaughtPokemon(
+  playerId: string,
+  species: PokemonSpecies,
+  level: number,
+  isShiny: boolean = false
+): Promise<Pokemon | null> {
+  const maxHp = Math.floor((2 * species.base_hp * level / 100) + level + 10)
+  const attack = Math.floor((2 * species.base_attack * level / 100) + 5)
+  const defense = Math.floor((2 * species.base_defense * level / 100) + 5)
+  const spAttack = Math.floor((2 * species.base_sp_attack * level / 100) + 5)
+  const spDefense = Math.floor((2 * species.base_sp_defense * level / 100) + 5)
+  const speed = Math.floor((2 * species.base_speed * level / 100) + 5)
+
+  const { data, error } = await supabase
+    .from('pokemon')
+    .insert({
+      owner_id: playerId,
+      species_id: species.id,
+      level,
+      xp: 0,
+      current_hp: maxHp,
+      max_hp: maxHp,
+      stat_attack: attack,
+      stat_defense: defense,
+      stat_sp_attack: spAttack,
+      stat_sp_defense: spDefense,
+      stat_speed: speed,
+      is_shiny: isShiny
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Failed to save pokemon:', error)
+    return null
+  }
+  return data
+}
+
+export async function updatePokedex(
+  playerId: string,
+  speciesId: number,
+  caught: boolean
+): Promise<void> {
+  const { data: existing } = await supabase
+    .from('pokedex_entries')
+    .select('*')
+    .eq('player_id', playerId)
+    .eq('species_id', speciesId)
+    .single()
+
+  if (existing) {
+    await supabase
+      .from('pokedex_entries')
+      .update({
+        seen: true,
+        caught: existing.caught || caught,
+        catch_count: caught ? existing.catch_count + 1 : existing.catch_count,
+        first_caught_at: existing.first_caught_at || (caught ? new Date().toISOString() : null)
+      })
+      .eq('player_id', playerId)
+      .eq('species_id', speciesId)
+  } else {
+    await supabase
+      .from('pokedex_entries')
+      .insert({
+        player_id: playerId,
+        species_id: speciesId,
+        seen: true,
+        caught,
+        catch_count: caught ? 1 : 0,
+        first_caught_at: caught ? new Date().toISOString() : null
+      })
+  }
+}
+
+export async function updatePokemonStats(pokemon: Pokemon): Promise<void> {
+  await supabase
+    .from('pokemon')
+    .update({
+      level: pokemon.level,
+      xp: pokemon.xp,
+      max_hp: pokemon.max_hp,
+      current_hp: pokemon.current_hp,
+      stat_attack: pokemon.stat_attack,
+      stat_defense: pokemon.stat_defense,
+      stat_sp_attack: pokemon.stat_sp_attack,
+      stat_sp_defense: pokemon.stat_sp_defense,
+      stat_speed: pokemon.stat_speed
+    })
+    .eq('id', pokemon.id)
+}
+
+export async function getPlayerBox(playerId: string): Promise<Pokemon[]> {
+  const { data, error } = await supabase
+    .from('pokemon')
+    .select('*')
+    .eq('owner_id', playerId)
+    .is('party_slot', null)
+    .order('caught_at', { ascending: false })
+
+  if (error) return []
+  return data || []
+}
+
+export async function swapPartyMember(
+  playerId: string,
+  boxPokemonId: string,
+  partySlot: number
+): Promise<boolean> {
+  // Clear current slot
+  await supabase
+    .from('pokemon')
+    .update({ party_slot: null })
+    .eq('owner_id', playerId)
+    .eq('party_slot', partySlot)
+
+  // Move box pokemon to party
+  const { error } = await supabase
+    .from('pokemon')
+    .update({ party_slot: partySlot })
+    .eq('id', boxPokemonId)
+    .eq('owner_id', playerId)
+
+  return !error
+}
+
+export async function savePokemonXP(pokemonId: string, xp: number): Promise<void> {
+  await supabase
+    .from('pokemon')
+    .update({ xp })
+    .eq('id', pokemonId)
+}
+
+// Update player's Pokedollars
+export async function updatePlayerMoney(playerId: string, amount: number): Promise<void> {
+  await supabase
+    .from('players')
+    .update({ pokedollars: amount })
+    .eq('id', playerId)
+}
+
+// Shop items
+export const SHOP_ITEMS = [
+  { id: 'pokeball', name: 'Poke Ball', description: 'A device for catching wild Pokemon', price: 200, effect_type: 'ball' as const },
+  { id: 'great_ball', name: 'Great Ball', description: 'A good ball with a higher catch rate', price: 600, effect_type: 'great_ball' as const },
+  { id: 'potion', name: 'Potion', description: 'Restores 20 HP to one Pokemon', price: 300, effect_type: 'potion' as const },
+  { id: 'super_potion', name: 'Super Potion', description: 'Restores 50 HP to one Pokemon', price: 700, effect_type: 'super_potion' as const },
+]
+
+// Buy an item from the shop
+export async function buyItem(
+  playerId: string,
+  itemId: string,
+  quantity: number,
+  currentMoney: number
+): Promise<{ success: boolean; newMoney: number; newQuantity: number; error?: string }> {
+  const item = SHOP_ITEMS.find(i => i.id === itemId)
+  if (!item) {
+    return { success: false, newMoney: currentMoney, newQuantity: 0, error: 'Item not found' }
+  }
+
+  const totalCost = item.price * quantity
+  if (currentMoney < totalCost) {
+    return { success: false, newMoney: currentMoney, newQuantity: 0, error: 'Not enough money' }
+  }
+
+  const newMoney = currentMoney - totalCost
+
+  // Update player money
+  await supabase
+    .from('players')
+    .update({ pokedollars: newMoney })
+    .eq('id', playerId)
+
+  // Update inventory
+  const { data: existing } = await supabase
+    .from('inventory')
+    .select('quantity')
+    .eq('player_id', playerId)
+    .eq('item_id', itemId)
+    .single()
+
+  const currentQuantity = existing?.quantity || 0
+  const newQuantity = currentQuantity + quantity
+
+  await supabase
+    .from('inventory')
+    .upsert({ player_id: playerId, item_id: itemId, quantity: newQuantity })
+
+  return { success: true, newMoney, newQuantity }
+}
+
+// Get player inventory
+export async function getPlayerInventory(playerId: string): Promise<Record<string, number>> {
+  const { data, error } = await supabase
+    .from('inventory')
+    .select('item_id, quantity')
+    .eq('player_id', playerId)
+
+  if (error) return {}
+
+  const inventory: Record<string, number> = {}
+  for (const item of data || []) {
+    inventory[item.item_id] = item.quantity
+  }
+  return inventory
+}
