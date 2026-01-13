@@ -83,9 +83,23 @@ export interface CatchResult {
   balls_used: number
   caught_pokemon?: Pokemon & { species: PokemonSpecies }
   catch_sequence?: CatchSequence  // Animation data for frontend
+  catch_strength?: number
+  close_call?: boolean
+  critical?: boolean
 }
 
 // Individual turn in a battle sequence
+export interface Move {
+  name: string
+  type: string
+  power: number
+  accuracy: number
+  status?: {
+    name: string
+    chance: number
+  }
+}
+
 export interface BattleTurn {
   turn_number: number
   attacker: 'player' | 'wild' | 'gym'
@@ -98,6 +112,9 @@ export interface BattleTurn {
   defender_hp_after: number
   attacker_max_hp: number
   defender_max_hp: number
+  move_name: string
+  move_type: string
+  status_effect?: string
 }
 
 // Gym battle sequence for a single Pokemon matchup

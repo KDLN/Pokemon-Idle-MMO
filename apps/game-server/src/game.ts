@@ -12,7 +12,8 @@ import type {
   BattleTurn,
   BattleSequence,
   CatchSequence,
-  GymBattleMatchup
+  GymBattleMatchup,
+  Move
 } from './types.js'
 import type { GymLeader, GymLeaderPokemon } from './db.js'
 
@@ -111,6 +112,98 @@ const TYPE_CHART: Record<string, Record<string, number>> = {
   DARK: { FIGHTING: 0.5, PSYCHIC: 2, GHOST: 2, DARK: 0.5, FAIRY: 0.5 },
   STEEL: { FIRE: 0.5, WATER: 0.5, ELECTRIC: 0.5, ICE: 2, ROCK: 2, STEEL: 0.5, FAIRY: 2 },
   FAIRY: { FIRE: 0.5, FIGHTING: 2, POISON: 0.5, DRAGON: 2, DARK: 2, STEEL: 0.5 },
+}
+
+const DEFAULT_MOVE: Move = {
+  name: 'Tackle',
+  type: 'Normal',
+  power: 40,
+  accuracy: 0.95,
+}
+
+const TYPE_MOVE_POOL: Record<string, Move[]> = {
+  NORMAL: [
+    { name: 'Tackle', type: 'Normal', power: 40, accuracy: 0.95 },
+    { name: 'Quick Attack', type: 'Normal', power: 40, accuracy: 0.9 },
+  ],
+  FIRE: [
+    { name: 'Flame Burst', type: 'Fire', power: 50, accuracy: 0.9, status: { name: 'burn', chance: 0.2 } },
+    { name: 'Ember', type: 'Fire', power: 40, accuracy: 1, status: { name: 'burn', chance: 0.1 } },
+  ],
+  WATER: [
+    { name: 'Water Gun', type: 'Water', power: 45, accuracy: 0.95 },
+    { name: 'Bubble Beam', type: 'Water', power: 50, accuracy: 0.9 },
+  ],
+  GRASS: [
+    { name: 'Vine Whip', type: 'Grass', power: 45, accuracy: 0.95 },
+    { name: 'Razor Leaf', type: 'Grass', power: 55, accuracy: 0.9 },
+  ],
+  ELECTRIC: [
+    { name: 'Spark', type: 'Electric', power: 65, accuracy: 0.9, status: { name: 'paralysis', chance: 0.15 } },
+  ],
+  FLYING: [
+    { name: 'Peck', type: 'Flying', power: 35, accuracy: 1 },
+    { name: 'Wing Attack', type: 'Flying', power: 60, accuracy: 0.88 },
+  ],
+  BUG: [
+    { name: 'String Shot', type: 'Bug', power: 30, accuracy: 1 },
+    { name: 'Bug Bite', type: 'Bug', power: 55, accuracy: 0.9 },
+  ],
+  ROCK: [
+    { name: 'Rock Throw', type: 'Rock', power: 50, accuracy: 0.9 },
+  ],
+  POISON: [
+    { name: 'Poison Sting', type: 'Poison', power: 40, accuracy: 1, status: { name: 'poison', chance: 0.2 } },
+  ],
+}
+
+const SPECIES_MOVES: Record<number, Move[]> = {
+  1: [
+    { name: 'Vine Whip', type: 'Grass', power: 45, accuracy: 0.95 },
+    { name: 'Seed Bomb', type: 'Grass', power: 55, accuracy: 0.9 },
+  ],
+  4: [
+    { name: 'Ember', type: 'Fire', power: 40, accuracy: 1 },
+    { name: 'Dragon Breath', type: 'Dragon', power: 60, accuracy: 0.9 },
+  ],
+  7: [
+    { name: 'Water Gun', type: 'Water', power: 45, accuracy: 0.95 },
+    { name: 'Bubble', type: 'Water', power: 40, accuracy: 1 },
+  ],
+  16: [
+    { name: 'Gust', type: 'Flying', power: 40, accuracy: 1 },
+  ],
+}
+
+function getSpeciesMoves(species: PokemonSpecies): Move[] {
+  if (SPECIES_MOVES[species.id]) {
+    return SPECIES_MOVES[species.id]
+  }
+  const typeKey = species.type1?.toUpperCase() ?? 'NORMAL'
+  return TYPE_MOVE_POOL[typeKey] || [DEFAULT_MOVE]
+}
+
+function selectMove(attacker: PokemonSpecies, defender: PokemonSpecies): Move {
+  const moves = getSpeciesMoves(attacker)
+  let bestMove = moves[0]
+  let bestScore = 0
+
+  for (const move of moves) {
+    const effectiveness = getTypeEffectiveness(move.type, defender.type1, defender.type2)
+    const score = effectiveness * move.power
+    if (score > bestScore) {
+      bestScore = score
+      bestMove = move
+    }
+  }
+
+  return bestMove
+}
+
+function applyStatusEffect(move: Move): string | undefined {
+  if (!move.status) return undefined
+  if (Math.random() > move.status.chance) return undefined
+  return move.status.name
 }
 
 // Calculate type effectiveness multiplier
@@ -252,15 +345,19 @@ export function simulate1v1Battle(
     if (playerAttacks) {
       // Lead Pokemon attacks wild
       const attackStat = Math.max(lead.stat_attack, lead.stat_sp_attack)
-      const { damage, isCritical } = calculateDamage(
-        lead.level,
-        attackStat,
-        wild.stat_defense,
-        leadTypeMultiplier
-      )
+  const leadMove = selectMove(leadSpecies, wild.species)
+  const { damage, isCritical } = calculateDamage(
+    lead.level,
+    attackStat,
+    wild.stat_defense,
+    leadTypeMultiplier,
+    leadMove.power
+  )
 
       const wildHPBefore = wildHP
       wildHP = Math.max(0, wildHP - damage)
+
+      const statusEffect = applyStatusEffect(leadMove)
 
       turns.push({
         turn_number: turnNumber,
@@ -274,14 +371,20 @@ export function simulate1v1Battle(
         defender_hp_after: wildHP,
         attacker_max_hp: leadMaxHP,
         defender_max_hp: wildMaxHP
+        ,
+        move_name: leadMove.name,
+        move_type: leadMove.type,
+        status_effect: statusEffect
       })
     } else {
       // Wild Pokemon attacks lead
+      const wildMove = selectMove(wild.species, leadSpecies)
       const { damage, isCritical } = calculateDamage(
         wild.level,
         wild.stat_attack,
         Math.max(lead.stat_defense, lead.stat_sp_defense),
-        wildTypeMultiplier
+        wildTypeMultiplier,
+        wildMove.power
       )
 
       const leadHPBefore = leadHP
@@ -299,6 +402,10 @@ export function simulate1v1Battle(
         defender_hp_after: leadHP,
         attacker_max_hp: wildMaxHP,
         defender_max_hp: leadMaxHP
+        ,
+        move_name: wildMove.name,
+        move_type: wildMove.type,
+        status_effect: applyStatusEffect(wildMove)
       })
     }
 
@@ -434,11 +541,18 @@ export function attemptCatch(wild: WildPokemon, pokeballs: number): { result: Ca
     break_free_shake: breakFreeShake
   }
 
+  const catchStrength = catchChance
+  const closeCall = catchStrength > 0.7 && catchStrength < 0.95
+  const critical = catchStrength >= 0.95
+
   return {
     result: {
       success,
       balls_used: 1,
-      catch_sequence: catchSequence
+      catch_sequence: catchSequence,
+      catch_strength: catchStrength,
+      close_call: closeCall,
+      critical
     },
     newPokeballs
   }
@@ -681,11 +795,26 @@ function simulateGymMatchup(
     if (playerAttacks) {
       // Player Pokemon attacks gym Pokemon
       const attackStat = Math.max(playerPokemon.stat_attack, playerPokemon.stat_sp_attack)
+      const playerMove = selectMove(playerSpecies, {
+        type1: gymPokemon.type1,
+        type2: gymPokemon.type2,
+        base_hp: gymStats.maxHp,
+        base_attack: gymStats.attack,
+        base_defense: gymStats.defense,
+        base_sp_attack: gymStats.spAttack,
+        base_sp_defense: gymStats.spDefense,
+        base_speed: gymStats.speed,
+        base_catch_rate: 0,
+        base_xp_yield: 0,
+        id: gymPokemon.species_id,
+        name: gymPokemon.species_name
+      } as PokemonSpecies)
       const { damage, isCritical } = calculateDamage(
         playerPokemon.level,
         attackStat,
         gymStats.defense,
-        playerTypeMultiplier
+        playerTypeMultiplier,
+        playerMove.power
       )
 
       gymHP = Math.max(0, gymHP - damage)
@@ -702,15 +831,24 @@ function simulateGymMatchup(
         defender_hp_after: gymHP,
         attacker_max_hp: playerMaxHP,
         defender_max_hp: gymMaxHP
+        ,
+        move_name: playerMove.name,
+        move_type: playerMove.type,
+        status_effect: applyStatusEffect(playerMove)
       })
     } else {
       // Gym Pokemon attacks player Pokemon
-      const { damage, isCritical } = calculateDamage(
-        gymPokemon.level,
-        Math.max(gymStats.attack, gymStats.spAttack),
-        Math.max(playerPokemon.stat_defense, playerPokemon.stat_sp_defense),
-        gymTypeMultiplier
-      )
+        const gymMove = selectMove(
+          { id: gymPokemon.species_id, name: gymPokemon.species_name, type1: gymPokemon.type1, type2: gymPokemon.type2, base_hp: gymStats.maxHp, base_attack: gymStats.attack, base_defense: gymStats.defense, base_sp_attack: gymStats.spAttack, base_sp_defense: gymStats.spDefense, base_speed: gymStats.speed, base_catch_rate: 0, base_xp_yield: 0 },
+          playerSpecies
+        )
+        const { damage, isCritical } = calculateDamage(
+          gymPokemon.level,
+          Math.max(gymStats.attack, gymStats.spAttack),
+          Math.max(playerPokemon.stat_defense, playerPokemon.stat_sp_defense),
+          gymTypeMultiplier,
+          gymMove.power
+        )
 
       playerHP = Math.max(0, playerHP - damage)
 

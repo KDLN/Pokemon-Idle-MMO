@@ -2,7 +2,7 @@
 
 import { useGameStore } from '@/stores/gameStore'
 import { getPokemonSpriteUrl } from '@/types/game'
-import { getSpeciesData, cn } from '@/lib/ui'
+import { getSpeciesData, cn, getTypeColor } from '@/lib/ui'
 import { useBattleAnimation } from '@/hooks/useBattleAnimation'
 
 // HP Bar component with smooth animation
@@ -197,6 +197,13 @@ export function EncounterDisplay() {
   const isShiny = wild.is_shiny || false
   const battleSeq = currentEncounter.battle_sequence
   const caught = currentEncounter.catch_result?.success
+  const currentTurn = battle.currentTurn
+  const catchResult = currentEncounter.catch_result
+  const catchStrengthPct = Math.min(100, Math.max(0, (catchResult?.catch_strength ?? 0) * 100))
+  const catchStatusLabel =
+    catchResult?.critical ? 'Critical Throw!' :
+    catchResult?.close_call ? 'Close Call!' :
+    'Catch Chance'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -302,6 +309,23 @@ export function EncounterDisplay() {
                   <Pokeball />
                 </div>
                 {battle.phase === 'catch_result' && caught && <CatchStars />}
+              </div>
+            )}
+
+            {/* Catch meter */}
+            {battle.isInCatch && catchResult && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-[10px] text-white/80 z-20">
+                <div className="w-56 h-2 bg-white/5 rounded-full overflow-hidden border border-white/20">
+                  <div
+                    className="h-full bg-gradient-to-r from-yellow-400 via-orange-400 to-red-500 transition-all duration-300"
+                    style={{ width: `${catchStrengthPct}%` }}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold tracking-widest">{catchStatusLabel}</span>
+                  {catchResult.close_call && <span className="text-yellow-300">Close!</span>}
+                  {catchResult.critical && <span className="text-emerald-300">Critical!</span>}
+                </div>
               </div>
             )}
 
@@ -455,9 +479,27 @@ export function EncounterDisplay() {
             </div>
           </div>
 
-          {/* Battle message text box */}
-          <div className="flex-none bg-[#1a1a2e] border-t-2 border-[#2a2a4a] p-4">
-            <p
+        {/* Battle message text box */}
+        <div className="flex-none bg-[#1a1a2e] border-t-2 border-[#2a2a4a] p-4">
+          {currentTurn && (
+            <div className="flex items-center justify-center gap-3 mb-1 text-[11px] text-white/70">
+              <span className="uppercase tracking-widest">Move:</span>
+              <span className="font-semibold text-white">{currentTurn.move_name}</span>
+              <span
+                className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                style={{
+                  backgroundColor: getTypeColor(currentTurn.move_type),
+                  color: '#0f0f1a'
+                }}
+              >
+                {currentTurn.move_type}
+              </span>
+              {currentTurn.status_effect && (
+                <span className="text-yellow-300">Inflicts {currentTurn.status_effect}</span>
+              )}
+            </div>
+          )}
+          <p
               className={cn(
                 'font-pixel text-sm text-white text-center',
                 battle.messageText && 'animate-message-slide-in'

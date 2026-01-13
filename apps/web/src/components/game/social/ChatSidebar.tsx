@@ -29,7 +29,6 @@ export function ChatSidebar({ isCollapsed = false, onToggle }: ChatSidebarProps)
 
   const handleSend = (content: string) => {
     if (!player) return
-    console.log('[chat] send', activeChannel, content)
     gameSocket.sendChatMessage(activeChannel, content)
   }
 

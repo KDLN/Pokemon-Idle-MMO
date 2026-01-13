@@ -17,6 +17,19 @@ const PHASE_DURATIONS = {
   fade_out: 500
 }
 
+const EFFECTIVENESS_MESSAGES: Record<'super' | 'not_very' | 'immune' | 'neutral', string> = {
+  super: "It's super effective!",
+  not_very: "It's not very effective...",
+  immune: "It has no effect!",
+  neutral: ''
+}
+
+function describeTurn(turn: BattleTurn): string {
+  const effectiveness = EFFECTIVENESS_MESSAGES[turn.effectiveness]
+  const status = turn.status_effect ? `It ${turn.status_effect}s ${turn.defender_name}!` : ''
+  return [`${turn.attacker_name} used ${turn.move_name}!`, effectiveness, status].filter(Boolean).join(' ')
+}
+
 export interface BattleAnimationState {
   phase: BattlePhase
   currentTurnIndex: number
@@ -152,6 +165,7 @@ export function useBattleAnimation(
           const damageTarget = turn.attacker === 'player' ? 'wild' : 'player'
 
           schedulePhase('turn_damage', PHASE_DURATIONS.turn_attack, {
+            messageText: describeTurn(turn),
             showDamageNumber: true,
             damageAmount: turn.damage_dealt,
             damageTarget,
