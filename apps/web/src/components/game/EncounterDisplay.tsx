@@ -2,7 +2,7 @@
 
 import { useGameStore } from '@/stores/gameStore'
 import { getPokemonSpriteUrl } from '@/types/game'
-import { getSpeciesData, cn, getTypeColor } from '@/lib/ui'
+import { getSpeciesData, cn, getTypeColor, TYPE_COLORS } from '@/lib/ui'
 import { useBattleAnimation } from '@/hooks/useBattleAnimation'
 import { BattleSceneFrame } from '@/components/game/BattleSceneFrame'
 
@@ -220,51 +220,72 @@ export function EncounterDisplay() {
       phaseClasses={framePhaseClasses}
       caught={caught}
     >
-      {/* Top section: Wild Pokemon */}
-      <div className="flex-none px-4 pt-4">
-        <div className="flex items-start justify-between">
-          {/* Wild HUD */}
-          <div className="bg-[#1a1a2e]/95 rounded-xl p-3 border-2 border-[#2a2a4a] w-[180px] shadow-lg">
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-pixel text-sm text-white truncate">{speciesName}</span>
-              <span className="text-sm text-[#606080]">Lv.{wild.level}</span>
+      <div className="relative flex flex-col gap-6 p-6">
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Wild column */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-[#a0a0c0] uppercase tracking-wider">Wild</p>
+              <span className="text-xs text-[#606080]">Lv.{wild.level}</span>
             </div>
-            <HPBar
-              percent={battle.wildHPPercent}
-              animating={battle.isInBattle}
-            />
-          </div>
-
-          {/* Wild Pokemon sprite */}
-          <div className="relative">
-            <div
-              className={cn(
-                'transform transition-all duration-300',
-                battle.phase === 'appear' && 'animate-wild-slide-in',
-                battle.isInBattle && battle.currentTurn?.attacker === 'wild' && 'animate-attack-lunge-wild',
-                battle.isInBattle && battle.damageTarget === 'wild' && battle.showDamageNumber && 'animate-damage-flash',
-                battle.phase === 'catch_throw' && 'animate-pokemon-faint',
-                battle.phase === 'catch_result' && !caught && 'animate-pokemon-emerge',
-                battle.wildHP <= 0 && 'animate-pokemon-faint'
-              )}
-            >
-              {/* Type glow */}
-              <div
-                className={cn('absolute inset-0 blur-3xl opacity-50 scale-100', isShiny && 'animate-pulse')}
-                style={{ backgroundColor: isShiny ? '#FFD700' : wildSpeciesData.color }}
-              />
+            <div className="bg-[#1a1a2e]/95 rounded-xl p-3 border-2 border-[#2a2a4a] shadow-lg flex items-center gap-3">
               <img
                 src={getPokemonSpriteUrl(wild.species_id, isShiny)}
                 alt={speciesName}
-                className="w-28 h-28 pixelated relative z-10"
+                className="w-20 h-20 pixelated relative z-10"
               />
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-pixel text-sm text-white">{speciesName}</span>
+                </div>
+                <HPBar percent={battle.wildHPPercent} animating={battle.isInBattle} />
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Middle section: Battle area */}
-      <div className="flex-1 relative" style={{ minHeight: '140px' }}>
+          {/* Player column */}
+          {leadPokemon && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-[#a0a0c0] uppercase tracking-wider">Your Pokemon</p>
+                <span className="text-xs text-[#606080]">Lv.{leadPokemon.level}</span>
+              </div>
+              <div className="bg-[#1a1a2e]/95 rounded-xl p-3 border-2 border-[#2a2a4a] shadow-lg flex items-center gap-3 justify-end">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-pixel text-sm text-white">{leadSpeciesData?.name || 'Unknown'}</span>
+                    <div className="flex gap-1">
+                      {leadSpeciesData?.type && (
+                        <span
+                          className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
+                          style={{ backgroundColor: TYPE_COLORS[leadSpeciesData.type.toLowerCase()]?.bg || '#3a3a5a' }}
+                        >
+                          {leadSpeciesData.type}
+                        </span>
+                      )}
+                      {leadSpeciesData?.type2 && (
+                        <span
+                          className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
+                          style={{ backgroundColor: TYPE_COLORS[leadSpeciesData.type2.toLowerCase()]?.bg || '#3a3a5a' }}
+                        >
+                          {leadSpeciesData.type2}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <HPBar percent={battle.playerHPPercent} animating={battle.isInBattle} />
+                </div>
+                <img
+                  src={getPokemonSpriteUrl(leadPokemon.species_id, leadPokemon.is_shiny)}
+                  alt={leadSpeciesData?.name || 'Pokemon'}
+                  className="w-20 h-20 pixelated -scale-x-100 relative z-10"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 relative" style={{ minHeight: '140px' }}>
         {/* Pokeball catch animation */}
         {battle.isInCatch && (
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
@@ -404,81 +425,37 @@ export function EncounterDisplay() {
         )}
       </div>
 
-      {/* Bottom section: Player Pokemon */}
-      <div className="flex-none px-4 pb-4">
-        <div className="flex items-end justify-between">
-          {/* Player Pokemon sprite */}
-          {battleSeq && leadPokemon && (
-            <div className="relative">
-              <div
-                className={cn(
-                  'transform transition-all duration-300',
-                  battle.phase === 'battle_intro' && 'animate-player-slide-in',
-                  battle.isInBattle && battle.currentTurn?.attacker === 'player' && 'animate-attack-lunge',
-                  battle.isInBattle && battle.damageTarget === 'player' && battle.showDamageNumber && 'animate-damage-flash',
-                  battle.phase === 'battle_end' && battleSeq.final_outcome === 'player_win' && 'animate-victory-bounce'
-                )}
-              >
-                {/* Type glow */}
-                <div
-                  className="absolute inset-0 blur-3xl opacity-40 scale-100"
-                  style={{ backgroundColor: leadSpeciesData?.color }}
-                />
-                <img
-                  src={getPokemonSpriteUrl(leadPokemon.species_id, leadPokemon.is_shiny)}
-                  alt={battleSeq.lead_pokemon_name}
-                  className="w-24 h-24 pixelated relative z-10 -scale-x-100"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Player HUD */}
-          {battleSeq && (
-            <div className="bg-[#1a1a2e]/95 rounded-xl p-3 border-2 border-[#2a2a4a] w-[180px] shadow-lg">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-pixel text-sm text-white truncate">{battleSeq.lead_pokemon_name}</span>
-                <span className="text-sm text-[#606080]">Lv.{battleSeq.lead_level}</span>
-              </div>
-              <HPBar
-                percent={battle.playerHPPercent}
-                animating={battle.isInBattle}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Battle message text box */}
-      <div className="flex-none bg-[#1a1a2e] border-t-2 border-[#2a2a4a] p-4">
-        {currentTurn && (
-          <div className="flex items-center justify-center gap-3 mb-1 text-[11px] text-white/70">
-            <span className="uppercase tracking-widest">Move:</span>
-            <span className="font-semibold text-white">{currentTurn.move_name}</span>
-            <span
-              className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
-              style={{
-                backgroundColor: getTypeColor(currentTurn.move_type),
-                color: '#0f0f1a'
-              }}
+        <div className="flex-none bg-[#1a1a2e] border-t-2 border-[#2a2a4a] p-4">
+          {currentTurn && (
+            <div className="flex items-center justify-center gap-3 mb-1 text-[11px] text-white/70">
+              <span className="uppercase tracking-widest">Move:</span>
+              <span className="font-semibold text-white">{currentTurn.move_name}</span>
+              <span
+                className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                style={{
+                  backgroundColor: getTypeColor(currentTurn.move_type),
+                  color: '#0f0f1a'
+                }}
+              >
+                {currentTurn.move_type}
+              </span>
+              {currentTurn.status_effect && (
+                <span className="text-yellow-300">Inflicts {currentTurn.status_effect}</span>
+              )}
+            </div>
+          )}
+          <p
+              className={cn(
+                'font-pixel text-sm text-white text-center',
+                battle.messageText && 'animate-message-slide-in'
+              )}
+              key={battle.messageText}
             >
-              {currentTurn.move_type}
-            </span>
-            {currentTurn.status_effect && (
-              <span className="text-yellow-300">Inflicts {currentTurn.status_effect}</span>
-            )}
-          </div>
-        )}
-        <p
-            className={cn(
-              'font-pixel text-sm text-white text-center',
-              battle.messageText && 'animate-message-slide-in'
-            )}
-            key={battle.messageText}
-          >
-            {battle.messageText || '\u00A0'}
-          </p>
-        </div>
+              {battle.messageText || '\u00A0'}
+            </p>
+         </div>
+      </div>
     </BattleSceneFrame>
   )
 }
