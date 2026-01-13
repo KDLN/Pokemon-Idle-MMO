@@ -546,49 +546,11 @@ export function GymBattlePanel() {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_rgba(15,15,26,0))]" />
             <div className="relative flex flex-col gap-6 p-6">
               <div className="grid lg:grid-cols-2 gap-4">
-                {/* Gym side */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-[#a0a0c0] uppercase tracking-wider">Gym Pokemon</p>
-                      <p className="font-pixel text-white text-sm">{currentMatchup.gym_pokemon_name}</p>
-                    </div>
-                    <span className="text-xs text-[#606080]">Lv.{currentMatchup.gym_level}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={getPokemonSpriteUrl(currentMatchup.gym_species_id)}
-                      alt={currentMatchup.gym_pokemon_name}
-                      className="w-24 h-24 pixelated"
-                    />
-                    <div className="flex-1 space-y-2">
-                      <HPBar percent={gymHPPercent} side="gym" />
-                      <div className="flex gap-2">
-                        <span className="text-[10px] text-[#a0a0c0]">Type</span>
-                        <span
-                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: TYPE_COLORS[currentMatchup.gym_type1] || '#888' }}
-                        >
-                          {currentMatchup.gym_type1}
-                        </span>
-                        {currentMatchup.gym_type2 && (
-                          <span
-                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                            style={{ backgroundColor: TYPE_COLORS[currentMatchup.gym_type2] || '#888' }}
-                          >
-                            {currentMatchup.gym_type2}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Player side */}
-                <div className="space-y-3">
+                <div className="space-y-3 order-1 lg:order-none">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-[#a0a0c0] uppercase tracking-wider">Player</p>
+                      <p className="text-xs text-[#a0a0c0] uppercase tracking-wider">Your Pokemon</p>
                       <p className="font-pixel text-white text-sm">{currentMatchup.player_pokemon_name}</p>
                     </div>
                     <span className="text-xs text-[#606080]">Lv.{currentMatchup.player_level}</span>
@@ -597,7 +559,7 @@ export function GymBattlePanel() {
                     <img
                       src={getPokemonSpriteUrl(currentMatchup.player_species_id)}
                       alt={currentMatchup.player_pokemon_name}
-                      className="w-24 h-24 pixelated -scale-x-100"
+                      className="w-28 h-28 pixelated"
                     />
                     <div className="flex-1 space-y-2">
                       <HPBar percent={playerHPPercent} side="player" />
@@ -619,6 +581,44 @@ export function GymBattlePanel() {
                         )}
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Gym side */}
+                <div className="space-y-3 order-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-[#a0a0c0] uppercase tracking-wider">Gym Pokemon</p>
+                      <p className="font-pixel text-white text-sm">{currentMatchup.gym_pokemon_name}</p>
+                    </div>
+                    <span className="text-xs text-[#606080]">Lv.{currentMatchup.gym_level}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 space-y-2">
+                      <HPBar percent={gymHPPercent} side="gym" />
+                      <div className="flex gap-2">
+                        <span className="text-[10px] text-[#a0a0c0]">Type</span>
+                        <span
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: TYPE_COLORS[currentMatchup.gym_type1] || '#888' }}
+                        >
+                          {currentMatchup.gym_type1}
+                        </span>
+                        {currentMatchup.gym_type2 && (
+                          <span
+                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                            style={{ backgroundColor: TYPE_COLORS[currentMatchup.gym_type2] || '#888' }}
+                          >
+                            {currentMatchup.gym_type2}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <img
+                      src={getPokemonSpriteUrl(currentMatchup.gym_species_id)}
+                      alt={currentMatchup.gym_pokemon_name}
+                      className="w-28 h-28 pixelated -scale-x-100"
+                    />
                   </div>
                 </div>
               </div>
