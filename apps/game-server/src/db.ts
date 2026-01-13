@@ -387,7 +387,7 @@ interface ChatMessageRow {
   channel: ChatChannel
   content: string
   created_at: string
-  player?: { username: string }
+  player?: { username: string }[]
 }
 
 export async function getRecentChatMessages(limit = 50): Promise<ChatMessageEntry[]> {
@@ -410,10 +410,13 @@ export async function getRecentChatMessages(limit = 50): Promise<ChatMessageEntr
   }
 
   const rows: ChatMessageRow[] = data || []
+  const getPlayerName = (player?: { username: string }[]): string =>
+    player && player.length > 0 ? player[0].username : 'System'
+
   return rows.map((row) => ({
     id: row.id,
     player_id: row.player_id,
-    player_name: row.player?.username || 'System',
+    player_name: getPlayerName(row.player),
     channel: row.channel,
     content: row.content,
     created_at: row.created_at,
@@ -447,10 +450,13 @@ export async function saveChatMessage(
     return null
   }
 
+  const getPlayerName = (player?: { username: string }[]): string =>
+    player && player.length > 0 ? player[0].username : 'System'
+
   return {
     id: data.id,
     player_id: data.player_id,
-    player_name: data.player?.username || 'System',
+    player_name: getPlayerName(data.player),
     channel: data.channel,
     content: data.content,
     created_at: data.created_at,
