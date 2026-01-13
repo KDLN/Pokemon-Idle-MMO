@@ -8,7 +8,10 @@ import type {
   LevelUpEvent,
   TickResult,
   PlayerSession,
-  EncounterTableEntry
+  EncounterTableEntry,
+  BattleTurn,
+  BattleSequence,
+  CatchSequence
 } from './types.js'
 import type { GymLeader, GymLeaderPokemon } from './db.js'
 
@@ -162,62 +165,226 @@ export function getBestTypeAdvantage(party: (Pokemon | null)[], wild: WildPokemo
   return { multiplier: bestMultiplier, attackerType: bestType }
 }
 
+// ============================================
+// 1v1 BATTLE SYSTEM
+// ============================================
+
+// Get first healthy Pokemon (lead)
+export function getLeadPokemon(party: (Pokemon | null)[]): Pokemon | null {
+  for (const p of party) {
+    if (p && p.current_hp > 0) return p
+  }
+  return null
+}
+
+// Calculate damage for a single attack
+export function calculateDamage(
+  attackerLevel: number,
+  attackerAttack: number,
+  defenderDefense: number,
+  typeMultiplier: number,
+  basePower: number = 40  // Default move power for idle game
+): { damage: number; isCritical: boolean } {
+  // Simplified damage formula based on Gen 1-3
+  const levelFactor = ((2 * attackerLevel) / 5) + 2
+  const attackDefenseRatio = attackerAttack / Math.max(1, defenderDefense)
+  const baseDamage = ((levelFactor * basePower * attackDefenseRatio) / 50) + 2
+
+  // Critical hit (6.25% chance)
+  const isCritical = Math.random() < 0.0625
+  const critMultiplier = isCritical ? 1.5 : 1
+
+  // Random variance (85-100%)
+  const randomFactor = 0.85 + Math.random() * 0.15
+
+  // Type effectiveness
+  const finalDamage = Math.max(1, Math.floor(baseDamage * typeMultiplier * critMultiplier * randomFactor))
+
+  return { damage: finalDamage, isCritical }
+}
+
+// Convert type multiplier to effectiveness text
+function getEffectivenessCategory(multiplier: number): 'super' | 'neutral' | 'not_very' | 'immune' {
+  if (multiplier === 0) return 'immune'
+  if (multiplier >= 2) return 'super'
+  if (multiplier < 1) return 'not_very'
+  return 'neutral'
+}
+
+// Simulate full 1v1 battle with turn sequence
+export function simulate1v1Battle(
+  lead: Pokemon,
+  leadSpecies: PokemonSpecies,
+  wild: WildPokemon,
+  speciesMap: Map<number, PokemonSpecies>
+): BattleSequence {
+  const turns: BattleTurn[] = []
+
+  let leadHP = lead.current_hp
+  let wildHP = wild.max_hp
+  const leadMaxHP = lead.max_hp
+  const wildMaxHP = wild.max_hp
+
+  // Calculate type effectiveness both ways
+  const leadTypeMultiplier = getTypeEffectiveness(
+    leadSpecies.type1,
+    wild.species.type1,
+    wild.species.type2
+  )
+  const wildTypeMultiplier = getTypeEffectiveness(
+    wild.species.type1,
+    leadSpecies.type1,
+    leadSpecies.type2
+  )
+
+  let turnNumber = 0
+  const MAX_TURNS = 10  // Prevent infinite loops
+
+  // Determine who goes first (speed comparison)
+  const leadFirst = lead.stat_speed >= wild.stat_attack // Using stat_attack as proxy for wild speed
+
+  while (leadHP > 0 && wildHP > 0 && turnNumber < MAX_TURNS) {
+    // Determine attacker based on turn and speed
+    const isEvenTurn = turnNumber % 2 === 0
+    const playerAttacks = isEvenTurn === leadFirst
+
+    if (playerAttacks) {
+      // Lead Pokemon attacks wild
+      const attackStat = Math.max(lead.stat_attack, lead.stat_sp_attack)
+      const { damage, isCritical } = calculateDamage(
+        lead.level,
+        attackStat,
+        wild.stat_defense,
+        leadTypeMultiplier
+      )
+
+      const wildHPBefore = wildHP
+      wildHP = Math.max(0, wildHP - damage)
+
+      turns.push({
+        turn_number: turnNumber,
+        attacker: 'player',
+        attacker_name: leadSpecies.name,
+        defender_name: wild.species.name,
+        damage_dealt: damage,
+        is_critical: isCritical,
+        effectiveness: getEffectivenessCategory(leadTypeMultiplier),
+        attacker_hp_after: leadHP,
+        defender_hp_after: wildHP,
+        attacker_max_hp: leadMaxHP,
+        defender_max_hp: wildMaxHP
+      })
+    } else {
+      // Wild Pokemon attacks lead
+      const { damage, isCritical } = calculateDamage(
+        wild.level,
+        wild.stat_attack,
+        Math.max(lead.stat_defense, lead.stat_sp_defense),
+        wildTypeMultiplier
+      )
+
+      const leadHPBefore = leadHP
+      leadHP = Math.max(0, leadHP - damage)
+
+      turns.push({
+        turn_number: turnNumber,
+        attacker: 'wild',
+        attacker_name: wild.species.name,
+        defender_name: leadSpecies.name,
+        damage_dealt: damage,
+        is_critical: isCritical,
+        effectiveness: getEffectivenessCategory(wildTypeMultiplier),
+        attacker_hp_after: wildHP,
+        defender_hp_after: leadHP,
+        attacker_max_hp: wildMaxHP,
+        defender_max_hp: leadMaxHP
+      })
+    }
+
+    turnNumber++
+  }
+
+  const playerWon = wildHP <= 0
+  const xpEarned = playerWon ? Math.floor((wild.species.base_xp_yield * wild.level) / 7) : 0
+
+  return {
+    lead_pokemon_id: lead.id,
+    lead_pokemon_name: leadSpecies.name,
+    lead_species_id: lead.species_id,
+    lead_level: lead.level,
+    lead_starting_hp: lead.current_hp,
+    lead_max_hp: leadMaxHP,
+    lead_type1: leadSpecies.type1,
+    lead_type2: leadSpecies.type2,
+    wild_starting_hp: wild.max_hp,
+    wild_max_hp: wildMaxHP,
+    turns,
+    final_outcome: playerWon ? 'player_win' : 'player_faint',
+    lead_final_hp: leadHP,
+    xp_earned: xpEarned
+  }
+}
+
 // Battle result with type effectiveness info
 export interface BattleResult {
   outcome: 'win' | 'lose' | 'fled' | 'wipe'
   typeEffectiveness: number
   effectivenessText: string | null // 'super_effective', 'not_very_effective', 'no_effect', null for neutral
+  battleSequence?: BattleSequence  // Full battle animation data
 }
 
-// Battle resolution with type effectiveness
+// Battle resolution using 1v1 lead Pokemon system
 export function resolveBattle(
   party: (Pokemon | null)[],
   wild: WildPokemon,
   speciesMap: Map<number, PokemonSpecies>
 ): BattleResult {
-  let partyPower = 0
-  let healthyPokemon = 0
+  // Get lead Pokemon
+  const lead = getLeadPokemon(party)
 
-  for (const p of party) {
-    if (p && p.current_hp > 0) {
-      healthyPokemon++
-      partyPower += (p.stat_attack + p.stat_sp_attack) * p.level
-    }
-  }
-
-  if (healthyPokemon === 0) {
+  if (!lead) {
     return { outcome: 'wipe', typeEffectiveness: 1, effectivenessText: null }
   }
 
-  // Get type advantage
-  const { multiplier: typeMultiplier } = getBestTypeAdvantage(party, wild, speciesMap)
+  const leadSpecies = speciesMap.get(lead.species_id)
+  if (!leadSpecies) {
+    // Fallback if species not found
+    return { outcome: 'fled', typeEffectiveness: 1, effectivenessText: null }
+  }
 
-  // Apply type effectiveness to party power
-  const effectivePower = partyPower * typeMultiplier
+  // Simulate the actual 1v1 battle
+  const battleSequence = simulate1v1Battle(lead, leadSpecies, wild, speciesMap)
 
-  const wildPower = (wild.stat_attack + wild.max_hp) * wild.level
-  let winChance = effectivePower / (effectivePower + wildPower)
+  // Apply damage to lead Pokemon (persistent damage!)
+  lead.current_hp = battleSequence.lead_final_hp
 
-  // Clamp between 10% and 95%
-  winChance = Math.max(0.1, Math.min(0.95, winChance))
+  // Determine type effectiveness text from lead's attacks
+  const leadTypeMultiplier = getTypeEffectiveness(
+    leadSpecies.type1,
+    wild.species.type1,
+    wild.species.type2
+  )
 
-  // Determine effectiveness text
   let effectivenessText: string | null = null
-  if (typeMultiplier >= 2) {
+  if (leadTypeMultiplier >= 2) {
     effectivenessText = 'super_effective'
-  } else if (typeMultiplier <= 0.5 && typeMultiplier > 0) {
+  } else if (leadTypeMultiplier <= 0.5 && leadTypeMultiplier > 0) {
     effectivenessText = 'not_very_effective'
-  } else if (typeMultiplier === 0) {
+  } else if (leadTypeMultiplier === 0) {
     effectivenessText = 'no_effect'
   }
 
-  if (Math.random() < winChance) {
-    return { outcome: 'win', typeEffectiveness: typeMultiplier, effectivenessText }
+  const outcome = battleSequence.final_outcome === 'player_win' ? 'win' : 'fled'
+
+  return {
+    outcome,
+    typeEffectiveness: leadTypeMultiplier,
+    effectivenessText,
+    battleSequence
   }
-  return { outcome: 'fled', typeEffectiveness: typeMultiplier, effectivenessText }
 }
 
-// Catch attempt
+// Catch attempt with animation sequence data
 export function attemptCatch(wild: WildPokemon, pokeballs: number): { result: CatchResult; newPokeballs: number } {
   if (pokeballs <= 0) {
     return { result: { success: false, balls_used: 0 }, newPokeballs: pokeballs }
@@ -236,12 +403,44 @@ export function attemptCatch(wild: WildPokemon, pokeballs: number): { result: Ca
   catchChance = Math.max(0.05, Math.min(0.95, catchChance))
 
   const newPokeballs = pokeballs - 1
+  const success = Math.random() < catchChance
 
-  if (Math.random() < catchChance) {
-    return { result: { success: true, balls_used: 1 }, newPokeballs }
+  // Calculate shake count for animation
+  // Success = full 3 shakes, failure = 1-3 based on how close the catch was
+  let shakeCount: number
+  let breakFreeShake: number | undefined
+
+  if (success) {
+    shakeCount = 3  // Full shakes on success
+  } else {
+    // Failed catch - break free after 1-3 shakes based on catch rate
+    const normalizedChance = catchChance / 0.95
+    if (normalizedChance > 0.66) {
+      shakeCount = 3
+      breakFreeShake = 3  // Almost had it
+    } else if (normalizedChance > 0.33) {
+      shakeCount = 2
+      breakFreeShake = 2  // Getting close
+    } else {
+      shakeCount = 1
+      breakFreeShake = 1  // Broke out quickly
+    }
   }
 
-  return { result: { success: false, balls_used: 1 }, newPokeballs }
+  const catchSequence: CatchSequence = {
+    shake_count: shakeCount,
+    success,
+    break_free_shake: breakFreeShake
+  }
+
+  return {
+    result: {
+      success,
+      balls_used: 1,
+      catch_sequence: catchSequence
+    },
+    newPokeballs
+  }
 }
 
 // Calculate money earned from defeating a wild Pokemon
@@ -253,29 +452,27 @@ export function calculateMoneyReward(wild: WildPokemon): number {
   return baseReward + bonus
 }
 
-// XP distribution
-export function distributeXP(party: (Pokemon | null)[], wild: WildPokemon): Record<string, number> {
+// XP distribution - only lead Pokemon gets XP in 1v1 system
+export function distributeXP(party: (Pokemon | null)[], wild: WildPokemon, battleSequence?: BattleSequence): Record<string, number> {
+  // If we have battle sequence data, use the pre-calculated XP for lead only
+  if (battleSequence) {
+    const lead = getLeadPokemon(party)
+    if (!lead) return {}
+
+    const xpEarned = battleSequence.xp_earned
+    lead.xp += xpEarned
+    return { [lead.id]: xpEarned }
+  }
+
+  // Fallback to old behavior if no battle sequence (shouldn't happen)
   const baseXP = wild.species.base_xp_yield
   const totalXP = Math.floor((baseXP * wild.level) / 7)
 
-  let participants = 0
-  for (const p of party) {
-    if (p && p.current_hp > 0) participants++
-  }
+  const lead = getLeadPokemon(party)
+  if (!lead) return {}
 
-  if (participants === 0) return {}
-
-  const xpPerPokemon = Math.max(1, Math.floor(totalXP / participants))
-  const result: Record<string, number> = {}
-
-  for (const p of party) {
-    if (p && p.current_hp > 0) {
-      result[p.id] = xpPerPokemon
-      p.xp += xpPerPokemon
-    }
-  }
-
-  return result
+  lead.xp += totalXP
+  return { [lead.id]: totalXP }
 }
 
 // Check for level ups
@@ -336,7 +533,8 @@ export function processEncounter(
     wild_pokemon: wild,
     battle_result: battleResult.outcome,
     type_effectiveness: battleResult.typeEffectiveness,
-    effectiveness_text: battleResult.effectivenessText
+    effectiveness_text: battleResult.effectivenessText,
+    battle_sequence: battleResult.battleSequence  // Include battle animation data
   }
 
   let newPokeballs = pokeballs
@@ -392,7 +590,7 @@ export function processTick(
 
   // Apply XP and money if battle won
   if (encounter.battle_result === 'win') {
-    result.xp_gained = distributeXP(session.party, encounter.wild_pokemon)
+    result.xp_gained = distributeXP(session.party, encounter.wild_pokemon, encounter.battle_sequence)
     result.level_ups = checkLevelUps(session.party, speciesMap)
 
     // Award money

@@ -719,3 +719,310 @@ html {
     height: 4px;
   }
 }
+
+/* ================== */
+/* Battle Scene Animations */
+/* ================== */
+
+/* Pokeball throw arc */
+@keyframes pokeball-throw {
+  0% {
+    transform: translate(-100px, 80px) scale(0.5) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(0, -30px) scale(1) rotate(360deg);
+  }
+  100% {
+    transform: translate(0, 0) scale(0.7) rotate(720deg);
+    opacity: 1;
+  }
+}
+
+.animate-pokeball-throw {
+  animation: pokeball-throw 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Pokeball wobble */
+@keyframes pokeball-wobble {
+  0%, 100% { transform: rotate(0deg) scale(0.7); }
+  25% { transform: rotate(-20deg) scale(0.7); }
+  75% { transform: rotate(20deg) scale(0.7); }
+}
+
+.animate-pokeball-wobble {
+  animation: pokeball-wobble 0.7s ease-in-out;
+}
+
+/* Catch success burst */
+@keyframes catch-burst {
+  0% {
+    transform: scale(0.7);
+    filter: brightness(1);
+  }
+  30% {
+    transform: scale(0.9);
+    filter: brightness(2);
+  }
+  60% {
+    transform: scale(0.6);
+  }
+  100% {
+    transform: scale(0.7);
+    filter: brightness(1);
+  }
+}
+
+.animate-catch-burst {
+  animation: catch-burst 0.5s ease-out;
+}
+
+/* Break free animation */
+@keyframes break-free {
+  0% {
+    transform: scale(0.7) rotate(0deg);
+    opacity: 1;
+  }
+  30% {
+    transform: scale(1.2) rotate(10deg);
+    filter: brightness(2);
+  }
+  100% {
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+}
+
+.animate-break-free {
+  animation: break-free 0.4s ease-out forwards;
+}
+
+/* Pokemon return from ball */
+@keyframes pokemon-emerge {
+  0% {
+    transform: scale(0) rotate(20deg);
+    opacity: 0;
+    filter: brightness(3);
+  }
+  50% {
+    filter: brightness(2);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+.animate-pokemon-emerge {
+  animation: pokemon-emerge 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* HP bar smooth drain */
+@keyframes hp-drain {
+  from { width: var(--hp-from); }
+  to { width: var(--hp-to); }
+}
+
+.animate-hp-drain {
+  animation: hp-drain 0.4s ease-out forwards;
+}
+
+/* Player Pokemon slide in */
+@keyframes player-slide-in {
+  0% {
+    transform: translateX(-100%) translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0) translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-player-slide-in {
+  animation: player-slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Wild Pokemon slide in */
+@keyframes wild-slide-in {
+  0% {
+    transform: translateX(100%) translateY(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0) translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-wild-slide-in {
+  animation: wild-slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Attack forward lunge */
+@keyframes attack-lunge {
+  0% { transform: translateX(0); }
+  40% { transform: translateX(30px); }
+  100% { transform: translateX(0); }
+}
+
+.animate-attack-lunge {
+  animation: attack-lunge 0.3s ease-out;
+}
+
+/* Wild attack lunge (opposite direction) */
+@keyframes attack-lunge-wild {
+  0% { transform: translateX(0); }
+  40% { transform: translateX(-30px); }
+  100% { transform: translateX(0); }
+}
+
+.animate-attack-lunge-wild {
+  animation: attack-lunge-wild 0.3s ease-out;
+}
+
+/* Pokemon faint */
+@keyframes pokemon-faint {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(10px) scale(1.1);
+  }
+  100% {
+    transform: translateY(30px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+.animate-pokemon-faint {
+  animation: pokemon-faint 0.5s ease-in forwards;
+}
+
+/* Victory bounce */
+@keyframes victory-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  25% { transform: translateY(-15px) scale(1.1); }
+  50% { transform: translateY(0) scale(1); }
+  75% { transform: translateY(-8px) scale(1.05); }
+}
+
+.animate-victory-bounce {
+  animation: victory-bounce 0.6s ease-out;
+}
+
+/* Star burst for catch success */
+@keyframes star-burst {
+  0% {
+    transform: translate(-50%, -50%) scale(0) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--star-x, 0px)), calc(-50% + var(--star-y, 0px))) scale(1) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+.animate-star-burst {
+  animation: star-burst 0.8s ease-out forwards;
+}
+
+/* Critical hit emphasis */
+@keyframes critical-flash {
+  0%, 100% { filter: brightness(1); }
+  25%, 75% { filter: brightness(1.5) saturate(1.5); }
+  50% { filter: brightness(2) saturate(2); }
+}
+
+.animate-critical-flash {
+  animation: critical-flash 0.3s ease-out;
+}
+
+/* Super effective screen shake */
+@keyframes screen-shake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-3px, -2px); }
+  20% { transform: translate(3px, 2px); }
+  30% { transform: translate(-2px, 3px); }
+  40% { transform: translate(2px, -3px); }
+  50% { transform: translate(-3px, 2px); }
+  60% { transform: translate(3px, -2px); }
+  70% { transform: translate(-2px, -3px); }
+  80% { transform: translate(2px, 3px); }
+  90% { transform: translate(-1px, 1px); }
+}
+
+.animate-screen-shake {
+  animation: screen-shake 0.4s ease-out;
+}
+
+/* Text typewriter cursor blink */
+@keyframes cursor-blink {
+  0%, 50% { border-color: transparent; }
+  51%, 100% { border-color: currentColor; }
+}
+
+.animate-cursor-blink {
+  border-right: 2px solid;
+  animation: cursor-blink 1s step-end infinite;
+}
+
+/* Reward float up */
+@keyframes reward-float {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-60px) scale(1.1);
+    opacity: 0;
+  }
+}
+
+.animate-reward-float {
+  animation: reward-float 1.2s ease-out forwards;
+}
+
+/* Battle message slide in */
+@keyframes message-slide-in {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-message-slide-in {
+  animation: message-slide-in 0.3s ease-out forwards;
+}
+
+/* Ball capture flash */
+@keyframes capture-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 30px 20px rgba(255, 255, 255, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.animate-capture-flash {
+  animation: capture-flash 0.5s ease-out;
+}

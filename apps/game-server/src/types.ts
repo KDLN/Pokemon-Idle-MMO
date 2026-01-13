@@ -70,11 +70,52 @@ export interface WildPokemon {
   is_shiny: boolean
 }
 
+// Catch sequence data for animation
+export interface CatchSequence {
+  shake_count: number       // 1-3 shakes before result
+  success: boolean
+  break_free_shake?: number // Which shake it broke free on (if failed)
+}
+
 export interface CatchResult {
   success: boolean
   pokemon_id?: string
   balls_used: number
   caught_pokemon?: Pokemon & { species: PokemonSpecies }
+  catch_sequence?: CatchSequence  // Animation data for frontend
+}
+
+// Individual turn in a battle sequence
+export interface BattleTurn {
+  turn_number: number
+  attacker: 'player' | 'wild'
+  attacker_name: string
+  defender_name: string
+  damage_dealt: number
+  is_critical: boolean
+  effectiveness: 'super' | 'neutral' | 'not_very' | 'immune'
+  attacker_hp_after: number
+  defender_hp_after: number
+  attacker_max_hp: number
+  defender_max_hp: number
+}
+
+// Complete battle sequence for animation
+export interface BattleSequence {
+  lead_pokemon_id: string
+  lead_pokemon_name: string
+  lead_species_id: number
+  lead_level: number
+  lead_starting_hp: number
+  lead_max_hp: number
+  lead_type1: string
+  lead_type2: string | null
+  wild_starting_hp: number
+  wild_max_hp: number
+  turns: BattleTurn[]
+  final_outcome: 'player_win' | 'player_faint'
+  lead_final_hp: number
+  xp_earned: number
 }
 
 export interface EncounterEvent {
@@ -83,6 +124,7 @@ export interface EncounterEvent {
   catch_result?: CatchResult
   type_effectiveness?: number
   effectiveness_text?: string | null // 'super_effective', 'not_very_effective', 'no_effect', null
+  battle_sequence?: BattleSequence   // Full battle animation data
 }
 
 export interface LevelUpEvent {
