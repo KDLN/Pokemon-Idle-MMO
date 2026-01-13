@@ -4,9 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import { getPokemonSpriteUrl, type GymBattleMatchup, type BattleTurn } from '@/types/game'
-import { getSpeciesData, cn, getTypeColor } from '@/lib/ui'
-import { BattleSceneFrame } from '@/components/game/BattleSceneFrame'
-import { BattleHudGrid } from '@/components/game/BattleHudGrid'
+import { cn, getTypeColor } from '@/lib/ui'
+import { ClassicBattleArena } from '@/components/game/ClassicBattleHud'
 
 // Gym leader data interface
 export interface GymLeader {
@@ -84,48 +83,6 @@ const TIMING = {
   TURN_DAMAGE: 500,
   MATCHUP_TRANSITION: 1200,
   RESULT_DELAY: 1500,
-}
-
-// HP Bar component
-function HPBar({ percent, side }: { percent: number; side: 'player' | 'gym' }) {
-  const getHPColor = () => {
-    if (percent > 50) return 'bg-green-500'
-    if (percent > 20) return 'bg-yellow-500'
-    return 'bg-red-500'
-  }
-
-  return (
-    <div className="h-2.5 bg-[#1a1a2e] rounded-full overflow-hidden border border-[#2a2a4a]">
-      <div
-        className={cn('h-full transition-all duration-400', getHPColor())}
-        style={{ width: `${Math.max(0, Math.min(100, percent))}%` }}
-      />
-    </div>
-  )
-}
-
-// Damage number popup
-function DamageNumber({
-  amount,
-  isCritical,
-  target
-}: {
-  amount: number
-  isCritical: boolean
-  target: 'player' | 'gym'
-}) {
-  return (
-    <div
-      className={cn(
-        'absolute font-pixel text-2xl animate-damage-pop z-30 drop-shadow-lg',
-        isCritical ? 'text-yellow-400 text-3xl' : 'text-white',
-        target === 'gym' ? 'top-[30%] right-[25%]' : 'bottom-[35%] left-[25%]'
-      )}
-    >
-      {isCritical && <span className="text-sm block -mb-1">CRIT!</span>}
-      -{amount}
-    </div>
-  )
 }
 
 type GymBattlePhase =
@@ -542,68 +499,70 @@ export function GymBattlePanel() {
             </>
           )}
 
-        {/* Battle Animation */}
+        {/* Battle Animation - Classic Pokemon Style */}
         {(battlePhase === 'battling' || battlePhase === 'turn_attack' || battlePhase === 'turn_damage' || battlePhase === 'matchup_transition') && currentMatchup && (
-          <BattleSceneFrame
-            glowColor={TYPE_COLORS[currentGymLeader.specialty_type] || '#3B4CCA'}
-            sizeClass="max-w-3xl"
-            phaseClasses="transition-all duration-500"
-          >
-            <div className="relative flex flex-col gap-6 p-6">
-              <BattleHudGrid
-                entries={[
-                  {
-                    label: 'Your Pokémon',
-                    name: currentMatchup.player_pokemon_name,
-                    level: currentMatchup.player_level,
-                    healthPercent: playerHPPercent,
-                    sprite: getPokemonSpriteUrl(currentMatchup.player_species_id),
-                    types: [currentMatchup.player_type1, currentMatchup.player_type2 ?? undefined],
-                  },
-                  {
-                    label: 'Gym Pokémon',
-                    name: currentMatchup.gym_pokemon_name,
-                    level: currentMatchup.gym_level,
-                    healthPercent: gymHPPercent,
-                    sprite: getPokemonSpriteUrl(currentMatchup.gym_species_id),
-                    types: [currentMatchup.gym_type1, currentMatchup.gym_type2 ?? undefined],
-                    flipped: true,
-                  },
-                ]}
-              />
+          <div className="relative">
+            <ClassicBattleArena
+              playerPokemon={{
+                name: currentMatchup.player_pokemon_name,
+                level: currentMatchup.player_level,
+                currentHp: playerHP,
+                maxHp: playerMaxHP,
+                sprite: getPokemonSpriteUrl(currentMatchup.player_species_id),
+                expPercent: 45,
+              }}
+              enemyPokemon={{
+                name: currentMatchup.gym_pokemon_name,
+                level: currentMatchup.gym_level,
+                currentHp: gymHP,
+                maxHp: gymMaxHP,
+                sprite: getPokemonSpriteUrl(currentMatchup.gym_species_id),
+              }}
+              messageText={messageText}
+              showAttackAnimation={
+                battlePhase === 'turn_attack' && currentTurn
+                  ? currentTurn.attacker === 'player' ? 'player' : 'enemy'
+                  : null
+              }
+              showDamageFlash={
+                battlePhase === 'turn_damage'
+                  ? damageTarget === 'player' ? 'player' : 'enemy'
+                  : null
+              }
+            >
+              {/* Move info overlay */}
+              {currentTurn && (
+                <div className="classic-move-info">
+                  <span className="classic-move-name">{currentTurn.move_name}</span>
+                  <span
+                    className="classic-move-type"
+                    style={{ backgroundColor: getTypeColor(currentTurn.move_type) }}
+                  >
+                    {currentTurn.move_type}
+                  </span>
+                  {currentTurn.is_critical && (
+                    <span className="text-[#f8c830] font-pixel text-[8px]">CRITICAL HIT!</span>
+                  )}
+                </div>
+              )}
+            </ClassicBattleArena>
 
-              <div className="bg-[#111322] border border-[#2a2a4a] rounded-xl p-4 relative overflow-hidden">
-                {currentTurn && (
-                  <div className="flex flex-wrap items-center gap-2 mb-2 text-xs uppercase tracking-wide">
-                    <span className="font-semibold">Move:</span>
-                    <span className="font-semibold text-white">{currentTurn.move_name}</span>
-                    <span
-                      className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                      style={{
-                        backgroundColor: getTypeColor(currentTurn.move_type),
-                        color: '#0f0f1a'
-                      }}
-                    >
-                      {currentTurn.move_type}
-                    </span>
-                    {currentTurn.status_effect && (
-                      <span className="text-yellow-300 text-[10px]">Inflicts {currentTurn.status_effect}</span>
-                    )}
-                  </div>
+            {/* Damage popup overlay */}
+            {showDamageNumber && (
+              <div
+                className={cn(
+                  'classic-damage-popup animate-damage-pop',
+                  isCritical && 'critical'
                 )}
-                <p className="font-pixel text-sm text-white text-center">
-                  {messageText || '\u00A0'}
-                </p>
-                {showDamageNumber && (
-                  <DamageNumber
-                    amount={damageAmount}
-                    isCritical={isCritical}
-                    target={damageTarget}
-                  />
-                )}
+                style={{
+                  top: damageTarget === 'gym' ? '25%' : '55%',
+                  left: damageTarget === 'gym' ? '70%' : '30%',
+                }}
+              >
+                -{damageAmount}
               </div>
-            </div>
-          </BattleSceneFrame>
+            )}
+          </div>
         )}
 
           {/* Loading state when no matchup yet */}
