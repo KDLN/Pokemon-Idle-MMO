@@ -111,8 +111,8 @@ export function TownMenu({ onAction }: TownMenuProps) {
         <span className="text-xs text-[#606080]">Town Services</span>
       </div>
 
-      {/* Action buttons grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Action buttons grid - auto-fit ensures all items visible */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
         {actions.map((action) => (
           <TownMenuButton
             key={action.id}
