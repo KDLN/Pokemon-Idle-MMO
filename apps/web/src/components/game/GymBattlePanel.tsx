@@ -567,14 +567,14 @@ export function GymBattlePanel() {
                         <div className="flex gap-1">
                           <span
                             className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
-                            style={{ backgroundColor: TYPE_COLORS[currentMatchup.player_type1.toLowerCase()]?.bg || '#888' }}
+                            style={{ backgroundColor: getTypeColor(currentMatchup.player_type1) }}
                           >
                             {currentMatchup.player_type1}
                           </span>
                           {currentMatchup.player_type2 && (
                             <span
                               className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
-                              style={{ backgroundColor: TYPE_COLORS[currentMatchup.player_type2.toLowerCase()]?.bg || '#888' }}
+                            style={{ backgroundColor: getTypeColor(currentMatchup.player_type2) }}
                             >
                               {currentMatchup.player_type2}
                             </span>
@@ -597,14 +597,14 @@ export function GymBattlePanel() {
                         <div className="flex gap-1">
                           <span
                             className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
-                            style={{ backgroundColor: TYPE_COLORS[currentMatchup.gym_type1.toLowerCase()]?.bg || '#888' }}
+                            style={{ backgroundColor: getTypeColor(currentMatchup.gym_type1) }}
                           >
                             {currentMatchup.gym_type1}
                           </span>
                           {currentMatchup.gym_type2 && (
                             <span
                               className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
-                              style={{ backgroundColor: TYPE_COLORS[currentMatchup.gym_type2.toLowerCase()]?.bg || '#888' }}
+                            style={{ backgroundColor: getTypeColor(currentMatchup.gym_type2) }}
                             >
                               {currentMatchup.gym_type2}
                             </span>
