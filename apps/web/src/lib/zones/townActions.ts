@@ -27,9 +27,9 @@ export const TOWN_ACTIONS: Record<string, TownAction[]> = {
     {
       id: 'gym',
       label: 'Gym',
-      icon: '🏟️',
+      icon: '🥊',
       action: 'gym',
-      description: 'Challenge Brock',
+      description: "Battle Brock!",
     },
   ],
   'Viridian City': [
