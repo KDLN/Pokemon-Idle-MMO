@@ -2,9 +2,10 @@
 
 import { useGameStore } from '@/stores/gameStore'
 import { getPokemonSpriteUrl } from '@/types/game'
-import { getSpeciesData, cn, getTypeColor, TYPE_COLORS } from '@/lib/ui'
+import { getSpeciesData, cn, getTypeColor } from '@/lib/ui'
 import { useBattleAnimation } from '@/hooks/useBattleAnimation'
 import { BattleSceneFrame } from '@/components/game/BattleSceneFrame'
+import { BattleHudGrid } from '@/components/game/BattleHudGrid'
 
 // HP Bar component with smooth animation
 function HPBar({
@@ -212,6 +213,40 @@ export function EncounterDisplay() {
     'transition-all duration-500'
   )
 
+  const wildTypes = [
+    wildSpeciesData.type,
+    wildSpeciesData.type2 ?? undefined,
+  ].filter(Boolean)
+
+  const leadTypes = [
+    leadSpeciesData?.type,
+    leadSpeciesData?.type2,
+  ].filter(Boolean)
+
+  const hudEntries = [
+    {
+      label: 'Wild Pokémon',
+      name: speciesName,
+      level: wild.level,
+      healthPercent: battle.wildHPPercent,
+      sprite: getPokemonSpriteUrl(wild.species_id, isShiny),
+      types: wildTypes,
+    },
+    ...(leadPokemon
+      ? [
+          {
+            label: 'Your Pokémon',
+            name: leadSpeciesData?.name || 'Unknown',
+            level: leadPokemon.level,
+            healthPercent: battle.playerHPPercent,
+            sprite: getPokemonSpriteUrl(leadPokemon.species_id, leadPokemon.is_shiny),
+            types: leadTypes,
+            flipped: true,
+          },
+        ]
+      : []),
+  ]
+
   return (
     <BattleSceneFrame
       isShiny={isShiny}
@@ -221,69 +256,7 @@ export function EncounterDisplay() {
       caught={caught}
     >
       <div className="relative flex flex-col gap-6 p-6">
-        <div className="grid md:grid-cols-2 gap-4">
-          {/* Wild column */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-[#a0a0c0] uppercase tracking-wider">Wild</p>
-              <span className="text-xs text-[#606080]">Lv.{wild.level}</span>
-            </div>
-            <div className="bg-[#1a1a2e]/95 rounded-xl p-3 border-2 border-[#2a2a4a] shadow-lg flex items-center gap-3">
-              <img
-                src={getPokemonSpriteUrl(wild.species_id, isShiny)}
-                alt={speciesName}
-                className="w-20 h-20 pixelated relative z-10"
-              />
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-pixel text-sm text-white">{speciesName}</span>
-                </div>
-                <HPBar percent={battle.wildHPPercent} animating={battle.isInBattle} />
-              </div>
-            </div>
-          </div>
-
-          {/* Player column */}
-          {leadPokemon && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-[#a0a0c0] uppercase tracking-wider">Your Pokemon</p>
-                <span className="text-xs text-[#606080]">Lv.{leadPokemon.level}</span>
-              </div>
-              <div className="bg-[#1a1a2e]/95 rounded-xl p-3 border-2 border-[#2a2a4a] shadow-lg flex items-center gap-3 justify-end">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-pixel text-sm text-white">{leadSpeciesData?.name || 'Unknown'}</span>
-                    <div className="flex gap-1">
-                      {leadSpeciesData?.type && (
-                        <span
-                          className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
-                          style={{ backgroundColor: TYPE_COLORS[leadSpeciesData.type.toLowerCase()]?.bg || '#3a3a5a' }}
-                        >
-                          {leadSpeciesData.type}
-                        </span>
-                      )}
-                      {leadSpeciesData?.type2 && (
-                        <span
-                          className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
-                          style={{ backgroundColor: TYPE_COLORS[leadSpeciesData.type2.toLowerCase()]?.bg || '#3a3a5a' }}
-                        >
-                          {leadSpeciesData.type2}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <HPBar percent={battle.playerHPPercent} animating={battle.isInBattle} />
-                </div>
-                <img
-                  src={getPokemonSpriteUrl(leadPokemon.species_id, leadPokemon.is_shiny)}
-                  alt={leadSpeciesData?.name || 'Pokemon'}
-                  className="w-20 h-20 pixelated -scale-x-100 relative z-10"
-                />
-              </div>
-            </div>
-          )}
-        </div>
+        <BattleHudGrid entries={hudEntries} />
 
         <div className="flex-1 relative" style={{ minHeight: '140px' }}>
         {/* Pokeball catch animation */}
