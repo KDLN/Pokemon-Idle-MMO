@@ -232,6 +232,8 @@ export function GymBattlePanel() {
   // Battle animation state machine
   useEffect(() => {
     if (!battleResult?.matchups || battlePhase === 'intro' || battlePhase === 'result') return
+    // Don't interfere with the initial battling phase - let the timeout from startBattleAnimation run
+    if (battlePhase === 'battling') return
 
     const matchups = battleResult.matchups
     const currentMatchup = matchups[currentMatchupIndex]
