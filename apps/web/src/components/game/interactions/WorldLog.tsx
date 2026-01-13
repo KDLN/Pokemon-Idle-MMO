@@ -9,6 +9,9 @@ export interface LogEntry {
   message: string
   icon: string
   highlight?: boolean
+  moveName?: string
+  moveType?: string
+  value?: string
 }
 
 interface WorldLogProps {
@@ -36,6 +39,47 @@ function getTypeColor(type: LogEntry['type']): string {
   }
 }
 
+function getMoveTypeColor(moveType: string): string {
+  switch (moveType.toLowerCase()) {
+    case 'normal':
+      return '#d1d5db'
+    case 'fire':
+      return '#f97316'
+    case 'water':
+      return '#22d3ee'
+    case 'grass':
+      return '#22c55e'
+    case 'electric':
+      return '#facc15'
+    case 'flying':
+      return '#a5b4fc'
+    case 'psychic':
+      return '#f472b6'
+    case 'dark':
+      return '#1e1b4b'
+    case 'dragon':
+      return '#a855f7'
+    case 'steel':
+      return '#94a3b8'
+    case 'ghost':
+      return '#a855f7'
+    case 'rock':
+      return '#fbbf24'
+    case 'ground':
+      return '#cbd5f5'
+    case 'fairy':
+      return '#fcd34d'
+    case 'poison':
+      return '#c084fc'
+    case 'bug':
+      return '#65a30d'
+    case 'ice':
+      return '#6ee7b7'
+    default:
+      return '#9ca3af'
+  }
+}
+
 function formatTime(date: Date): string {
   return new Intl.DateTimeFormat('en-US', {
     hour: 'numeric',
@@ -46,26 +90,46 @@ function formatTime(date: Date): string {
 }
 
 function LogEntryItem({ entry, isNew }: { entry: LogEntry; isNew: boolean }) {
+  const typeColor = getTypeColor(entry.type)
   return (
     <div
       className={`
-        flex items-start gap-2 py-1.5 px-2 rounded transition-all duration-300
-        ${isNew ? 'bg-[#252542] animate-slide-up' : 'hover:bg-[#1a1a2e]'}
-        ${entry.highlight ? 'bg-yellow-500/10 border-l-2 border-yellow-400' : ''}
+        relative w-full rounded-2xl overflow-hidden border transition-all duration-300
+        ${isNew ? 'animate-slide-up shadow-lg' : 'hover:shadow-[0_0_25px_rgba(91,110,234,0.2)]'}
+        ${entry.highlight ? 'border-yellow-500/40' : 'border-[#1a1a2e]'}
       `}
     >
-      {/* Timestamp */}
-      <span className="text-[10px] text-[#606080] font-mono shrink-0 mt-0.5">
-        {formatTime(entry.timestamp)}
-      </span>
-
-      {/* Icon */}
-      <span className="text-sm shrink-0">{entry.icon}</span>
-
-      {/* Message */}
-      <span className={`text-sm ${getTypeColor(entry.type)} break-words`}>
-        {entry.message}
-      </span>
+      <div
+        className="absolute inset-0 opacity-0 animate-log-pulse"
+        style={{ background: `${typeColor}11` }}
+      />
+      <div className="relative flex items-center gap-3 px-3 py-2 bg-[#0f0f1a]/90">
+        <div className="flex flex-col text-[10px] text-[#606080]">
+          <span>{formatTime(entry.timestamp)}</span>
+          <span className="tracking-wider uppercase">LOG</span>
+        </div>
+        <div className="text-lg">{entry.icon}</div>
+        <div className="flex-1 flex flex-col gap-1">
+          <div className="text-sm font-semibold text-white">{entry.message}</div>
+          {entry.moveName && (
+            <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider">
+              <span className="text-xs text-[#a0a0c0]">Move:</span>
+              <span className="font-bold text-white">{entry.moveName}</span>
+              {entry.moveType && (
+                <span
+                  className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                  style={{ backgroundColor: getMoveTypeColor(entry.moveType) }}
+                >
+                  {entry.moveType}
+                </span>
+              )}
+            </div>
+          )}
+          {entry.value && (
+            <div className="text-[10px] text-white/70">{entry.value}</div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

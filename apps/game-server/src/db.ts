@@ -387,6 +387,7 @@ interface ChatMessageRow {
   channel: ChatChannel
   content: string
   created_at: string
+  player?: { username?: string }[]
 }
 
 export async function getRecentChatMessages(limit = 50): Promise<ChatMessageEntry[]> {
@@ -397,7 +398,8 @@ export async function getRecentChatMessages(limit = 50): Promise<ChatMessageEntr
       player_id,
       channel,
       content,
-      created_at
+      created_at,
+      player:players(username)
     `)
     .order('created_at', { ascending: false })
     .limit(limit)
@@ -407,28 +409,12 @@ export async function getRecentChatMessages(limit = 50): Promise<ChatMessageEntr
     return []
   }
 
-  const rows: ChatMessageRow[] = data || []
-  const playerIds = Array.from(new Set(rows.map((row) => row.player_id)))
-  let playerMap: Record<string, string> = {}
-
-  if (playerIds.length > 0) {
-    const { data: players } = await supabase
-      .from('players')
-      .select('id, username')
-      .in('id', playerIds)
-
-    playerMap = (players || []).reduce<Record<string, string>>((acc, player) => {
-      if (player?.id && player.username) {
-        acc[player.id] = player.username
-      }
-      return acc
-    }, {})
-  }
+  const rows = (data || []) as ChatMessageRow[]
 
   return rows.map((row) => ({
     id: row.id,
     player_id: row.player_id,
-    player_name: playerMap[row.player_id] || 'System',
+    player_name: row.player?.[0]?.username || 'System',
     channel: row.channel,
     content: row.content,
     created_at: row.created_at,
@@ -452,25 +438,20 @@ export async function saveChatMessage(
       player_id,
       channel,
       content,
-      created_at
+      created_at,
+      player:players(username)
     `)
     .single()
 
-  if (error) {
+  if (error || !data) {
     console.error('Failed to save chat message:', error)
     return null
   }
 
-  const { data: playerData } = await supabase
-    .from('players')
-    .select('username')
-    .eq('id', playerId)
-    .single()
-
   return {
     id: data.id,
     player_id: data.player_id,
-    player_name: playerData?.username || 'System',
+    player_name: data.player?.[0]?.username || 'System',
     channel: data.channel,
     content: data.content,
     created_at: data.created_at,
