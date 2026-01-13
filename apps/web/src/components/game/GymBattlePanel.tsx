@@ -5,6 +5,7 @@ import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import { getPokemonSpriteUrl, type GymBattleMatchup, type BattleTurn } from '@/types/game'
 import { getSpeciesData, cn, getTypeColor } from '@/lib/ui'
+import { BattleSceneFrame } from '@/components/game/BattleSceneFrame'
 
 // Gym leader data interface
 export interface GymLeader {
@@ -542,8 +543,11 @@ export function GymBattlePanel() {
 
         {/* Battle Animation */}
         {(battlePhase === 'battling' || battlePhase === 'turn_attack' || battlePhase === 'turn_damage' || battlePhase === 'matchup_transition') && currentMatchup && (
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-b from-[#0f0f1a] via-[#15152b] to-[#0b0b14] border border-[#2a2a4a] shadow-2xl">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_rgba(15,15,26,0))]" />
+          <BattleSceneFrame
+            glowColor={TYPE_COLORS[currentGymLeader.specialty_type] || '#3B4CCA'}
+            sizeClass="max-w-3xl"
+            phaseClasses="transition-all duration-500"
+          >
             <div className="relative flex flex-col gap-6 p-6">
               <div className="grid lg:grid-cols-2 gap-4">
                 {/* Player side */}
@@ -655,7 +659,7 @@ export function GymBattlePanel() {
                 )}
               </div>
             </div>
-          </div>
+          </BattleSceneFrame>
         )}
 
           {/* Loading state when no matchup yet */}
