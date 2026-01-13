@@ -1,5 +1,6 @@
 import { useGameStore } from '@/stores/gameStore'
 import type { TickResult, GameState, Zone, Pokemon, ShopItem } from '@/types/game'
+import type { GymLeader, GymBattleResult } from '@/components/game/GymBattlePanel'
 
 type MessageHandler = (payload: unknown) => void
 
@@ -19,6 +20,8 @@ class GameSocket {
     this.handlers.set('party_update', this.handlePartyUpdate)
     this.handlers.set('shop_data', this.handleShopData)
     this.handlers.set('shop_purchase', this.handleShopPurchase)
+    this.handlers.set('gym_data', this.handleGymData)
+    this.handlers.set('gym_battle_result', this.handleGymBattleResult)
     this.handlers.set('error', this.handleError)
   }
 
@@ -128,6 +131,16 @@ class GameSocket {
   // Buy an item from the shop
   buyItem(itemId: string, quantity: number) {
     this.send('buy_item', { item_id: itemId, quantity })
+  }
+
+  // Request gym data for the current zone
+  getGym(zoneId: number) {
+    this.send('get_gym', { zone_id: zoneId })
+  }
+
+  // Challenge a gym leader
+  challengeGym(gymLeaderId: string) {
+    this.send('challenge_gym', { gym_leader_id: gymLeaderId })
   }
 
   // Message handlers - using arrow functions to avoid binding issues
@@ -240,6 +253,36 @@ class GameSocket {
       if (inventory.pokeball !== undefined) {
         store.setPokeballs(inventory.pokeball)
       }
+    }
+  }
+
+  private handleGymData = (payload: unknown) => {
+    const gymLeader = payload as GymLeader | null
+    const store = useGameStore.getState()
+    if (gymLeader) {
+      store.setCurrentGymLeader(gymLeader)
+      store.setGymOpen(true)
+    }
+  }
+
+  private handleGymBattleResult = (payload: unknown) => {
+    const result = payload as GymBattleResult
+    const store = useGameStore.getState()
+
+    // Update badges if we won
+    if (result.success && result.badge_earned) {
+      store.addBadge(result.badge_earned)
+    }
+
+    // Update money if we earned any
+    if (result.money_earned) {
+      store.setPokedollars(store.pokedollars + result.money_earned)
+    }
+
+    // Call the gym battle handler if it exists (for UI updates)
+    const handler = (window as unknown as { __gymBattleHandler?: (result: GymBattleResult) => void }).__gymBattleHandler
+    if (handler) {
+      handler(result)
     }
   }
 }

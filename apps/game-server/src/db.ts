@@ -366,3 +366,159 @@ export async function getPlayerInventory(playerId: string): Promise<Record<strin
   }
   return inventory
 }
+
+// ============================================
+// GYM QUERIES
+// ============================================
+
+export interface GymLeader {
+  id: string
+  name: string
+  title: string
+  badge_id: string
+  badge_name: string
+  specialty_type: string
+  zone_id: number
+  dialog_intro: string
+  dialog_win: string
+  dialog_lose: string
+  reward_money: number
+  reward_badge_points: number
+  required_badges: string[]
+  team: GymLeaderPokemon[]
+}
+
+export interface GymLeaderPokemon {
+  species_id: number
+  species_name: string
+  level: number
+  slot: number
+  type1: string
+  type2: string | null
+  species?: PokemonSpecies
+}
+
+// Get gym leader for a zone
+export async function getGymLeaderByZone(zoneId: number): Promise<GymLeader | null> {
+  const { data: leader, error } = await supabase
+    .from('gym_leaders')
+    .select('*')
+    .eq('zone_id', zoneId)
+    .eq('is_active', true)
+    .single()
+
+  if (error || !leader) {
+    return null
+  }
+
+  // Get the gym leader's team
+  const { data: teamData } = await supabase
+    .from('gym_leader_pokemon')
+    .select(`
+      species_id,
+      level,
+      slot,
+      species:pokemon_species(id, name, type1, type2, base_hp, base_attack, base_defense, base_sp_attack, base_sp_defense, base_speed, base_catch_rate, base_xp_yield)
+    `)
+    .eq('gym_leader_id', leader.id)
+    .order('slot')
+
+  const team: GymLeaderPokemon[] = (teamData || []).map(p => ({
+    species_id: p.species_id,
+    species_name: (p.species as unknown as PokemonSpecies)?.name || 'Unknown',
+    level: p.level,
+    slot: p.slot,
+    type1: (p.species as unknown as PokemonSpecies)?.type1 || 'Normal',
+    type2: (p.species as unknown as PokemonSpecies)?.type2 || null,
+    species: p.species as unknown as PokemonSpecies
+  }))
+
+  return {
+    id: leader.id,
+    name: leader.name,
+    title: leader.title,
+    badge_id: leader.badge_id,
+    badge_name: leader.badge_name,
+    specialty_type: leader.specialty_type,
+    zone_id: leader.zone_id,
+    dialog_intro: leader.dialog_intro,
+    dialog_win: leader.dialog_win,
+    dialog_lose: leader.dialog_lose,
+    reward_money: leader.reward_money,
+    reward_badge_points: leader.reward_badge_points,
+    required_badges: leader.required_badges || [],
+    team
+  }
+}
+
+// Check if player has already beaten a gym
+export async function hasPlayerDefeatedGym(playerId: string, gymLeaderId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('player_gym_progress')
+    .select('defeated_at')
+    .eq('player_id', playerId)
+    .eq('gym_leader_id', gymLeaderId)
+    .single()
+
+  return !error && !!data
+}
+
+// Record gym victory
+export async function recordGymVictory(
+  playerId: string,
+  gymLeaderId: string,
+  bestPokemonLevel: number
+): Promise<void> {
+  // Check if already defeated
+  const alreadyDefeated = await hasPlayerDefeatedGym(playerId, gymLeaderId)
+
+  if (alreadyDefeated) {
+    // Just increment attempts
+    await supabase
+      .from('player_gym_progress')
+      .update({ attempts: supabase.rpc('increment_attempts') })
+      .eq('player_id', playerId)
+      .eq('gym_leader_id', gymLeaderId)
+  } else {
+    // Record first victory
+    await supabase
+      .from('player_gym_progress')
+      .insert({
+        player_id: playerId,
+        gym_leader_id: gymLeaderId,
+        best_pokemon_level: bestPokemonLevel,
+        attempts: 1
+      })
+  }
+}
+
+// Add badge to player
+export async function addBadgeToPlayer(playerId: string, badgeId: string): Promise<void> {
+  // First get current badges
+  const { data: player } = await supabase
+    .from('players')
+    .select('badges')
+    .eq('id', playerId)
+    .single()
+
+  const currentBadges: string[] = player?.badges || []
+
+  if (!currentBadges.includes(badgeId)) {
+    await supabase
+      .from('players')
+      .update({ badges: [...currentBadges, badgeId] })
+      .eq('id', playerId)
+  }
+}
+
+// Get player badges
+export async function getPlayerBadges(playerId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('players')
+    .select('badges')
+    .eq('id', playerId)
+    .single()
+
+  if (error) return []
+  return data?.badges || []
+}

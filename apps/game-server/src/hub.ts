@@ -21,9 +21,13 @@ import {
   updatePlayerMoney,
   buyItem,
   getPlayerInventory,
-  SHOP_ITEMS
+  SHOP_ITEMS,
+  getGymLeaderByZone,
+  hasPlayerDefeatedGym,
+  recordGymVictory,
+  addBadgeToPlayer
 } from './db.js'
-import { processTick } from './game.js'
+import { processTick, simulateGymBattle } from './game.js'
 
 interface Client {
   ws: WebSocket
@@ -181,6 +185,12 @@ export class GameHub {
         case 'get_shop':
           this.handleGetShop(client)
           break
+        case 'get_gym':
+          this.handleGetGym(client, msg.payload as { zone_id: number })
+          break
+        case 'challenge_gym':
+          this.handleChallengeGym(client, msg.payload as { gym_leader_id: string })
+          break
         case 'get_state':
           this.sendGameState(client)
           break
@@ -318,6 +328,62 @@ export class GameHub {
       money: client.session.pokedollars,
       inventory
     })
+  }
+
+  private async handleGetGym(client: Client, payload: { zone_id: number }) {
+    if (!client.session) return
+
+    const gymLeader = await getGymLeaderByZone(payload.zone_id)
+
+    if (!gymLeader) {
+      this.sendError(client, 'No gym in this zone')
+      return
+    }
+
+    this.send(client, 'gym_data', gymLeader)
+  }
+
+  private async handleChallengeGym(client: Client, payload: { gym_leader_id: string }) {
+    if (!client.session) return
+
+    // Get gym leader data
+    const gymLeader = await getGymLeaderByZone(client.session.zone.id)
+
+    if (!gymLeader || gymLeader.id !== payload.gym_leader_id) {
+      this.sendError(client, 'Invalid gym challenge')
+      return
+    }
+
+    // Check if already defeated
+    const alreadyDefeated = await hasPlayerDefeatedGym(client.session.player.id, gymLeader.id)
+
+    // Simulate the battle
+    const result = simulateGymBattle(
+      client.session.party,
+      gymLeader,
+      this.speciesMap,
+      alreadyDefeated
+    )
+
+    // Handle victory rewards
+    if (result.success) {
+      const maxLevel = Math.max(...client.session.party.filter(p => p).map(p => p!.level))
+
+      // Record the victory
+      await recordGymVictory(client.session.player.id, gymLeader.id, maxLevel)
+
+      // Award badge and money (only on first victory)
+      if (result.badge_earned && !alreadyDefeated) {
+        await addBadgeToPlayer(client.session.player.id, result.badge_earned)
+
+        if (result.money_earned) {
+          client.session.pokedollars += result.money_earned
+          await updatePlayerMoney(client.session.player.id, client.session.pokedollars)
+        }
+      }
+    }
+
+    this.send(client, 'gym_battle_result', result)
   }
 
   private async processTicks() {

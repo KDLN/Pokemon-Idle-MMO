@@ -14,6 +14,8 @@ import { WorldEventsTicker } from './social/WorldEventsTicker'
 import { ChatSidebar } from './social/ChatSidebar'
 import { TownMenu } from './interactions/TownMenu'
 import { WorldLog, createLogEntry } from './interactions/WorldLog'
+import { ShopPanel } from './ShopPanel'
+import { GymBattlePanel } from './GymBattlePanel'
 
 interface GameShellProps {
   accessToken: string
@@ -138,6 +140,8 @@ export function GameShell({ accessToken }: GameShellProps) {
 
       {/* Floating UI */}
       <BoxPanel />
+      <ShopPanel />
+      <GymBattlePanel />
       <LevelUpToast />
 
       {/* Mobile Chat Toggle Button */}
