@@ -22,7 +22,7 @@ function HPBar({
   }
 
   return (
-    <div className={cn('hp-bar', size === 'small' && 'h-1.5')}>
+    <div className={cn('hp-bar', size === 'small' && 'h-2')}>
       <div
         className={cn('hp-bar-fill', getHPColor(), animating && 'transition-all duration-400')}
         style={{ width: `${Math.max(0, Math.min(100, percent))}%` }}
@@ -34,11 +34,11 @@ function HPBar({
 // Pokeball component for catch animation
 function Pokeball({ className }: { className?: string }) {
   return (
-    <div className={cn('w-12 h-12 relative', className)}>
-      <div className="absolute inset-0 rounded-full bg-gradient-to-b from-[#EE1515] to-[#CC0000] overflow-hidden">
+    <div className={cn('w-16 h-16 relative', className)}>
+      <div className="absolute inset-0 rounded-full bg-gradient-to-b from-[#EE1515] to-[#CC0000] overflow-hidden shadow-lg">
         <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-b from-[#f0f0f0] to-[#d0d0d0]" />
-        <div className="absolute top-1/2 left-0 right-0 h-1 bg-[#1a1a2e] -translate-y-1/2" />
-        <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-[#f0f0f0] rounded-full -translate-x-1/2 -translate-y-1/2 border-2 border-[#1a1a2e]" />
+        <div className="absolute top-1/2 left-0 right-0 h-1.5 bg-[#1a1a2e] -translate-y-1/2" />
+        <div className="absolute top-1/2 left-1/2 w-4 h-4 bg-[#f0f0f0] rounded-full -translate-x-1/2 -translate-y-1/2 border-[3px] border-[#1a1a2e]" />
       </div>
     </div>
   )
@@ -57,12 +57,12 @@ function DamageNumber({
   return (
     <div
       className={cn(
-        'absolute font-pixel text-lg animate-damage-pop z-30',
-        isCritical ? 'text-yellow-400 text-xl' : 'text-white',
-        target === 'wild' ? 'top-1/4 right-1/4' : 'bottom-1/3 left-1/4'
+        'absolute font-pixel text-2xl animate-damage-pop z-30 drop-shadow-lg',
+        isCritical ? 'text-yellow-400 text-3xl' : 'text-white',
+        target === 'wild' ? 'top-[30%] right-[25%]' : 'bottom-[35%] left-[25%]'
       )}
     >
-      {isCritical && <span className="text-xs block -mb-1">CRIT!</span>}
+      {isCritical && <span className="text-sm block -mb-1">CRIT!</span>}
       -{amount}
     </div>
   )
@@ -71,12 +71,12 @@ function DamageNumber({
 // Star burst effect for catch success
 function CatchStars() {
   const stars = [
-    { x: '-40px', y: '-30px', delay: '0s' },
-    { x: '40px', y: '-30px', delay: '0.1s' },
-    { x: '-50px', y: '20px', delay: '0.2s' },
-    { x: '50px', y: '20px', delay: '0.15s' },
-    { x: '0px', y: '-50px', delay: '0.05s' },
-    { x: '0px', y: '40px', delay: '0.25s' },
+    { x: '-50px', y: '-40px', delay: '0s' },
+    { x: '50px', y: '-40px', delay: '0.1s' },
+    { x: '-60px', y: '30px', delay: '0.2s' },
+    { x: '60px', y: '30px', delay: '0.15s' },
+    { x: '0px', y: '-60px', delay: '0.05s' },
+    { x: '0px', y: '50px', delay: '0.25s' },
   ]
 
   return (
@@ -84,7 +84,7 @@ function CatchStars() {
       {stars.map((star, i) => (
         <div
           key={i}
-          className="absolute top-1/2 left-1/2 text-yellow-400 text-2xl animate-star-burst"
+          className="absolute top-1/2 left-1/2 text-yellow-400 text-3xl animate-star-burst"
           style={{
             '--star-x': star.x,
             '--star-y': star.y,
@@ -113,10 +113,10 @@ export function EncounterDisplay() {
 
   const isRoute = currentZone?.zone_type === 'route'
 
-  // Idle state when no encounter
+  // Idle state when no encounter - show inline
   if (battle.phase === 'idle' || !currentEncounter) {
     return (
-      <div className="relative rounded-2xl overflow-hidden h-[280px] sm:h-[320px]">
+      <div className="relative rounded-2xl overflow-hidden h-[200px] sm:h-[240px]">
         {/* Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a2e] to-[#0f0f1a]" />
 
@@ -139,11 +139,11 @@ export function EncounterDisplay() {
         )}
 
         {/* Content */}
-        <div className="relative flex flex-col items-center justify-center h-full p-4 sm:p-6">
+        <div className="relative flex flex-col items-center justify-center h-full p-4">
           {isRoute ? (
             <>
               {/* Pokeball waiting indicator */}
-              <div className="relative w-20 h-20 mb-4">
+              <div className="relative w-16 h-16 mb-3">
                 <div className="absolute inset-0 rounded-full bg-gradient-to-b from-[#EE1515]/20 to-transparent animate-pulse" />
                 <Pokeball className="w-full h-full opacity-60" />
               </div>
@@ -154,7 +154,7 @@ export function EncounterDisplay() {
               <div className="text-[#a0a0c0] text-sm">{currentZone.name}</div>
 
               {/* Waiting dots */}
-              <div className="flex gap-1.5 mt-4">
+              <div className="flex gap-1.5 mt-3">
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
@@ -163,16 +163,14 @@ export function EncounterDisplay() {
                   />
                 ))}
               </div>
-
-              <div className="mt-4 text-xs text-[#606080]">Wild Pokemon may appear!</div>
             </>
           ) : (
             <>
               {/* Town resting state */}
-              <div className="relative w-20 h-20 mb-4">
+              <div className="relative w-16 h-16 mb-3">
                 <div className="absolute inset-0 rounded-full bg-gradient-to-br from-pink-500/20 to-transparent animate-pulse" />
                 <div className="w-full h-full rounded-full bg-gradient-to-br from-[#1a1a2e] to-[#252542] border-2 border-[#2a2a4a] flex items-center justify-center">
-                  <svg className="w-10 h-10 text-pink-400" viewBox="0 0 24 24" fill="currentColor">
+                  <svg className="w-8 h-8 text-pink-400" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                   </svg>
                 </div>
@@ -182,7 +180,6 @@ export function EncounterDisplay() {
                 RESTING
               </div>
               <div className="text-[#a0a0c0] text-sm">{currentZone?.name}</div>
-              <div className="mt-4 text-xs text-[#606080]">Your Pokemon are healed</div>
             </>
           )}
         </div>
@@ -193,7 +190,7 @@ export function EncounterDisplay() {
     )
   }
 
-  // Battle scene
+  // Battle scene - MODAL OVERLAY
   const wild = currentEncounter.wild_pokemon
   const wildSpeciesData = getSpeciesData(wild.species_id)
   const speciesName = wild.species?.name || wildSpeciesData.name
@@ -201,284 +198,285 @@ export function EncounterDisplay() {
   const battleSeq = currentEncounter.battle_sequence
   const caught = currentEncounter.catch_result?.success
 
-  // Determine container animation class
-  const getContainerClass = () => {
-    if (battle.phase === 'fade_out') return 'opacity-0 scale-95'
-    if (battle.phase === 'turn_damage' && battle.currentTurn?.effectiveness === 'super') {
-      return 'animate-screen-shake'
-    }
-    return 'opacity-100 scale-100'
-  }
-
   return (
-    <div
-      className={cn(
-        'relative rounded-2xl overflow-hidden h-[280px] sm:h-[320px] transition-all duration-500',
-        getContainerClass(),
-        isShiny && 'ring-2 ring-yellow-400'
-      )}
-    >
-      {/* Background with type color glow */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a2e] to-[#0f0f1a]" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
       <div
-        className="absolute inset-0 opacity-20"
-        style={{
-          background: `radial-gradient(ellipse at center, ${isShiny ? '#FFD700' : wildSpeciesData.color} 0%, transparent 70%)`
-        }}
+        className={cn(
+          "absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-300",
+          battle.phase === 'fade_out' ? 'opacity-0' : 'opacity-100'
+        )}
       />
 
-      {/* Shiny indicator banner */}
-      {isShiny && (
-        <div className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-500 py-1 animate-shimmer">
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-black text-xs">✦</span>
-            <span className="font-pixel text-[8px] sm:text-[10px] text-black tracking-widest">SHINY!</span>
-            <span className="text-black text-xs">✦</span>
-          </div>
-        </div>
-      )}
+      {/* Battle Modal */}
+      <div
+        className={cn(
+          'relative w-full max-w-lg rounded-2xl overflow-hidden transition-all duration-500',
+          battle.phase === 'fade_out' ? 'opacity-0 scale-90' : 'opacity-100 scale-100',
+          battle.phase === 'turn_damage' && battle.currentTurn?.effectiveness === 'super' && 'animate-screen-shake',
+          isShiny && 'ring-4 ring-yellow-400'
+        )}
+      >
+        {/* Background with type color glow */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a2e] to-[#0f0f1a]" />
+        <div
+          className="absolute inset-0 opacity-30"
+          style={{
+            background: `radial-gradient(ellipse at center, ${isShiny ? '#FFD700' : wildSpeciesData.color} 0%, transparent 70%)`
+          }}
+        />
 
-      {/* Battle scene ground */}
-      <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-green-900/30 to-transparent" />
-
-      {/* Main battle area - use flexbox for proper positioning */}
-      <div className="relative h-full flex flex-col">
-        {/* Top section: Wild Pokemon HUD and sprite */}
-        <div className="flex-none pt-2 sm:pt-3 px-3">
-          <div className="flex items-start justify-between">
-            {/* Wild HUD */}
-            <div className="bg-[#1a1a2e]/90 rounded-lg p-1.5 sm:p-2 border border-[#2a2a4a] w-[140px] sm:w-[160px] z-20">
-              <div className="flex items-center justify-between mb-0.5 sm:mb-1">
-                <span className="font-pixel text-[10px] sm:text-xs text-white truncate">{speciesName}</span>
-                <span className="text-[10px] sm:text-xs text-[#606080]">Lv.{wild.level}</span>
-              </div>
-              <HPBar
-                percent={battle.wildHPPercent}
-                animating={battle.isInBattle}
-                size="small"
-              />
-            </div>
-
-            {/* Wild Pokemon sprite */}
-            <div className="relative mr-2 sm:mr-4">
-              <div
-                className={cn(
-                  'transform transition-all duration-300',
-                  battle.phase === 'appear' && 'animate-wild-slide-in',
-                  battle.isInBattle && battle.currentTurn?.attacker === 'wild' && 'animate-attack-lunge-wild',
-                  battle.isInBattle && battle.damageTarget === 'wild' && battle.showDamageNumber && 'animate-damage-flash',
-                  battle.phase === 'catch_throw' && 'animate-pokemon-faint',
-                  battle.phase === 'catch_result' && !caught && 'animate-pokemon-emerge',
-                  battle.wildHP <= 0 && 'animate-pokemon-faint'
-                )}
-              >
-                {/* Type glow */}
-                <div
-                  className={cn('absolute inset-0 blur-2xl opacity-40 scale-75', isShiny && 'animate-pulse')}
-                  style={{ backgroundColor: isShiny ? '#FFD700' : wildSpeciesData.color }}
-                />
-                <img
-                  src={getPokemonSpriteUrl(wild.species_id, isShiny)}
-                  alt={speciesName}
-                  className="w-16 h-16 sm:w-20 sm:h-20 pixelated relative z-10"
-                />
-              </div>
+        {/* Shiny indicator banner */}
+        {isShiny && (
+          <div className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-500 py-2 animate-shimmer">
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-black text-lg">✦</span>
+              <span className="font-pixel text-sm text-black tracking-widest">SHINY POKEMON!</span>
+              <span className="text-black text-lg">✦</span>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Middle section: Battle area (flexible) */}
-        <div className="flex-1 relative min-h-0">
-          {/* Pokeball catch animation - center of battle area */}
-          {battle.isInCatch && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-              <div
-                className={cn(
-                  battle.phase === 'catch_throw' && 'animate-pokeball-throw',
-                  battle.phase === 'catch_shake' && 'animate-pokeball-wobble',
-                  battle.phase === 'catch_result' && caught && 'animate-catch-burst',
-                  battle.phase === 'catch_result' && !caught && 'animate-break-free'
-                )}
-              >
-                <Pokeball />
+        {/* Battle scene ground */}
+        <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-green-900/40 to-transparent" />
+
+        {/* Main battle area */}
+        <div className={cn("relative flex flex-col", isShiny ? "pt-10" : "pt-0")} style={{ minHeight: '420px' }}>
+
+          {/* Top section: Wild Pokemon */}
+          <div className="flex-none px-4 pt-4">
+            <div className="flex items-start justify-between">
+              {/* Wild HUD */}
+              <div className="bg-[#1a1a2e]/95 rounded-xl p-3 border-2 border-[#2a2a4a] w-[180px] shadow-lg">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-pixel text-sm text-white truncate">{speciesName}</span>
+                  <span className="text-sm text-[#606080]">Lv.{wild.level}</span>
+                </div>
+                <HPBar
+                  percent={battle.wildHPPercent}
+                  animating={battle.isInBattle}
+                />
               </div>
-              {/* Catch success stars */}
-              {battle.phase === 'catch_result' && caught && <CatchStars />}
-            </div>
-          )}
 
-          {/* Damage numbers */}
-          {battle.showDamageNumber && (
-            <DamageNumber
-              amount={battle.damageAmount}
-              isCritical={battle.isCritical}
-              target={battle.damageTarget}
-            />
-          )}
-
-          {/* Type effectiveness message */}
-          {battle.phase === 'battle_intro' && currentEncounter.effectiveness_text && (
-            <div className="absolute top-2 left-1/2 -translate-x-1/2 animate-slide-up z-20">
-              {currentEncounter.effectiveness_text === 'super_effective' && (
-                <div className="px-2 py-1 rounded-full bg-green-500/30 border border-green-500/50 backdrop-blur-sm">
-                  <span className="font-pixel text-[8px] sm:text-[10px] text-green-400 tracking-wide">
-                    SUPER EFFECTIVE!
-                  </span>
-                </div>
-              )}
-              {currentEncounter.effectiveness_text === 'not_very_effective' && (
-                <div className="px-2 py-1 rounded-full bg-orange-500/30 border border-orange-500/50 backdrop-blur-sm">
-                  <span className="font-pixel text-[8px] sm:text-[10px] text-orange-400 tracking-wide">
-                    NOT VERY EFFECTIVE...
-                  </span>
-                </div>
-              )}
-              {currentEncounter.effectiveness_text === 'no_effect' && (
-                <div className="px-2 py-1 rounded-full bg-gray-500/30 border border-gray-500/50 backdrop-blur-sm">
-                  <span className="font-pixel text-[8px] sm:text-[10px] text-gray-400 tracking-wide">
-                    NO EFFECT!
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Battle result overlay */}
-          {(battle.phase === 'battle_end' || battle.phase === 'catch_result') && (
-            <div className="absolute inset-0 flex items-center justify-center z-25 pointer-events-none">
-              {battle.phase === 'battle_end' && currentEncounter.battle_result === 'win' && !currentEncounter.catch_result && (
-                <div className="px-4 py-2 rounded-full bg-[#3B4CCA]/30 border-2 border-[#3B4CCA]/60 backdrop-blur-sm animate-pop-in">
-                  <span className="font-pixel text-xs sm:text-sm text-[#5B6EEA] tracking-wider">
-                    VICTORY!
-                  </span>
-                </div>
-              )}
-              {battle.phase === 'catch_result' && caught && (
-                <div className="px-4 py-2 rounded-full bg-green-500/30 border-2 border-green-500/60 backdrop-blur-sm animate-pop-in">
-                  <span className="font-pixel text-xs sm:text-sm text-green-400 tracking-wider">
-                    GOTCHA!
-                  </span>
-                </div>
-              )}
-              {battle.phase === 'catch_result' && !caught && (
-                <div className="px-4 py-2 rounded-full bg-yellow-500/30 border-2 border-yellow-500/60 backdrop-blur-sm animate-pop-in">
-                  <span className="font-pixel text-xs sm:text-sm text-yellow-400 tracking-wider">
-                    BROKE FREE!
-                  </span>
-                </div>
-              )}
-              {battle.phase === 'battle_end' && currentEncounter.battle_result === 'fled' && (
-                <div className="px-4 py-2 rounded-full bg-gray-500/30 border-2 border-gray-500/60 backdrop-blur-sm animate-pop-in">
-                  <span className="font-pixel text-xs sm:text-sm text-gray-400 tracking-wider">
-                    GOT AWAY...
-                  </span>
-                </div>
-              )}
-              {battle.phase === 'battle_end' && currentEncounter.battle_result === 'wipe' && (
-                <div className="px-4 py-2 rounded-full bg-red-500/30 border-2 border-red-500/60 backdrop-blur-sm animate-pop-in">
-                  <span className="font-pixel text-xs sm:text-sm text-red-400 tracking-wider">
-                    BLACKOUT!
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Rewards overlay */}
-          {battle.phase === 'rewards' && currentEncounter.battle_result === 'win' && (
-            <div className="absolute inset-0 flex items-center justify-center z-25 pointer-events-none">
-              <div className="flex flex-col items-center gap-1">
-                {battleSeq && battleSeq.xp_earned > 0 && (
-                  <div className="animate-reward-float text-yellow-400 font-pixel text-xs sm:text-sm">
-                    +{battleSeq.xp_earned} XP
-                  </div>
-                )}
-                {caught && (
-                  <div className="animate-reward-float text-green-400 font-pixel text-xs sm:text-sm" style={{ animationDelay: '0.2s' }}>
-                    {speciesName} caught!
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Sparkles for shiny or catch */}
-          {(isShiny || caught) && battle.phase === 'catch_result' && (
-            <>
-              <div className="absolute top-1/4 left-1/4 w-2 h-2 text-yellow-400 animate-sparkle">✦</div>
-              <div className="absolute top-1/3 right-1/4 w-2 h-2 text-yellow-300 animate-sparkle delay-200">✦</div>
-              <div className="absolute bottom-1/3 left-1/3 w-2 h-2 text-yellow-400 animate-sparkle delay-500">✦</div>
-            </>
-          )}
-        </div>
-
-        {/* Bottom section: Player Pokemon and HUD */}
-        <div className="flex-none pb-10 sm:pb-12 px-3">
-          <div className="flex items-end justify-between">
-            {/* Player Pokemon sprite */}
-            {battleSeq && leadPokemon && (
-              <div className="relative ml-2 sm:ml-4">
+              {/* Wild Pokemon sprite */}
+              <div className="relative">
                 <div
                   className={cn(
                     'transform transition-all duration-300',
-                    battle.phase === 'battle_intro' && 'animate-player-slide-in',
-                    battle.isInBattle && battle.currentTurn?.attacker === 'player' && 'animate-attack-lunge',
-                    battle.isInBattle && battle.damageTarget === 'player' && battle.showDamageNumber && 'animate-damage-flash',
-                    battle.phase === 'battle_end' && battleSeq.final_outcome === 'player_win' && 'animate-victory-bounce'
+                    battle.phase === 'appear' && 'animate-wild-slide-in',
+                    battle.isInBattle && battle.currentTurn?.attacker === 'wild' && 'animate-attack-lunge-wild',
+                    battle.isInBattle && battle.damageTarget === 'wild' && battle.showDamageNumber && 'animate-damage-flash',
+                    battle.phase === 'catch_throw' && 'animate-pokemon-faint',
+                    battle.phase === 'catch_result' && !caught && 'animate-pokemon-emerge',
+                    battle.wildHP <= 0 && 'animate-pokemon-faint'
                   )}
                 >
                   {/* Type glow */}
                   <div
-                    className="absolute inset-0 blur-2xl opacity-30 scale-75"
-                    style={{ backgroundColor: leadSpeciesData?.color }}
+                    className={cn('absolute inset-0 blur-3xl opacity-50 scale-100', isShiny && 'animate-pulse')}
+                    style={{ backgroundColor: isShiny ? '#FFD700' : wildSpeciesData.color }}
                   />
                   <img
-                    src={getPokemonSpriteUrl(leadPokemon.species_id, leadPokemon.is_shiny)}
-                    alt={battleSeq.lead_pokemon_name}
-                    className="w-14 h-14 sm:w-16 sm:h-16 pixelated relative z-10 -scale-x-100"
+                    src={getPokemonSpriteUrl(wild.species_id, isShiny)}
+                    alt={speciesName}
+                    className="w-28 h-28 pixelated relative z-10"
                   />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Middle section: Battle area */}
+          <div className="flex-1 relative" style={{ minHeight: '140px' }}>
+            {/* Pokeball catch animation */}
+            {battle.isInCatch && (
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+                <div
+                  className={cn(
+                    battle.phase === 'catch_throw' && 'animate-pokeball-throw',
+                    battle.phase === 'catch_shake' && 'animate-pokeball-wobble',
+                    battle.phase === 'catch_result' && caught && 'animate-catch-burst',
+                    battle.phase === 'catch_result' && !caught && 'animate-break-free'
+                  )}
+                >
+                  <Pokeball />
+                </div>
+                {battle.phase === 'catch_result' && caught && <CatchStars />}
+              </div>
+            )}
+
+            {/* Damage numbers */}
+            {battle.showDamageNumber && (
+              <DamageNumber
+                amount={battle.damageAmount}
+                isCritical={battle.isCritical}
+                target={battle.damageTarget}
+              />
+            )}
+
+            {/* Type effectiveness message */}
+            {battle.phase === 'battle_intro' && currentEncounter.effectiveness_text && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 animate-slide-up z-20">
+                {currentEncounter.effectiveness_text === 'super_effective' && (
+                  <div className="px-4 py-2 rounded-full bg-green-500/30 border-2 border-green-500/50 backdrop-blur-sm">
+                    <span className="font-pixel text-sm text-green-400 tracking-wide">
+                      SUPER EFFECTIVE!
+                    </span>
+                  </div>
+                )}
+                {currentEncounter.effectiveness_text === 'not_very_effective' && (
+                  <div className="px-4 py-2 rounded-full bg-orange-500/30 border-2 border-orange-500/50 backdrop-blur-sm">
+                    <span className="font-pixel text-sm text-orange-400 tracking-wide">
+                      NOT VERY EFFECTIVE...
+                    </span>
+                  </div>
+                )}
+                {currentEncounter.effectiveness_text === 'no_effect' && (
+                  <div className="px-4 py-2 rounded-full bg-gray-500/30 border-2 border-gray-500/50 backdrop-blur-sm">
+                    <span className="font-pixel text-sm text-gray-400 tracking-wide">
+                      NO EFFECT!
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Battle result overlay */}
+            {(battle.phase === 'battle_end' || battle.phase === 'catch_result') && (
+              <div className="absolute inset-0 flex items-center justify-center z-25 pointer-events-none">
+                {battle.phase === 'battle_end' && currentEncounter.battle_result === 'win' && !currentEncounter.catch_result && (
+                  <div className="px-8 py-4 rounded-full bg-[#3B4CCA]/40 border-2 border-[#3B4CCA]/70 backdrop-blur-sm animate-pop-in">
+                    <span className="font-pixel text-xl text-[#5B6EEA] tracking-wider">
+                      VICTORY!
+                    </span>
+                  </div>
+                )}
+                {battle.phase === 'catch_result' && caught && (
+                  <div className="px-8 py-4 rounded-full bg-green-500/40 border-2 border-green-500/70 backdrop-blur-sm animate-pop-in">
+                    <span className="font-pixel text-xl text-green-400 tracking-wider">
+                      GOTCHA!
+                    </span>
+                  </div>
+                )}
+                {battle.phase === 'catch_result' && !caught && (
+                  <div className="px-8 py-4 rounded-full bg-yellow-500/40 border-2 border-yellow-500/70 backdrop-blur-sm animate-pop-in">
+                    <span className="font-pixel text-xl text-yellow-400 tracking-wider">
+                      BROKE FREE!
+                    </span>
+                  </div>
+                )}
+                {battle.phase === 'battle_end' && currentEncounter.battle_result === 'fled' && (
+                  <div className="px-8 py-4 rounded-full bg-gray-500/40 border-2 border-gray-500/70 backdrop-blur-sm animate-pop-in">
+                    <span className="font-pixel text-xl text-gray-400 tracking-wider">
+                      GOT AWAY...
+                    </span>
+                  </div>
+                )}
+                {battle.phase === 'battle_end' && currentEncounter.battle_result === 'wipe' && (
+                  <div className="px-8 py-4 rounded-full bg-red-500/40 border-2 border-red-500/70 backdrop-blur-sm animate-pop-in">
+                    <span className="font-pixel text-xl text-red-400 tracking-wider">
+                      BLACKOUT!
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Rewards overlay */}
+            {battle.phase === 'rewards' && currentEncounter.battle_result === 'win' && (
+              <div className="absolute inset-0 flex items-center justify-center z-25 pointer-events-none">
+                <div className="flex flex-col items-center gap-2">
+                  {battleSeq && battleSeq.xp_earned > 0 && (
+                    <div className="animate-reward-float text-yellow-400 font-pixel text-lg drop-shadow-lg">
+                      +{battleSeq.xp_earned} XP
+                    </div>
+                  )}
+                  {caught && (
+                    <div className="animate-reward-float text-green-400 font-pixel text-lg drop-shadow-lg" style={{ animationDelay: '0.2s' }}>
+                      {speciesName} caught!
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Player HUD */}
-            {battleSeq && (
-              <div className="bg-[#1a1a2e]/90 rounded-lg p-1.5 sm:p-2 border border-[#2a2a4a] w-[140px] sm:w-[160px] z-20">
-                <div className="flex items-center justify-between mb-0.5 sm:mb-1">
-                  <span className="font-pixel text-[10px] sm:text-xs text-white truncate">{battleSeq.lead_pokemon_name}</span>
-                  <span className="text-[10px] sm:text-xs text-[#606080]">Lv.{battleSeq.lead_level}</span>
-                </div>
-                <HPBar
-                  percent={battle.playerHPPercent}
-                  animating={battle.isInBattle}
-                  size="small"
-                />
-              </div>
+            {/* Sparkles */}
+            {(isShiny || caught) && battle.phase === 'catch_result' && (
+              <>
+                <div className="absolute top-1/4 left-1/4 text-yellow-400 text-xl animate-sparkle">✦</div>
+                <div className="absolute top-1/3 right-1/4 text-yellow-300 text-lg animate-sparkle delay-200">✦</div>
+                <div className="absolute bottom-1/3 left-1/3 text-yellow-400 text-lg animate-sparkle delay-500">✦</div>
+              </>
             )}
+          </div>
+
+          {/* Bottom section: Player Pokemon */}
+          <div className="flex-none px-4 pb-4">
+            <div className="flex items-end justify-between">
+              {/* Player Pokemon sprite */}
+              {battleSeq && leadPokemon && (
+                <div className="relative">
+                  <div
+                    className={cn(
+                      'transform transition-all duration-300',
+                      battle.phase === 'battle_intro' && 'animate-player-slide-in',
+                      battle.isInBattle && battle.currentTurn?.attacker === 'player' && 'animate-attack-lunge',
+                      battle.isInBattle && battle.damageTarget === 'player' && battle.showDamageNumber && 'animate-damage-flash',
+                      battle.phase === 'battle_end' && battleSeq.final_outcome === 'player_win' && 'animate-victory-bounce'
+                    )}
+                  >
+                    {/* Type glow */}
+                    <div
+                      className="absolute inset-0 blur-3xl opacity-40 scale-100"
+                      style={{ backgroundColor: leadSpeciesData?.color }}
+                    />
+                    <img
+                      src={getPokemonSpriteUrl(leadPokemon.species_id, leadPokemon.is_shiny)}
+                      alt={battleSeq.lead_pokemon_name}
+                      className="w-24 h-24 pixelated relative z-10 -scale-x-100"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Player HUD */}
+              {battleSeq && (
+                <div className="bg-[#1a1a2e]/95 rounded-xl p-3 border-2 border-[#2a2a4a] w-[180px] shadow-lg">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-pixel text-sm text-white truncate">{battleSeq.lead_pokemon_name}</span>
+                    <span className="text-sm text-[#606080]">Lv.{battleSeq.lead_level}</span>
+                  </div>
+                  <HPBar
+                    percent={battle.playerHPPercent}
+                    animating={battle.isInBattle}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Battle message text box */}
+          <div className="flex-none bg-[#1a1a2e] border-t-2 border-[#2a2a4a] p-4">
+            <p
+              className={cn(
+                'font-pixel text-sm text-white text-center',
+                battle.messageText && 'animate-message-slide-in'
+              )}
+              key={battle.messageText}
+            >
+              {battle.messageText || '\u00A0'}
+            </p>
           </div>
         </div>
 
-        {/* Battle message text box */}
-        <div className="flex-none bg-[#1a1a2e]/95 border-t-2 border-[#2a2a4a] p-2 sm:p-3 z-20">
-          <p
-            className={cn(
-              'font-pixel text-[10px] sm:text-xs text-white text-center',
-              battle.messageText && 'animate-message-slide-in'
-            )}
-            key={battle.messageText}
-          >
-            {battle.messageText || '\u00A0'}
-          </p>
-        </div>
+        {/* Border */}
+        <div
+          className={cn(
+            'absolute inset-0 rounded-2xl border-2 pointer-events-none transition-colors duration-300',
+            caught ? 'border-green-500/60' : 'border-[#3a3a5a]'
+          )}
+        />
       </div>
-
-      {/* Border */}
-      <div
-        className={cn(
-          'absolute inset-0 rounded-2xl border-2 pointer-events-none transition-colors duration-300',
-          caught ? 'border-green-500/50' : 'border-[#2a2a4a]'
-        )}
-      />
     </div>
   )
 }
