@@ -11,8 +11,6 @@
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.90.1",
-    "@tailwindcss/oxide-win32-x64-msvc": "^4.1.18",
-    "lightningcss-win32-x64-msvc": "^1.30.2",
     "next": "16.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -28,5 +26,9 @@
     "eslint-config-next": "16.1.1",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "optionalDependencies": {
+    "@tailwindcss/oxide-win32-x64-msvc": "^4.1.18",
+    "lightningcss-win32-x64-msvc": "^1.30.2"
   }
 }
