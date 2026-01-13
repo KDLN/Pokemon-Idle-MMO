@@ -392,13 +392,13 @@ interface ChatMessageRow {
 export async function getRecentChatMessages(limit = 50): Promise<ChatMessageEntry[]> {
   const { data, error } = await supabase
     .from('chat_messages')
-    .select(
+    .select(`
       id,
       player_id,
       channel,
       content,
       created_at
-    )
+    `)
     .order('created_at', { ascending: false })
     .limit(limit)
 
@@ -417,7 +417,7 @@ export async function getRecentChatMessages(limit = 50): Promise<ChatMessageEntr
       .select('id, username')
       .in('id', playerIds)
 
-    playerMap = (players || []).reduce((acc, player) => {
+    playerMap = (players || []).reduce<Record<string, string>>((acc, player) => {
       if (player?.id && player.username) {
         acc[player.id] = player.username
       }
@@ -447,13 +447,13 @@ export async function saveChatMessage(
       channel,
       content,
     })
-    .select(
+    .select(`
       id,
       player_id,
       channel,
       content,
       created_at
-    )
+    `)
     .single()
 
   if (error) {
