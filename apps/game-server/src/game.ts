@@ -10,6 +10,7 @@ import type {
   PlayerSession,
   EncounterTableEntry
 } from './types.js'
+import type { GymLeader, GymLeaderPokemon } from './db.js'
 
 // Stat calculation
 export function calculateHP(baseHP: number, level: number): number {
@@ -402,4 +403,169 @@ export function processTick(
   }
 
   return result
+}
+
+// ============================================
+// GYM BATTLE LOGIC
+// ============================================
+
+export interface GymBattleResult {
+  success: boolean
+  gym_leader_id: string
+  badge_earned?: string
+  badge_name?: string
+  money_earned?: number
+  battle_log: string[]
+  error?: string
+}
+
+// Calculate gym Pokemon stats
+function calculateGymPokemonStats(pokemon: GymLeaderPokemon): {
+  maxHp: number
+  attack: number
+  defense: number
+  spAttack: number
+  spDefense: number
+  speed: number
+} {
+  if (!pokemon.species) {
+    return { maxHp: 20, attack: 10, defense: 10, spAttack: 10, spDefense: 10, speed: 10 }
+  }
+  const level = pokemon.level
+  return {
+    maxHp: calculateHP(pokemon.species.base_hp, level),
+    attack: calculateStat(pokemon.species.base_attack, level),
+    defense: calculateStat(pokemon.species.base_defense, level),
+    spAttack: calculateStat(pokemon.species.base_sp_attack, level),
+    spDefense: calculateStat(pokemon.species.base_sp_defense, level),
+    speed: calculateStat(pokemon.species.base_speed, level)
+  }
+}
+
+// Simulate a gym battle
+export function simulateGymBattle(
+  party: (Pokemon | null)[],
+  gymLeader: GymLeader,
+  speciesMap: Map<number, PokemonSpecies>,
+  alreadyDefeated: boolean
+): GymBattleResult {
+  const battleLog: string[] = []
+
+  // Check if player has healthy Pokemon
+  const healthyParty = party.filter(p => p && p.current_hp > 0) as Pokemon[]
+  if (healthyParty.length === 0) {
+    return {
+      success: false,
+      gym_leader_id: gymLeader.id,
+      battle_log: ['You have no healthy Pokemon!'],
+      error: 'No healthy Pokemon'
+    }
+  }
+
+  battleLog.push(`${gymLeader.name}: "${gymLeader.dialog_intro.slice(0, 50)}..."`)
+  battleLog.push(`Battle started!`)
+
+  // Calculate total party power
+  let partyPower = 0
+  let maxPartyLevel = 0
+  for (const p of healthyParty) {
+    const species = speciesMap.get(p.species_id)
+    if (!species) continue
+
+    // Calculate effective power considering type advantage
+    let typeMult = 1.0
+    const gymType = gymLeader.specialty_type.toUpperCase()
+
+    // Check type advantage
+    if (species.type1) {
+      const mult = getTypeEffectiveness(species.type1, gymType, null)
+      if (mult > typeMult) typeMult = mult
+    }
+    if (species.type2) {
+      const mult = getTypeEffectiveness(species.type2, gymType, null)
+      if (mult > typeMult) typeMult = mult
+    }
+
+    partyPower += (p.stat_attack + p.stat_sp_attack + p.stat_defense + p.stat_sp_defense) * p.level * typeMult
+    maxPartyLevel = Math.max(maxPartyLevel, p.level)
+  }
+
+  // Calculate gym team power
+  let gymPower = 0
+  let maxGymLevel = 0
+  for (const gymPokemon of gymLeader.team) {
+    const stats = calculateGymPokemonStats(gymPokemon)
+    gymPower += (stats.attack + stats.spAttack + stats.defense + stats.spDefense) * gymPokemon.level
+    maxGymLevel = Math.max(maxGymLevel, gymPokemon.level)
+  }
+
+  // Log team comparison
+  battleLog.push(`Your team (${healthyParty.length} Pokemon, max Lv.${maxPartyLevel})`)
+  battleLog.push(`${gymLeader.name}'s team (${gymLeader.team.length} Pokemon, max Lv.${maxGymLevel})`)
+
+  // Calculate win chance
+  let winChance = partyPower / (partyPower + gymPower)
+
+  // Level difference bonus/penalty
+  const levelDiff = maxPartyLevel - maxGymLevel
+  if (levelDiff > 5) {
+    winChance += 0.1 // Bonus for being overleveled
+    battleLog.push(`Your high level gives you an advantage!`)
+  } else if (levelDiff < -5) {
+    winChance -= 0.1 // Penalty for being underleveled
+    battleLog.push(`You might be underleveled...`)
+  }
+
+  // Clamp win chance
+  winChance = Math.max(0.15, Math.min(0.90, winChance))
+
+  // Simulate battle rounds
+  const rounds = Math.floor(Math.random() * 3) + 3 // 3-5 rounds
+  for (let i = 0; i < rounds; i++) {
+    const playerPokemon = healthyParty[Math.floor(Math.random() * healthyParty.length)]
+    const gymPokemon = gymLeader.team[Math.floor(Math.random() * gymLeader.team.length)]
+    const playerSpecies = speciesMap.get(playerPokemon.species_id)
+
+    if (Math.random() < 0.5) {
+      battleLog.push(`${playerSpecies?.name || 'Your Pokemon'} attacks ${gymPokemon.species_name}!`)
+    } else {
+      battleLog.push(`${gymPokemon.species_name} attacks ${playerSpecies?.name || 'your Pokemon'}!`)
+    }
+  }
+
+  // Determine outcome
+  const won = Math.random() < winChance
+
+  if (won) {
+    battleLog.push(`${gymLeader.name}'s last Pokemon fainted!`)
+    battleLog.push(`You defeated ${gymLeader.name}!`)
+
+    const result: GymBattleResult = {
+      success: true,
+      gym_leader_id: gymLeader.id,
+      battle_log: battleLog
+    }
+
+    // Only award badge and money on first victory
+    if (!alreadyDefeated) {
+      result.badge_earned = gymLeader.badge_id
+      result.badge_name = gymLeader.badge_name
+      result.money_earned = gymLeader.reward_money
+      battleLog.push(`You earned the ${gymLeader.badge_name}!`)
+      battleLog.push(`Received $${gymLeader.reward_money}!`)
+    } else {
+      battleLog.push(`(You've already earned the ${gymLeader.badge_name})`)
+    }
+
+    return result
+  } else {
+    battleLog.push(`Your last Pokemon fainted...`)
+    battleLog.push(`You were defeated by ${gymLeader.name}!`)
+
+    return {
+      success: false,
+      gym_leader_id: gymLeader.id,
+      battle_log: battleLog
+    }
+  }
 }

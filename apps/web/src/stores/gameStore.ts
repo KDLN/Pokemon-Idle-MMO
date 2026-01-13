@@ -4,6 +4,7 @@ import type { Player, Pokemon, Zone, EncounterEvent, LevelUpEvent, ShopItem } fr
 import type { ChatMessageData, ChatChannel } from '@/components/game/social/ChatMessage'
 import type { LogEntry } from '@/components/game/interactions/WorldLog'
 import type { WorldEvent } from '@/components/game/social/WorldEventsTicker'
+import type { GymLeader } from '@/components/game/GymBattlePanel'
 import type { TimeOfDay } from '@/lib/time/timeOfDay'
 import type { TrainerCustomization } from '@/lib/sprites/trainerCustomization'
 import { DEFAULT_TRAINER_CUSTOMIZATION } from '@/lib/sprites/trainerCustomization'
@@ -82,6 +83,12 @@ interface GameStore {
   setShopItems: (items: ShopItem[]) => void
   isShopOpen: boolean
   setShopOpen: (open: boolean) => void
+
+  // Gym
+  isGymOpen: boolean
+  setGymOpen: (open: boolean) => void
+  currentGymLeader: GymLeader | null
+  setCurrentGymLeader: (leader: GymLeader | null) => void
 
   // Current encounter (for display)
   currentEncounter: EncounterEvent | null
@@ -183,6 +190,8 @@ const initialState = {
   inventory: {},
   shopItems: [],
   isShopOpen: false,
+  isGymOpen: false,
+  currentGymLeader: null,
   currentEncounter: null,
   pendingLevelUps: [],
   chat: initialChatState,
@@ -251,6 +260,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setShopItems: (items) => set({ shopItems: items }),
 
   setShopOpen: (open) => set({ isShopOpen: open }),
+
+  setGymOpen: (open) => set({ isGymOpen: open }),
+
+  setCurrentGymLeader: (leader) => set({ currentGymLeader: leader }),
 
   setCurrentEncounter: (encounter) => set({ currentEncounter: encounter }),
 

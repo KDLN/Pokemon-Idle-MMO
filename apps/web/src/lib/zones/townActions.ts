@@ -24,6 +24,13 @@ export const TOWN_ACTIONS: Record<string, TownAction[]> = {
       action: 'lab',
       description: 'Visit Professor Oak',
     },
+    {
+      id: 'gym',
+      label: 'Gym',
+      icon: '🏟️',
+      action: 'gym',
+      description: 'Challenge Brock',
+    },
   ],
   'Viridian City': [
     {

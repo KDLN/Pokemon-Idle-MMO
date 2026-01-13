@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { getTownActions, type TownAction } from '@/lib/zones/townActions'
+import { gameSocket } from '@/lib/ws/gameSocket'
 
 interface TownMenuProps {
   onAction?: (action: string) => void
@@ -89,6 +90,11 @@ export function TownMenu({ onAction }: TownMenuProps) {
     if (actionType === 'shop') {
       const { setShopOpen } = useGameStore.getState()
       setShopOpen(true)
+    }
+
+    if (actionType === 'gym') {
+      // Request gym data from server
+      gameSocket.getGym(currentZone?.id || 1)
     }
 
     onAction?.(actionType)
