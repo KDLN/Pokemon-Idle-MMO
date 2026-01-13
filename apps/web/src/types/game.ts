@@ -102,7 +102,7 @@ export interface CatchResult {
 // Individual turn in a battle sequence
 export interface BattleTurn {
   turn_number: number
-  attacker: 'player' | 'wild'
+  attacker: 'player' | 'wild' | 'gym'
   attacker_name: string
   defender_name: string
   damage_dealt: number
@@ -112,6 +112,28 @@ export interface BattleTurn {
   defender_hp_after: number
   attacker_max_hp: number
   defender_max_hp: number
+}
+
+// Gym battle sequence for a single Pokemon matchup
+export interface GymBattleMatchup {
+  player_pokemon_id: string
+  player_pokemon_name: string
+  player_species_id: number
+  player_level: number
+  player_starting_hp: number
+  player_max_hp: number
+  player_type1: string
+  player_type2: string | null
+  gym_pokemon_name: string
+  gym_species_id: number
+  gym_level: number
+  gym_starting_hp: number
+  gym_max_hp: number
+  gym_type1: string
+  gym_type2: string | null
+  turns: BattleTurn[]
+  outcome: 'player_pokemon_faint' | 'gym_pokemon_faint'
+  player_final_hp: number
 }
 
 // Complete battle sequence for animation

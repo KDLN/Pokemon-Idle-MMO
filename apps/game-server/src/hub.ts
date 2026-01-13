@@ -17,6 +17,7 @@ import {
   saveCaughtPokemon,
   updatePokedex,
   swapPartyMember,
+  removeFromParty,
   savePokemonXP,
   updatePlayerMoney,
   buyItem,
@@ -179,6 +180,9 @@ export class GameHub {
         case 'swap_party':
           this.handleSwapParty(client, msg.payload as { box_pokemon_id: string; party_slot: number })
           break
+        case 'remove_from_party':
+          this.handleRemoveFromParty(client, msg.payload as { party_slot: number })
+          break
         case 'buy_item':
           this.handleBuyItem(client, msg.payload as { item_id: string; quantity: number })
           break
@@ -263,6 +267,41 @@ export class GameHub {
 
     if (!success) {
       this.sendError(client, 'Failed to swap party member')
+      return
+    }
+
+    // Reload party and box
+    client.session.party = await getPlayerParty(client.session.player.id)
+    const box = await getPlayerBox(client.session.player.id)
+
+    this.send(client, 'party_update', {
+      party: client.session.party,
+      box
+    })
+  }
+
+  private async handleRemoveFromParty(client: Client, payload: { party_slot: number }) {
+    if (!client.session) return
+
+    if (payload.party_slot < 1 || payload.party_slot > 6) {
+      this.sendError(client, 'Invalid party slot')
+      return
+    }
+
+    // Make sure there's at least one other Pokemon in party
+    const partyCount = client.session.party.filter(p => p !== null).length
+    if (partyCount <= 1) {
+      this.sendError(client, 'Cannot remove last Pokemon from party')
+      return
+    }
+
+    const success = await removeFromParty(
+      client.session.player.id,
+      payload.party_slot
+    )
+
+    if (!success) {
+      this.sendError(client, 'Failed to remove from party')
       return
     }
 

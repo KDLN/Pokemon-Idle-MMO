@@ -4,6 +4,7 @@ import { useGameStore } from '@/stores/gameStore'
 import { PokemonCard, EmptyPokemonSlot } from './PokemonCard'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { getStaggerDelayStyle } from '@/lib/ui'
+import { gameSocket } from '@/lib/ws/gameSocket'
 
 // Pokeball icon component
 function PokeballIcon({ className = '' }: { className?: string }) {
@@ -75,7 +76,16 @@ export function PartyPanel() {
               style={getStaggerDelayStyle(index)}
               role="listitem"
             >
-              <PokemonCard pokemon={pokemon} showXP />
+              <PokemonCard
+                pokemon={pokemon}
+                showXP
+                canRemove={activePartyCount > 1}
+                onRemove={() => {
+                  if (pokemon.party_slot) {
+                    gameSocket.removeFromParty(pokemon.party_slot)
+                  }
+                }}
+              />
             </div>
           ) : (
             <EmptyPokemonSlot key={`empty-${index}`} slot={index + 1} />

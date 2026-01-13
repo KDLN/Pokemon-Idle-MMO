@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
+import { getPokemonSpriteUrl, type GymBattleMatchup, type BattleTurn } from '@/types/game'
+import { getSpeciesData, cn } from '@/lib/ui'
 
 // Gym leader data interface
 export interface GymLeader {
@@ -36,6 +38,7 @@ export interface GymBattleResult {
   badge_name?: string
   money_earned?: number
   battle_log?: string[]
+  matchups?: GymBattleMatchup[]
   error?: string
 }
 
@@ -73,32 +76,118 @@ const BADGE_ICONS: Record<string, string> = {
   earth: '🌍',
 }
 
+// Animation timing constants
+const TIMING = {
+  TURN_ATTACK: 600,
+  TURN_DAMAGE: 500,
+  MATCHUP_TRANSITION: 1200,
+  RESULT_DELAY: 1500,
+}
+
+// HP Bar component
+function HPBar({ percent, side }: { percent: number; side: 'player' | 'gym' }) {
+  const getHPColor = () => {
+    if (percent > 50) return 'bg-green-500'
+    if (percent > 20) return 'bg-yellow-500'
+    return 'bg-red-500'
+  }
+
+  return (
+    <div className="h-2.5 bg-[#1a1a2e] rounded-full overflow-hidden border border-[#2a2a4a]">
+      <div
+        className={cn('h-full transition-all duration-400', getHPColor())}
+        style={{ width: `${Math.max(0, Math.min(100, percent))}%` }}
+      />
+    </div>
+  )
+}
+
+// Damage number popup
+function DamageNumber({
+  amount,
+  isCritical,
+  target
+}: {
+  amount: number
+  isCritical: boolean
+  target: 'player' | 'gym'
+}) {
+  return (
+    <div
+      className={cn(
+        'absolute font-pixel text-2xl animate-damage-pop z-30 drop-shadow-lg',
+        isCritical ? 'text-yellow-400 text-3xl' : 'text-white',
+        target === 'gym' ? 'top-[30%] right-[25%]' : 'bottom-[35%] left-[25%]'
+      )}
+    >
+      {isCritical && <span className="text-sm block -mb-1">CRIT!</span>}
+      -{amount}
+    </div>
+  )
+}
+
+type GymBattlePhase =
+  | 'intro'
+  | 'battling'
+  | 'turn_attack'
+  | 'turn_damage'
+  | 'matchup_transition'
+  | 'result'
+
 export function GymBattlePanel() {
   const isGymOpen = useGameStore((state) => state.isGymOpen)
   const currentGymLeader = useGameStore((state) => state.currentGymLeader)
   const badges = useGameStore((state) => state.badges)
   const setGymOpen = useGameStore((state) => state.setGymOpen)
-  const addBadge = useGameStore((state) => state.addBadge)
   const party = useGameStore((state) => state.party)
 
-  const [battleState, setBattleState] = useState<'intro' | 'battling' | 'result'>('intro')
+  const [battlePhase, setBattlePhase] = useState<GymBattlePhase>('intro')
   const [battleResult, setBattleResult] = useState<GymBattleResult | null>(null)
   const [dialogText, setDialogText] = useState('')
   const [dialogIndex, setDialogIndex] = useState(0)
 
+  // Battle animation state
+  const [currentMatchupIndex, setCurrentMatchupIndex] = useState(0)
+  const [currentTurnIndex, setCurrentTurnIndex] = useState(0)
+  const [currentTurn, setCurrentTurn] = useState<BattleTurn | null>(null)
+  const [playerHP, setPlayerHP] = useState(0)
+  const [gymHP, setGymHP] = useState(0)
+  const [playerMaxHP, setPlayerMaxHP] = useState(0)
+  const [gymMaxHP, setGymMaxHP] = useState(0)
+  const [showDamageNumber, setShowDamageNumber] = useState(false)
+  const [damageAmount, setDamageAmount] = useState(0)
+  const [damageTarget, setDamageTarget] = useState<'player' | 'gym'>('gym')
+  const [isCritical, setIsCritical] = useState(false)
+  const [messageText, setMessageText] = useState('')
+
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Clear pending timeouts
+  const clearPendingTimeout = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+  }, [])
+
   // Reset state when panel opens
   useEffect(() => {
     if (isGymOpen && currentGymLeader) {
-      setBattleState('intro')
+      setBattlePhase('intro')
       setBattleResult(null)
       setDialogText('')
       setDialogIndex(0)
+      setCurrentMatchupIndex(0)
+      setCurrentTurnIndex(0)
+      setCurrentTurn(null)
+      setShowDamageNumber(false)
+      setMessageText('')
     }
   }, [isGymOpen, currentGymLeader])
 
   // Typewriter effect for dialog
   useEffect(() => {
-    if (!currentGymLeader || battleState !== 'intro') return
+    if (!currentGymLeader || battlePhase !== 'intro') return
 
     const fullText = currentGymLeader.dialog_intro
     if (dialogIndex < fullText.length) {
@@ -108,49 +197,203 @@ export function GymBattlePanel() {
       }, 20)
       return () => clearTimeout(timeout)
     }
-  }, [currentGymLeader, dialogIndex, battleState])
+  }, [currentGymLeader, dialogIndex, battlePhase])
+
+  // Start battle animation when we get a result with matchups
+  const startBattleAnimation = useCallback((result: GymBattleResult) => {
+    if (!result.matchups || result.matchups.length === 0) {
+      // No matchups, just show result
+      setBattlePhase('result')
+      return
+    }
+
+    // Initialize first matchup
+    const firstMatchup = result.matchups[0]
+    setPlayerHP(firstMatchup.player_starting_hp)
+    setPlayerMaxHP(firstMatchup.player_max_hp)
+    setGymHP(firstMatchup.gym_starting_hp)
+    setGymMaxHP(firstMatchup.gym_max_hp)
+    setCurrentMatchupIndex(0)
+    setCurrentTurnIndex(0)
+    setMessageText(`Go, ${firstMatchup.player_pokemon_name}!`)
+    setBattlePhase('battling')
+
+    // Start the turn sequence after a short delay
+    timeoutRef.current = setTimeout(() => {
+      if (firstMatchup.turns.length > 0) {
+        const turn = firstMatchup.turns[0]
+        setCurrentTurn(turn)
+        setMessageText(`${turn.attacker_name} attacks!`)
+        setBattlePhase('turn_attack')
+      }
+    }, 1000)
+  }, [])
+
+  // Battle animation state machine
+  useEffect(() => {
+    if (!battleResult?.matchups || battlePhase === 'intro' || battlePhase === 'result') return
+
+    const matchups = battleResult.matchups
+    const currentMatchup = matchups[currentMatchupIndex]
+    if (!currentMatchup) {
+      setBattlePhase('result')
+      return
+    }
+
+    clearPendingTimeout()
+
+    switch (battlePhase) {
+      case 'turn_attack':
+        // After attack animation, show damage
+        if (currentTurn) {
+          timeoutRef.current = setTimeout(() => {
+            const target = currentTurn.attacker === 'player' ? 'gym' : 'player'
+            setShowDamageNumber(true)
+            setDamageAmount(currentTurn.damage_dealt)
+            setDamageTarget(target)
+            setIsCritical(currentTurn.is_critical)
+
+            // Update HP bars
+            if (target === 'gym') {
+              setGymHP(currentTurn.defender_hp_after)
+            } else {
+              setPlayerHP(currentTurn.defender_hp_after)
+            }
+
+            setBattlePhase('turn_damage')
+          }, TIMING.TURN_ATTACK)
+        }
+        break
+
+      case 'turn_damage':
+        // After damage, either next turn or check for KO
+        timeoutRef.current = setTimeout(() => {
+          setShowDamageNumber(false)
+
+          const nextTurnIndex = currentTurnIndex + 1
+
+          // Check if current matchup is over
+          if (nextTurnIndex >= currentMatchup.turns.length) {
+            // Matchup over - show result message
+            if (currentMatchup.outcome === 'gym_pokemon_faint') {
+              setMessageText(`${currentMatchup.gym_pokemon_name} fainted!`)
+            } else {
+              setMessageText(`${currentMatchup.player_pokemon_name} fainted!`)
+            }
+
+            // Check if there's another matchup
+            const nextMatchupIndex = currentMatchupIndex + 1
+            if (nextMatchupIndex < matchups.length) {
+              setBattlePhase('matchup_transition')
+            } else {
+              // Battle over
+              timeoutRef.current = setTimeout(() => {
+                setBattlePhase('result')
+              }, TIMING.RESULT_DELAY)
+            }
+            return
+          }
+
+          // Continue to next turn
+          const nextTurn = currentMatchup.turns[nextTurnIndex]
+          setCurrentTurnIndex(nextTurnIndex)
+          setCurrentTurn(nextTurn)
+          setMessageText(`${nextTurn.attacker_name} attacks!`)
+          setBattlePhase('turn_attack')
+        }, TIMING.TURN_DAMAGE)
+        break
+
+      case 'matchup_transition':
+        // Transition to next matchup
+        timeoutRef.current = setTimeout(() => {
+          const nextMatchupIndex = currentMatchupIndex + 1
+          const nextMatchup = matchups[nextMatchupIndex]
+
+          if (nextMatchup) {
+            setCurrentMatchupIndex(nextMatchupIndex)
+            setCurrentTurnIndex(0)
+            setPlayerHP(nextMatchup.player_starting_hp)
+            setPlayerMaxHP(nextMatchup.player_max_hp)
+            setGymHP(nextMatchup.gym_starting_hp)
+            setGymMaxHP(nextMatchup.gym_max_hp)
+
+            // Determine message based on what happened
+            const prevMatchup = matchups[currentMatchupIndex]
+            if (prevMatchup.outcome === 'player_pokemon_faint') {
+              setMessageText(`Go, ${nextMatchup.player_pokemon_name}!`)
+            } else {
+              setMessageText(`${currentGymLeader?.name} sent out ${nextMatchup.gym_pokemon_name}!`)
+            }
+
+            // Start next matchup's turns
+            timeoutRef.current = setTimeout(() => {
+              if (nextMatchup.turns.length > 0) {
+                const turn = nextMatchup.turns[0]
+                setCurrentTurn(turn)
+                setMessageText(`${turn.attacker_name} attacks!`)
+                setBattlePhase('turn_attack')
+              }
+            }, 1000)
+          } else {
+            setBattlePhase('result')
+          }
+        }, TIMING.MATCHUP_TRANSITION)
+        break
+    }
+
+    return () => clearPendingTimeout()
+  }, [battlePhase, currentTurn, currentTurnIndex, currentMatchupIndex, battleResult, currentGymLeader, clearPendingTimeout])
 
   // Expose handler for socket - must be before early return to maintain hook order
   useEffect(() => {
-    // Store handler on window for socket to call
     const handler = (result: GymBattleResult) => {
       setBattleResult(result)
-      setBattleState('result')
 
       if (result.success && result.badge_earned) {
         useGameStore.getState().addBadge(result.badge_earned)
       }
+
+      // Start the battle animation
+      startBattleAnimation(result)
     }
     ;(window as unknown as { __gymBattleHandler?: (result: GymBattleResult) => void }).__gymBattleHandler = handler
     return () => {
       delete (window as unknown as { __gymBattleHandler?: (result: GymBattleResult) => void }).__gymBattleHandler
+      clearPendingTimeout()
     }
-  }, [])
+  }, [startBattleAnimation, clearPendingTimeout])
 
   if (!isGymOpen || !currentGymLeader) return null
 
   const hasAlreadyBeaten = badges.includes(currentGymLeader.badge_id)
   const healthyPartyCount = party.filter(p => p && p.current_hp > 0).length
+  const currentMatchup = battleResult?.matchups?.[currentMatchupIndex]
 
   const handleChallenge = () => {
     if (healthyPartyCount === 0) return
 
-    setBattleState('battling')
+    setBattlePhase('battling')
+    setMessageText('Battle start!')
     gameSocket.challengeGym(currentGymLeader.id)
   }
 
   const handleClose = () => {
+    clearPendingTimeout()
     setGymOpen(false)
-    setBattleState('intro')
+    setBattlePhase('intro')
     setBattleResult(null)
   }
+
+  // Calculate HP percentages
+  const playerHPPercent = playerMaxHP > 0 ? (playerHP / playerMaxHP) * 100 : 100
+  const gymHPPercent = gymMaxHP > 0 ? (gymHP / gymMaxHP) * 100 : 100
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={handleClose}
+        onClick={battlePhase === 'intro' || battlePhase === 'result' ? handleClose : undefined}
       />
 
       {/* Panel */}
@@ -199,9 +442,9 @@ export function GymBattlePanel() {
           </div>
         </div>
 
-        {/* Content based on battle state */}
+        {/* Content based on battle phase */}
         <div className="p-6">
-          {battleState === 'intro' && (
+          {battlePhase === 'intro' && (
             <>
               {/* Gym Leader Dialog */}
               <div className="mb-6 p-4 rounded-xl bg-[#0f0f1a]/60 border border-[#2a2a4a]">
@@ -295,16 +538,113 @@ export function GymBattlePanel() {
             </>
           )}
 
-          {battleState === 'battling' && (
-            <div className="text-center py-12">
-              <div className="inline-flex items-center gap-3 px-6 py-4 rounded-xl bg-[#0f0f1a]/60 border border-[#2a2a4a]">
-                <div className="w-8 h-8 border-4 border-[#3B4CCA] border-t-transparent rounded-full animate-spin" />
-                <span className="text-white font-medium">Battle in progress...</span>
+          {/* Battle Animation */}
+          {(battlePhase === 'battling' || battlePhase === 'turn_attack' || battlePhase === 'turn_damage' || battlePhase === 'matchup_transition') && currentMatchup && (
+            <div className="relative" style={{ minHeight: '320px' }}>
+              {/* Battle field */}
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-green-900/20 rounded-xl" />
+
+              {/* Gym Pokemon (top right) */}
+              <div className="absolute top-0 right-0 left-1/3">
+                <div className="flex items-start justify-between p-4">
+                  {/* Gym HUD */}
+                  <div className="bg-[#1a1a2e]/95 rounded-xl p-3 border-2 border-[#2a2a4a] w-[160px] shadow-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-pixel text-xs text-white truncate">{currentMatchup.gym_pokemon_name}</span>
+                      <span className="text-xs text-[#606080]">Lv.{currentMatchup.gym_level}</span>
+                    </div>
+                    <HPBar percent={gymHPPercent} side="gym" />
+                  </div>
+
+                  {/* Gym Pokemon sprite */}
+                  <div className="relative">
+                    <div
+                      className={cn(
+                        'transform transition-all duration-300',
+                        battlePhase === 'turn_attack' && currentTurn?.attacker === 'gym' && 'animate-attack-lunge-wild',
+                        battlePhase === 'turn_damage' && damageTarget === 'gym' && showDamageNumber && 'animate-damage-flash',
+                        gymHP <= 0 && 'animate-pokemon-faint'
+                      )}
+                    >
+                      <div
+                        className="absolute inset-0 blur-xl opacity-30"
+                        style={{ backgroundColor: TYPE_COLORS[currentMatchup.gym_type1] || '#888' }}
+                      />
+                      <img
+                        src={getPokemonSpriteUrl(currentMatchup.gym_species_id)}
+                        alt={currentMatchup.gym_pokemon_name}
+                        className="w-24 h-24 pixelated relative z-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Player Pokemon (bottom left) */}
+              <div className="absolute bottom-0 left-0 right-1/3">
+                <div className="flex items-end justify-between p-4">
+                  {/* Player Pokemon sprite */}
+                  <div className="relative">
+                    <div
+                      className={cn(
+                        'transform transition-all duration-300',
+                        battlePhase === 'turn_attack' && currentTurn?.attacker === 'player' && 'animate-attack-lunge',
+                        battlePhase === 'turn_damage' && damageTarget === 'player' && showDamageNumber && 'animate-damage-flash',
+                        playerHP <= 0 && 'animate-pokemon-faint'
+                      )}
+                    >
+                      <div
+                        className="absolute inset-0 blur-xl opacity-30"
+                        style={{ backgroundColor: TYPE_COLORS[currentMatchup.player_type1] || '#888' }}
+                      />
+                      <img
+                        src={getPokemonSpriteUrl(currentMatchup.player_species_id)}
+                        alt={currentMatchup.player_pokemon_name}
+                        className="w-20 h-20 pixelated relative z-10 -scale-x-100"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Player HUD */}
+                  <div className="bg-[#1a1a2e]/95 rounded-xl p-3 border-2 border-[#2a2a4a] w-[160px] shadow-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-pixel text-xs text-white truncate">{currentMatchup.player_pokemon_name}</span>
+                      <span className="text-xs text-[#606080]">Lv.{currentMatchup.player_level}</span>
+                    </div>
+                    <HPBar percent={playerHPPercent} side="player" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Damage numbers */}
+              {showDamageNumber && (
+                <DamageNumber
+                  amount={damageAmount}
+                  isCritical={isCritical}
+                  target={damageTarget}
+                />
+              )}
+
+              {/* Battle message */}
+              <div className="absolute bottom-0 left-0 right-0 bg-[#1a1a2e] border-t-2 border-[#2a2a4a] p-4">
+                <p className="font-pixel text-sm text-white text-center">
+                  {messageText || '\u00A0'}
+                </p>
               </div>
             </div>
           )}
 
-          {battleState === 'result' && battleResult && (
+          {/* Loading state when no matchup yet */}
+          {battlePhase === 'battling' && !currentMatchup && (
+            <div className="text-center py-12">
+              <div className="inline-flex items-center gap-3 px-6 py-4 rounded-xl bg-[#0f0f1a]/60 border border-[#2a2a4a]">
+                <div className="w-8 h-8 border-4 border-[#3B4CCA] border-t-transparent rounded-full animate-spin" />
+                <span className="text-white font-medium">Battle starting...</span>
+              </div>
+            </div>
+          )}
+
+          {battlePhase === 'result' && battleResult && (
             <div className="text-center">
               {battleResult.success ? (
                 <>
@@ -344,12 +684,33 @@ export function GymBattlePanel() {
                 </>
               )}
 
-              {/* Battle Log */}
-              {battleResult.battle_log && battleResult.battle_log.length > 0 && (
+              {/* Battle Summary */}
+              {battleResult.matchups && battleResult.matchups.length > 0 && (
                 <div className="mb-6 p-4 rounded-xl bg-[#0f0f1a]/60 border border-[#2a2a4a] text-left max-h-40 overflow-y-auto">
-                  <h4 className="text-xs text-[#606080] uppercase tracking-wider mb-2">Battle Log</h4>
-                  {battleResult.battle_log.map((log, idx) => (
-                    <p key={idx} className="text-xs text-[#a0a0c0] mb-1">{log}</p>
+                  <h4 className="text-xs text-[#606080] uppercase tracking-wider mb-2">Battle Summary</h4>
+                  {battleResult.matchups.map((matchup, idx) => (
+                    <div key={idx} className="text-xs text-[#a0a0c0] mb-1 flex items-center gap-2">
+                      <img
+                        src={getPokemonSpriteUrl(matchup.player_species_id)}
+                        alt={matchup.player_pokemon_name}
+                        className="w-5 h-5 pixelated"
+                      />
+                      <span>{matchup.player_pokemon_name}</span>
+                      <span className="text-[#606080]">vs</span>
+                      <img
+                        src={getPokemonSpriteUrl(matchup.gym_species_id)}
+                        alt={matchup.gym_pokemon_name}
+                        className="w-5 h-5 pixelated"
+                      />
+                      <span>{matchup.gym_pokemon_name}</span>
+                      <span className="ml-auto">
+                        {matchup.outcome === 'gym_pokemon_faint' ? (
+                          <span className="text-green-400">Win</span>
+                        ) : (
+                          <span className="text-red-400">Loss</span>
+                        )}
+                      </span>
+                    </div>
                   ))}
                 </div>
               )}
@@ -365,7 +726,7 @@ export function GymBattlePanel() {
         </div>
 
         {/* Footer with reward info */}
-        {battleState === 'intro' && !hasAlreadyBeaten && (
+        {battlePhase === 'intro' && !hasAlreadyBeaten && (
           <div className="px-6 py-4 border-t border-[#2a2a4a] bg-[#0f0f1a]/50">
             <div className="flex items-center justify-center gap-6 text-xs text-[#606080]">
               <span>Reward: <span className="text-[#FFDE00]">${currentGymLeader.reward_money.toLocaleString()}</span></span>

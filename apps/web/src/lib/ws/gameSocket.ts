@@ -118,6 +118,11 @@ class GameSocket {
     this.send('swap_party', { box_pokemon_id: boxPokemonId, party_slot: partySlot })
   }
 
+  // Remove a Pokemon from party (send to box)
+  removeFromParty(partySlot: number) {
+    this.send('remove_from_party', { party_slot: partySlot })
+  }
+
   // Request current game state
   getState() {
     this.send('get_state')

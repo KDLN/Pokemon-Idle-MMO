@@ -11,7 +11,8 @@ import type {
   EncounterTableEntry,
   BattleTurn,
   BattleSequence,
-  CatchSequence
+  CatchSequence,
+  GymBattleMatchup
 } from './types.js'
 import type { GymLeader, GymLeaderPokemon } from './db.js'
 
@@ -614,6 +615,7 @@ export interface GymBattleResult {
   badge_name?: string
   money_earned?: number
   battle_log: string[]
+  matchups: GymBattleMatchup[]  // Full battle sequence data
   error?: string
 }
 
@@ -640,7 +642,121 @@ function calculateGymPokemonStats(pokemon: GymLeaderPokemon): {
   }
 }
 
-// Simulate a gym battle
+// Simulate a single 1v1 matchup within a gym battle
+function simulateGymMatchup(
+  playerPokemon: Pokemon,
+  playerSpecies: PokemonSpecies,
+  gymPokemon: GymLeaderPokemon,
+  gymStats: { maxHp: number; attack: number; defense: number; spAttack: number; spDefense: number; speed: number }
+): GymBattleMatchup {
+  const turns: BattleTurn[] = []
+
+  let playerHP = playerPokemon.current_hp
+  let gymHP = gymStats.maxHp
+  const playerMaxHP = playerPokemon.max_hp
+  const gymMaxHP = gymStats.maxHp
+
+  // Calculate type effectiveness both ways
+  const playerTypeMultiplier = getTypeEffectiveness(
+    playerSpecies.type1,
+    gymPokemon.type1,
+    gymPokemon.type2
+  )
+  const gymTypeMultiplier = getTypeEffectiveness(
+    gymPokemon.type1,
+    playerSpecies.type1,
+    playerSpecies.type2
+  )
+
+  let turnNumber = 0
+  const MAX_TURNS = 15  // Slightly longer than wild battles
+
+  // Determine who goes first (speed comparison)
+  const playerFirst = playerPokemon.stat_speed >= gymStats.speed
+
+  while (playerHP > 0 && gymHP > 0 && turnNumber < MAX_TURNS) {
+    const isEvenTurn = turnNumber % 2 === 0
+    const playerAttacks = isEvenTurn === playerFirst
+
+    if (playerAttacks) {
+      // Player Pokemon attacks gym Pokemon
+      const attackStat = Math.max(playerPokemon.stat_attack, playerPokemon.stat_sp_attack)
+      const { damage, isCritical } = calculateDamage(
+        playerPokemon.level,
+        attackStat,
+        gymStats.defense,
+        playerTypeMultiplier
+      )
+
+      gymHP = Math.max(0, gymHP - damage)
+
+      turns.push({
+        turn_number: turnNumber,
+        attacker: 'player',
+        attacker_name: playerSpecies.name,
+        defender_name: gymPokemon.species_name,
+        damage_dealt: damage,
+        is_critical: isCritical,
+        effectiveness: getEffectivenessCategory(playerTypeMultiplier),
+        attacker_hp_after: playerHP,
+        defender_hp_after: gymHP,
+        attacker_max_hp: playerMaxHP,
+        defender_max_hp: gymMaxHP
+      })
+    } else {
+      // Gym Pokemon attacks player Pokemon
+      const { damage, isCritical } = calculateDamage(
+        gymPokemon.level,
+        Math.max(gymStats.attack, gymStats.spAttack),
+        Math.max(playerPokemon.stat_defense, playerPokemon.stat_sp_defense),
+        gymTypeMultiplier
+      )
+
+      playerHP = Math.max(0, playerHP - damage)
+
+      turns.push({
+        turn_number: turnNumber,
+        attacker: 'gym',
+        attacker_name: gymPokemon.species_name,
+        defender_name: playerSpecies.name,
+        damage_dealt: damage,
+        is_critical: isCritical,
+        effectiveness: getEffectivenessCategory(gymTypeMultiplier),
+        attacker_hp_after: gymHP,
+        defender_hp_after: playerHP,
+        attacker_max_hp: gymMaxHP,
+        defender_max_hp: playerMaxHP
+      })
+    }
+
+    turnNumber++
+  }
+
+  const playerWon = gymHP <= 0
+
+  return {
+    player_pokemon_id: playerPokemon.id,
+    player_pokemon_name: playerSpecies.name,
+    player_species_id: playerPokemon.species_id,
+    player_level: playerPokemon.level,
+    player_starting_hp: playerPokemon.current_hp,
+    player_max_hp: playerMaxHP,
+    player_type1: playerSpecies.type1,
+    player_type2: playerSpecies.type2,
+    gym_pokemon_name: gymPokemon.species_name,
+    gym_species_id: gymPokemon.species_id,
+    gym_level: gymPokemon.level,
+    gym_starting_hp: gymMaxHP,
+    gym_max_hp: gymMaxHP,
+    gym_type1: gymPokemon.type1,
+    gym_type2: gymPokemon.type2,
+    turns,
+    outcome: playerWon ? 'gym_pokemon_faint' : 'player_pokemon_faint',
+    player_final_hp: playerHP
+  }
+}
+
+// Simulate a full gym battle with turn-by-turn combat
 export function simulateGymBattle(
   party: (Pokemon | null)[],
   gymLeader: GymLeader,
@@ -648,6 +764,7 @@ export function simulateGymBattle(
   alreadyDefeated: boolean
 ): GymBattleResult {
   const battleLog: string[] = []
+  const matchups: GymBattleMatchup[] = []
 
   // Check if player has healthy Pokemon
   const healthyParty = party.filter(p => p && p.current_hp > 0) as Pokemon[]
@@ -656,92 +773,73 @@ export function simulateGymBattle(
       success: false,
       gym_leader_id: gymLeader.id,
       battle_log: ['You have no healthy Pokemon!'],
+      matchups: [],
       error: 'No healthy Pokemon'
     }
   }
 
-  battleLog.push(`${gymLeader.name}: "${gymLeader.dialog_intro.slice(0, 50)}..."`)
-  battleLog.push(`Battle started!`)
+  battleLog.push(`${gymLeader.name} wants to battle!`)
 
-  // Calculate total party power
-  let partyPower = 0
-  let maxPartyLevel = 0
+  // Track current HP for player's Pokemon (copy so we can mutate)
+  const partyHP: Map<string, number> = new Map()
   for (const p of healthyParty) {
-    const species = speciesMap.get(p.species_id)
-    if (!species) continue
-
-    // Calculate effective power considering type advantage
-    let typeMult = 1.0
-    const gymType = gymLeader.specialty_type.toUpperCase()
-
-    // Check type advantage
-    if (species.type1) {
-      const mult = getTypeEffectiveness(species.type1, gymType, null)
-      if (mult > typeMult) typeMult = mult
-    }
-    if (species.type2) {
-      const mult = getTypeEffectiveness(species.type2, gymType, null)
-      if (mult > typeMult) typeMult = mult
-    }
-
-    partyPower += (p.stat_attack + p.stat_sp_attack + p.stat_defense + p.stat_sp_defense) * p.level * typeMult
-    maxPartyLevel = Math.max(maxPartyLevel, p.level)
+    partyHP.set(p.id, p.current_hp)
   }
 
-  // Calculate gym team power
-  let gymPower = 0
-  let maxGymLevel = 0
-  for (const gymPokemon of gymLeader.team) {
-    const stats = calculateGymPokemonStats(gymPokemon)
-    gymPower += (stats.attack + stats.spAttack + stats.defense + stats.spDefense) * gymPokemon.level
-    maxGymLevel = Math.max(maxGymLevel, gymPokemon.level)
-  }
+  // Track remaining gym Pokemon
+  const gymTeam = [...gymLeader.team].sort((a, b) => a.slot - b.slot)
+  let gymIndex = 0
 
-  // Log team comparison
-  battleLog.push(`Your team (${healthyParty.length} Pokemon, max Lv.${maxPartyLevel})`)
-  battleLog.push(`${gymLeader.name}'s team (${gymLeader.team.length} Pokemon, max Lv.${maxGymLevel})`)
+  // Player's current Pokemon is first healthy one
+  let playerIndex = 0
 
-  // Calculate win chance
-  let winChance = partyPower / (partyPower + gymPower)
-
-  // Level difference bonus/penalty
-  const levelDiff = maxPartyLevel - maxGymLevel
-  if (levelDiff > 5) {
-    winChance += 0.1 // Bonus for being overleveled
-    battleLog.push(`Your high level gives you an advantage!`)
-  } else if (levelDiff < -5) {
-    winChance -= 0.1 // Penalty for being underleveled
-    battleLog.push(`You might be underleveled...`)
-  }
-
-  // Clamp win chance
-  winChance = Math.max(0.15, Math.min(0.90, winChance))
-
-  // Simulate battle rounds
-  const rounds = Math.floor(Math.random() * 3) + 3 // 3-5 rounds
-  for (let i = 0; i < rounds; i++) {
-    const playerPokemon = healthyParty[Math.floor(Math.random() * healthyParty.length)]
-    const gymPokemon = gymLeader.team[Math.floor(Math.random() * gymLeader.team.length)]
+  // Battle until one side runs out
+  while (playerIndex < healthyParty.length && gymIndex < gymTeam.length) {
+    const playerPokemon = healthyParty[playerIndex]
     const playerSpecies = speciesMap.get(playerPokemon.species_id)
 
-    if (Math.random() < 0.5) {
-      battleLog.push(`${playerSpecies?.name || 'Your Pokemon'} attacks ${gymPokemon.species_name}!`)
+    if (!playerSpecies) {
+      playerIndex++
+      continue
+    }
+
+    const gymPokemon = gymTeam[gymIndex]
+    const gymStats = calculateGymPokemonStats(gymPokemon)
+
+    // Create a copy of player Pokemon with current HP for this matchup
+    const playerWithCurrentHP = {
+      ...playerPokemon,
+      current_hp: partyHP.get(playerPokemon.id) || playerPokemon.current_hp
+    }
+
+    // Simulate this matchup
+    const matchup = simulateGymMatchup(playerWithCurrentHP, playerSpecies, gymPokemon, gymStats)
+    matchups.push(matchup)
+
+    // Update player Pokemon's HP in our tracking map
+    partyHP.set(playerPokemon.id, matchup.player_final_hp)
+
+    // Log the matchup result
+    if (matchup.outcome === 'gym_pokemon_faint') {
+      battleLog.push(`${gymPokemon.species_name} fainted!`)
+      gymIndex++
     } else {
-      battleLog.push(`${gymPokemon.species_name} attacks ${playerSpecies?.name || 'your Pokemon'}!`)
+      battleLog.push(`${playerSpecies.name} fainted!`)
+      playerIndex++
     }
   }
 
-  // Determine outcome
-  const won = Math.random() < winChance
+  // Determine overall outcome
+  const playerWon = gymIndex >= gymTeam.length
 
-  if (won) {
-    battleLog.push(`${gymLeader.name}'s last Pokemon fainted!`)
+  if (playerWon) {
     battleLog.push(`You defeated ${gymLeader.name}!`)
 
     const result: GymBattleResult = {
       success: true,
       gym_leader_id: gymLeader.id,
-      battle_log: battleLog
+      battle_log: battleLog,
+      matchups
     }
 
     // Only award badge and money on first victory
@@ -757,13 +855,13 @@ export function simulateGymBattle(
 
     return result
   } else {
-    battleLog.push(`Your last Pokemon fainted...`)
     battleLog.push(`You were defeated by ${gymLeader.name}!`)
 
     return {
       success: false,
       gym_leader_id: gymLeader.id,
-      battle_log: battleLog
+      battle_log: battleLog,
+      matchups
     }
   }
 }

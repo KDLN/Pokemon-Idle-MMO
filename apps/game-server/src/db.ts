@@ -285,6 +285,20 @@ export async function swapPartyMember(
   return !error
 }
 
+// Remove a Pokemon from party (move to box)
+export async function removeFromParty(
+  playerId: string,
+  partySlot: number
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('pokemon')
+    .update({ party_slot: null })
+    .eq('owner_id', playerId)
+    .eq('party_slot', partySlot)
+
+  return !error
+}
+
 export async function savePokemonXP(pokemonId: string, xp: number): Promise<void> {
   await supabase
     .from('pokemon')

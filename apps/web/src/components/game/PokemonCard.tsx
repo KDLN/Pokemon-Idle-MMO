@@ -58,9 +58,11 @@ interface PokemonCardProps {
   onClick?: () => void
   selected?: boolean
   compact?: boolean
+  onRemove?: () => void
+  canRemove?: boolean
 }
 
-export function PokemonCard({ pokemon, showXP = false, onClick, selected, compact }: PokemonCardProps) {
+export function PokemonCard({ pokemon, showXP = false, onClick, selected, compact, onRemove, canRemove }: PokemonCardProps) {
   const xpProgress = getXPProgress(pokemon.xp, pokemon.level)
   const speciesData = getSpeciesData(pokemon.species_id)
   const name = pokemon.nickname || speciesData.name
@@ -148,10 +150,30 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
     >
+      {/* Remove button */}
+      {onRemove && canRemove && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onRemove()
+          }}
+          className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 z-30 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500/80 hover:bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Remove from party"
+          aria-label={`Remove ${name} from party`}
+        >
+          <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
+
       {/* Shiny sparkle effect */}
       {isShiny && (
         <>
-          <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-20 text-yellow-400 animate-pulse">
+          <div className={cn(
+            "absolute z-20 text-yellow-400 animate-pulse",
+            onRemove && canRemove ? "top-7 right-1.5 sm:top-8 sm:right-2" : "top-1.5 right-1.5 sm:top-2 sm:right-2"
+          )}>
             <svg className="w-4 h-4 sm:w-5 sm:h-5 drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
