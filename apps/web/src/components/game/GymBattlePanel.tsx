@@ -79,7 +79,6 @@ export function GymBattlePanel() {
   const badges = useGameStore((state) => state.badges)
   const setGymOpen = useGameStore((state) => state.setGymOpen)
   const addBadge = useGameStore((state) => state.addBadge)
-  const setPokedollars = useGameStore((state) => state.pokedollars)
   const party = useGameStore((state) => state.party)
 
   const [battleState, setBattleState] = useState<'intro' | 'battling' | 'result'>('intro')
@@ -111,6 +110,23 @@ export function GymBattlePanel() {
     }
   }, [currentGymLeader, dialogIndex, battleState])
 
+  // Expose handler for socket - must be before early return to maintain hook order
+  useEffect(() => {
+    // Store handler on window for socket to call
+    const handler = (result: GymBattleResult) => {
+      setBattleResult(result)
+      setBattleState('result')
+
+      if (result.success && result.badge_earned) {
+        useGameStore.getState().addBadge(result.badge_earned)
+      }
+    }
+    ;(window as unknown as { __gymBattleHandler?: (result: GymBattleResult) => void }).__gymBattleHandler = handler
+    return () => {
+      delete (window as unknown as { __gymBattleHandler?: (result: GymBattleResult) => void }).__gymBattleHandler
+    }
+  }, [])
+
   if (!isGymOpen || !currentGymLeader) return null
 
   const hasAlreadyBeaten = badges.includes(currentGymLeader.badge_id)
@@ -122,25 +138,6 @@ export function GymBattlePanel() {
     setBattleState('battling')
     gameSocket.challengeGym(currentGymLeader.id)
   }
-
-  // Handle gym battle result from socket
-  const handleBattleResult = (result: GymBattleResult) => {
-    setBattleResult(result)
-    setBattleState('result')
-
-    if (result.success && result.badge_earned) {
-      addBadge(result.badge_earned)
-    }
-  }
-
-  // Expose handler for socket
-  useEffect(() => {
-    // Store handler on window for socket to call
-    (window as unknown as { __gymBattleHandler?: (result: GymBattleResult) => void }).__gymBattleHandler = handleBattleResult
-    return () => {
-      delete (window as unknown as { __gymBattleHandler?: (result: GymBattleResult) => void }).__gymBattleHandler
-    }
-  }, [])
 
   const handleClose = () => {
     setGymOpen(false)
