@@ -387,20 +387,18 @@ interface ChatMessageRow {
   channel: ChatChannel
   content: string
   created_at: string
-  player?: { username: string }[]
 }
 
 export async function getRecentChatMessages(limit = 50): Promise<ChatMessageEntry[]> {
   const { data, error } = await supabase
     .from('chat_messages')
-    .select(`
+    .select(
       id,
       player_id,
       channel,
       content,
-      created_at,
-      player:players(username)
-    `)
+      created_at
+    )
     .order('created_at', { ascending: false })
     .limit(limit)
 
@@ -410,13 +408,27 @@ export async function getRecentChatMessages(limit = 50): Promise<ChatMessageEntr
   }
 
   const rows: ChatMessageRow[] = data || []
-  const getPlayerName = (player?: { username: string }[]): string =>
-    player && player.length > 0 ? player[0].username : 'System'
+  const playerIds = Array.from(new Set(rows.map((row) => row.player_id)))
+  let playerMap: Record<string, string> = {}
+
+  if (playerIds.length > 0) {
+    const { data: players } = await supabase
+      .from('players')
+      .select('id, username')
+      .in('id', playerIds)
+
+    playerMap = (players || []).reduce((acc, player) => {
+      if (player?.id && player.username) {
+        acc[player.id] = player.username
+      }
+      return acc
+    }, {})
+  }
 
   return rows.map((row) => ({
     id: row.id,
     player_id: row.player_id,
-    player_name: getPlayerName(row.player),
+    player_name: playerMap[row.player_id] || 'System',
     channel: row.channel,
     content: row.content,
     created_at: row.created_at,
@@ -435,14 +447,13 @@ export async function saveChatMessage(
       channel,
       content,
     })
-    .select(`
+    .select(
       id,
       player_id,
       channel,
       content,
-      created_at,
-      player:players(username)
-    `)
+      created_at
+    )
     .single()
 
   if (error) {
@@ -450,13 +461,16 @@ export async function saveChatMessage(
     return null
   }
 
-  const getPlayerName = (player?: { username: string }[]): string =>
-    player && player.length > 0 ? player[0].username : 'System'
+  const { data: playerData } = await supabase
+    .from('players')
+    .select('username')
+    .eq('id', playerId)
+    .single()
 
   return {
     id: data.id,
     player_id: data.player_id,
-    player_name: getPlayerName(data.player),
+    player_name: playerData?.username || 'System',
     channel: data.channel,
     content: data.content,
     created_at: data.created_at,
