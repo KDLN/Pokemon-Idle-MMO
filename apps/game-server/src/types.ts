@@ -7,6 +7,7 @@ export interface Player {
   current_zone_id: number
   pokedollars: number
   last_online: string
+  badges: string[]
 }
 
 export interface Pokemon {

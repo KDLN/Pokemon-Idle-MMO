@@ -31,7 +31,11 @@ export async function getPlayerByUserId(userId: string): Promise<Player | null> 
     console.error('Failed to get player:', error)
     return null
   }
-  return data
+  // Ensure badges is always an array (database default is '{}' but handle null just in case)
+  return {
+    ...data,
+    badges: data.badges || []
+  }
 }
 
 export async function getPlayerParty(playerId: string): Promise<(Pokemon | null)[]> {
@@ -536,7 +540,16 @@ interface ChatMessageRow {
   channel: ChatChannel
   content: string
   created_at: string
-  player?: { username?: string }[]
+  player?: { username?: string } | { username?: string }[] | null
+}
+
+// Helper to extract username from Supabase join result (handles both object and array formats)
+function extractUsername(player: ChatMessageRow['player']): string {
+  if (!player) return 'Unknown'
+  if (Array.isArray(player)) {
+    return player[0]?.username || 'Unknown'
+  }
+  return player.username || 'Unknown'
 }
 
 export async function getRecentChatMessages(limit = 50): Promise<ChatMessageEntry[]> {
@@ -563,7 +576,7 @@ export async function getRecentChatMessages(limit = 50): Promise<ChatMessageEntr
   return rows.map((row) => ({
     id: row.id,
     player_id: row.player_id,
-    player_name: row.player?.[0]?.username || 'System',
+    player_name: extractUsername(row.player),
     channel: row.channel,
     content: row.content,
     created_at: row.created_at,
@@ -600,7 +613,7 @@ export async function saveChatMessage(
   return {
     id: data.id,
     player_id: data.player_id,
-    player_name: data.player?.[0]?.username || 'System',
+    player_name: extractUsername(data.player as ChatMessageRow['player']),
     channel: data.channel,
     content: data.content,
     created_at: data.created_at,

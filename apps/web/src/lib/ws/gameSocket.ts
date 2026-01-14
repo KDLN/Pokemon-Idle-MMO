@@ -250,6 +250,8 @@ class GameSocket {
     if (state.inventory) {
       store.setInventory(state.inventory)
     }
+    // Load badges from player data (always set, defaulting to empty array)
+    store.setBadges(state.player.badges || [])
     store.setLoading(false)
   }
 

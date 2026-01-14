@@ -8,6 +8,7 @@ export interface Player {
   pokedollars: number
   last_online: string
   created_at: string
+  badges: string[]
 }
 
 export interface Pokemon {
