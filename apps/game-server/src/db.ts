@@ -800,11 +800,22 @@ export async function sendFriendRequest(
   playerId: string,
   friendPlayerId: string
 ): Promise<{ success: boolean; error?: string; friend_id?: string }> {
-  // Check for existing relationship (in either direction)
-  const { data: existing } = await supabase
-    .from('friends')
-    .select('friend_id, status, player_id')
-    .or(`and(player_id.eq.${playerId},friend_player_id.eq.${friendPlayerId}),and(player_id.eq.${friendPlayerId},friend_player_id.eq.${playerId})`)
+  // Check for existing relationship (in either direction) using two separate queries
+  // to avoid string interpolation in .or() clause
+  const [{ data: sentByMe }, { data: sentByThem }] = await Promise.all([
+    supabase
+      .from('friends')
+      .select('friend_id, status, player_id')
+      .eq('player_id', playerId)
+      .eq('friend_player_id', friendPlayerId),
+    supabase
+      .from('friends')
+      .select('friend_id, status, player_id')
+      .eq('player_id', friendPlayerId)
+      .eq('friend_player_id', playerId)
+  ])
+
+  const existing = [...(sentByMe || []), ...(sentByThem || [])]
 
   if (existing && existing.length > 0) {
     const record = existing[0]
@@ -884,17 +895,33 @@ export async function declineFriendRequest(
   playerId: string,
   friendId: string
 ): Promise<{ success: boolean; error?: string }> {
-  // Can decline if you received it OR cancel if you sent it
-  const { data, error } = await supabase
+  // First verify the request exists and player is involved
+  const { data: request, error: fetchError } = await supabase
+    .from('friends')
+    .select('friend_id, player_id, friend_player_id')
+    .eq('friend_id', friendId)
+    .eq('status', 'pending')
+    .single()
+
+  if (fetchError || !request) {
+    console.error('Decline friend request - not found:', fetchError)
+    return { success: false, error: 'Friend request not found' }
+  }
+
+  // Verify player is part of this relationship
+  if (request.player_id !== playerId && request.friend_player_id !== playerId) {
+    return { success: false, error: 'Friend request not found' }
+  }
+
+  // Delete the request
+  const { error } = await supabase
     .from('friends')
     .delete()
     .eq('friend_id', friendId)
-    .eq('status', 'pending')
-    .or(`player_id.eq.${playerId},friend_player_id.eq.${playerId}`)
-    .select()
 
-  if (error || !data || data.length === 0) {
-    return { success: false, error: 'Friend request not found' }
+  if (error) {
+    console.error('Failed to decline friend request:', error)
+    return { success: false, error: 'Failed to decline request' }
   }
 
   return { success: true }
@@ -923,7 +950,12 @@ export async function getIncomingFriendRequests(playerId: string): Promise<Frien
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
 
-  if (error || !data) return []
+  if (error) {
+    console.error('Failed to get incoming friend requests:', error)
+    return []
+  }
+
+  if (!data) return []
 
   return data.map(row => ({
     friend_id: row.friend_id,
@@ -947,7 +979,12 @@ export async function getOutgoingFriendRequests(playerId: string): Promise<Frien
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
 
-  if (error || !data) return []
+  if (error) {
+    console.error('Failed to get outgoing friend requests:', error)
+    return []
+  }
+
+  if (!data) return []
 
   return data.map(row => ({
     friend_id: row.friend_id,
@@ -957,40 +994,55 @@ export async function getOutgoingFriendRequests(playerId: string): Promise<Frien
   }))
 }
 
-// Get accepted friends list
+// Helper to extract player data from Supabase join result
+function extractPlayerFromJoin(player: unknown): { username?: string; last_online?: string } | null {
+  if (!player) return null
+  if (Array.isArray(player)) {
+    return player[0] as { username?: string; last_online?: string } || null
+  }
+  return player as { username?: string; last_online?: string }
+}
+
+// Get accepted friends list - uses JOIN for single query optimization
 export async function getFriendsList(playerId: string): Promise<Friend[]> {
   // Query friends where player is either the requester or recipient
-  const { data, error } = await supabase
-    .from('friends')
-    .select(`
-      friend_id,
-      player_id,
-      friend_player_id,
-      status,
-      created_at
-    `)
-    .eq('status', 'accepted')
-    .or(`player_id.eq.${playerId},friend_player_id.eq.${playerId}`)
-    .order('created_at', { ascending: false })
+  // Use two queries to avoid string interpolation in OR clause
+  const [{ data: sentByMe, error: err1 }, { data: sentToMe, error: err2 }] = await Promise.all([
+    supabase
+      .from('friends')
+      .select(`
+        friend_id,
+        player_id,
+        friend_player_id,
+        status,
+        created_at,
+        friend:players!friends_friend_player_id_fkey(username, last_online)
+      `)
+      .eq('status', 'accepted')
+      .eq('player_id', playerId)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('friends')
+      .select(`
+        friend_id,
+        player_id,
+        friend_player_id,
+        status,
+        created_at,
+        friend:players!friends_player_id_fkey(username, last_online)
+      `)
+      .eq('status', 'accepted')
+      .eq('friend_player_id', playerId)
+      .order('created_at', { ascending: false })
+  ])
 
-  if (error || !data) return []
+  if (err1) console.error('Failed to get friends list (sent):', err1)
+  if (err2) console.error('Failed to get friends list (received):', err2)
 
-  // Get unique friend player IDs
-  const friendPlayerIds = data.map(row =>
-    row.player_id === playerId ? row.friend_player_id : row.player_id
-  )
+  const allFriends = [...(sentByMe || []), ...(sentToMe || [])]
 
-  // Fetch friend usernames and last online
-  const { data: players } = await supabase
-    .from('players')
-    .select('id, username, last_online')
-    .in('id', friendPlayerIds)
-
-  const playerMap = new Map(players?.map(p => [p.id, p]) || [])
-
-  return data.map(row => {
-    const friendId = row.player_id === playerId ? row.friend_player_id : row.player_id
-    const friendData = playerMap.get(friendId)
+  return allFriends.map(row => {
+    const friendData = extractPlayerFromJoin(row.friend)
     return {
       friend_id: row.friend_id,
       player_id: row.player_id,
@@ -1008,16 +1060,33 @@ export async function removeFriend(
   playerId: string,
   friendId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const { data, error } = await supabase
+  // First verify the friendship exists and player is involved
+  const { data: friendship, error: fetchError } = await supabase
+    .from('friends')
+    .select('friend_id, player_id, friend_player_id')
+    .eq('friend_id', friendId)
+    .eq('status', 'accepted')
+    .single()
+
+  if (fetchError || !friendship) {
+    console.error('Remove friend - not found:', fetchError)
+    return { success: false, error: 'Friend not found' }
+  }
+
+  // Verify player is part of this friendship
+  if (friendship.player_id !== playerId && friendship.friend_player_id !== playerId) {
+    return { success: false, error: 'Friend not found' }
+  }
+
+  // Delete the friendship
+  const { error } = await supabase
     .from('friends')
     .delete()
     .eq('friend_id', friendId)
-    .eq('status', 'accepted')
-    .or(`player_id.eq.${playerId},friend_player_id.eq.${playerId}`)
-    .select()
 
-  if (error || !data || data.length === 0) {
-    return { success: false, error: 'Friend not found' }
+  if (error) {
+    console.error('Failed to remove friend:', error)
+    return { success: false, error: 'Failed to remove friend' }
   }
 
   return { success: true }
