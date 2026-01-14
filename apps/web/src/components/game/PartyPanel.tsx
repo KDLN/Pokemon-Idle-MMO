@@ -32,9 +32,26 @@ function StarIcon({ filled, className = '' }: { filled: boolean; className?: str
 
 export function PartyPanel() {
   const party = useGameStore((state) => state.party)
+  const inventory = useGameStore((state) => state.inventory)
   const activePartyCount = party.filter(p => p !== null).length
   const totalLevel = party.filter(p => p).reduce((sum, p) => sum + (p?.level || 0), 0)
   const powerStars = Math.min(5, Math.floor(activePartyCount * 0.8) + 1)
+
+  // Check if player has any healing potions
+  const regularPotionCount = inventory.potion || 0
+  const superPotionCount = inventory.super_potion || 0
+  const hasPotions = regularPotionCount > 0 || superPotionCount > 0
+
+  // Use the best available potion - verify we actually have one before sending
+  const handleUsePotion = (pokemonId: string) => {
+    // Prefer regular potion first (more economical), fall back to super potion
+    if (regularPotionCount > 0) {
+      gameSocket.usePotion(pokemonId, 'potion')
+    } else if (superPotionCount > 0) {
+      gameSocket.usePotion(pokemonId, 'super_potion')
+    }
+    // If neither exists, do nothing (button shouldn't be visible anyway)
+  }
 
   return (
     <Card variant="glass" padding="sm" className="p-3 sm:p-4">
@@ -85,6 +102,8 @@ export function PartyPanel() {
                     gameSocket.removeFromParty(pokemon.party_slot)
                   }
                 }}
+                onUsePotion={handleUsePotion}
+                hasPotions={hasPotions}
               />
             </div>
           ) : (

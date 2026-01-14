@@ -60,9 +60,11 @@ interface PokemonCardProps {
   compact?: boolean
   onRemove?: () => void
   canRemove?: boolean
+  onUsePotion?: (pokemonId: string) => void
+  hasPotions?: boolean
 }
 
-export function PokemonCard({ pokemon, showXP = false, onClick, selected, compact, onRemove, canRemove }: PokemonCardProps) {
+export function PokemonCard({ pokemon, showXP = false, onClick, selected, compact, onRemove, canRemove, onUsePotion, hasPotions }: PokemonCardProps) {
   const xpProgress = getXPProgress(pokemon.xp, pokemon.level)
   const speciesData = getSpeciesData(pokemon.species_id)
   const name = pokemon.nickname || speciesData.name
@@ -164,6 +166,21 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
           <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
+        </button>
+      )}
+
+      {/* Potion button - shown when Pokemon needs healing and player has potions */}
+      {onUsePotion && hasPotions && pokemon.current_hp < pokemon.max_hp && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onUsePotion(pokemon.id)
+          }}
+          className="absolute bottom-1 right-1 sm:bottom-1.5 sm:right-1.5 z-30 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-purple-500/90 hover:bg-purple-500 text-white flex items-center justify-center transition-all hover:scale-110"
+          title="Use Potion"
+          aria-label={`Use potion on ${name}`}
+        >
+          <span className="text-sm">💜</span>
         </button>
       )}
 

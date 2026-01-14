@@ -11,11 +11,11 @@ export interface TownAction {
 export const TOWN_ACTIONS: Record<string, TownAction[]> = {
   'Pallet Town': [
     {
-      id: 'heal',
-      label: 'Heal',
-      icon: '💊',
-      action: 'heal',
-      description: "Restore your Pokemon's HP",
+      id: 'pokecenter',
+      label: 'PokeCenter',
+      icon: '🏥',
+      action: 'pokecenter',
+      description: 'Heal your Pokemon for free',
     },
     {
       id: 'lab',
@@ -34,11 +34,11 @@ export const TOWN_ACTIONS: Record<string, TownAction[]> = {
   ],
   'Viridian City': [
     {
-      id: 'heal',
-      label: 'Heal',
-      icon: '💊',
-      action: 'heal',
-      description: "Restore your Pokemon's HP",
+      id: 'pokecenter',
+      label: 'PokeCenter',
+      icon: '🏥',
+      action: 'pokecenter',
+      description: 'Heal your Pokemon for free',
     },
     {
       id: 'shop',
@@ -59,11 +59,11 @@ export const TOWN_ACTIONS: Record<string, TownAction[]> = {
   ],
   'Pewter City': [
     {
-      id: 'heal',
-      label: 'Heal',
-      icon: '💊',
-      action: 'heal',
-      description: "Restore your Pokemon's HP",
+      id: 'pokecenter',
+      label: 'PokeCenter',
+      icon: '🏥',
+      action: 'pokecenter',
+      description: 'Heal your Pokemon for free',
     },
     {
       id: 'shop',
@@ -89,11 +89,11 @@ export const TOWN_ACTIONS: Record<string, TownAction[]> = {
   ],
   'Cerulean City': [
     {
-      id: 'heal',
-      label: 'Heal',
-      icon: '💊',
-      action: 'heal',
-      description: "Restore your Pokemon's HP",
+      id: 'pokecenter',
+      label: 'PokeCenter',
+      icon: '🏥',
+      action: 'pokecenter',
+      description: 'Heal your Pokemon for free',
     },
     {
       id: 'shop',
@@ -122,11 +122,11 @@ export const TOWN_ACTIONS: Record<string, TownAction[]> = {
 export function getTownActions(zoneName: string): TownAction[] {
   return TOWN_ACTIONS[zoneName] || [
     {
-      id: 'heal',
-      label: 'Heal',
-      icon: '💊',
-      action: 'heal',
-      description: "Restore your Pokemon's HP",
+      id: 'pokecenter',
+      label: 'PokeCenter',
+      icon: '🏥',
+      action: 'pokecenter',
+      description: 'Heal your Pokemon for free',
     },
   ]
 }

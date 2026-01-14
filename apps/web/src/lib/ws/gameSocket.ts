@@ -36,6 +36,8 @@ class GameSocket {
     this.handlers.set('gym_battle_result', this.handleGymBattleResult)
     this.handlers.set('chat_history', this.handleChatHistory)
     this.handlers.set('chat_message', this.handleChatMessage)
+    this.handlers.set('potion_used', this.handlePotionUsed)
+    this.handlers.set('pokecenter_heal', this.handlePokeCenterHeal)
     this.handlers.set('error', this.handleError)
   }
 
@@ -167,6 +169,16 @@ class GameSocket {
     this.send('chat_message', { channel, content })
   }
 
+  // Use a potion on a Pokemon
+  usePotion(pokemonId: string, itemId: string) {
+    this.send('use_potion', { pokemon_id: pokemonId, item_id: itemId })
+  }
+
+  // Heal all Pokemon at PokeCenter (free)
+  healAtPokeCenter() {
+    this.send('heal_at_pokecenter')
+  }
+
   // Message handlers - using arrow functions to avoid binding issues
   private handleTick = (payload: unknown) => {
     const result = payload as TickResult
@@ -216,7 +228,7 @@ class GameSocket {
   }
 
   private handleGameState = (payload: unknown) => {
-    const state = payload as GameState
+    const state = payload as GameState & { inventory?: Record<string, number> }
     const store = useGameStore.getState()
 
     store.setPlayer(state.player)
@@ -225,6 +237,9 @@ class GameSocket {
     store.setPokeballs(state.pokeballs)
     store.setPokedollars(state.pokedollars)
     store.setBox(state.box || [])
+    if (state.inventory) {
+      store.setInventory(state.inventory)
+    }
     store.setLoading(false)
   }
 
@@ -332,6 +347,34 @@ class GameSocket {
   private handleChatMessage = (payload: unknown) => {
     const chatMessage = this.mapChatPayload(payload as ChatPayload)
     useGameStore.getState().addChatMessage(chatMessage)
+  }
+
+  private handlePotionUsed = (payload: unknown) => {
+    const { success, pokemon_id, new_hp, inventory } = payload as {
+      success: boolean
+      pokemon_id: string
+      new_hp: number
+      max_hp: number
+      item_id: string
+      inventory: Record<string, number>
+    }
+    if (success) {
+      const store = useGameStore.getState()
+      store.updatePokemonInParty(pokemon_id, { current_hp: new_hp })
+      store.setInventory(inventory)
+    }
+  }
+
+  private handlePokeCenterHeal = (payload: unknown) => {
+    const { success, party } = payload as {
+      success: boolean
+      healed_pokemon: { id: string; new_hp: number }[]
+      party: Pokemon[]
+    }
+    if (success) {
+      const store = useGameStore.getState()
+      store.setParty(party)
+    }
   }
 
   private mapChatPayload(payload: ChatPayload): ChatMessageData {

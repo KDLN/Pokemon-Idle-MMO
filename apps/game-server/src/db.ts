@@ -251,6 +251,38 @@ export async function updatePokemonStats(pokemon: Pokemon): Promise<void> {
     .eq('id', pokemon.id)
 }
 
+// Update only a Pokemon's current HP - includes ownership check for security
+export async function updatePokemonHP(
+  pokemonId: string,
+  currentHp: number,
+  ownerId?: string
+): Promise<boolean> {
+  let query = supabase
+    .from('pokemon')
+    .update({ current_hp: currentHp })
+    .eq('id', pokemonId)
+
+  // If ownerId provided, verify ownership (defense in depth)
+  if (ownerId) {
+    query = query.eq('owner_id', ownerId)
+  }
+
+  const { data, error } = await query.select()
+
+  if (error) {
+    console.error('Failed to update Pokemon HP:', error)
+    return false
+  }
+
+  // If no rows were updated, either Pokemon doesn't exist or ownership check failed
+  if (!data || data.length === 0) {
+    console.error('Pokemon HP update failed: no matching Pokemon found')
+    return false
+  }
+
+  return true
+}
+
 export async function getPlayerBox(playerId: string): Promise<Pokemon[]> {
   const { data, error } = await supabase
     .from('pokemon')
@@ -379,6 +411,105 @@ export async function getPlayerInventory(playerId: string): Promise<Record<strin
     inventory[item.item_id] = item.quantity
   }
   return inventory
+}
+
+// Add an inventory item (increment quantity) - used for refunds/compensation
+export async function addInventoryItem(
+  playerId: string,
+  itemId: string,
+  quantity: number = 1
+): Promise<boolean> {
+  const { data: existing } = await supabase
+    .from('inventory')
+    .select('quantity')
+    .eq('player_id', playerId)
+    .eq('item_id', itemId)
+    .single()
+
+  const currentQuantity = existing?.quantity || 0
+  const newQuantity = currentQuantity + quantity
+
+  const { error } = await supabase
+    .from('inventory')
+    .upsert({ player_id: playerId, item_id: itemId, quantity: newQuantity })
+
+  if (error) {
+    console.error('Failed to add inventory item:', error)
+    return false
+  }
+  return true
+}
+
+// Use an inventory item (decrement quantity) - uses optimistic locking to prevent race conditions
+export async function useInventoryItem(
+  playerId: string,
+  itemId: string,
+  quantity: number = 1
+): Promise<{ success: boolean; newQuantity: number; error?: string }> {
+  // Read current quantity
+  const { data: existing } = await supabase
+    .from('inventory')
+    .select('quantity')
+    .eq('player_id', playerId)
+    .eq('item_id', itemId)
+    .single()
+
+  const currentQuantity = existing?.quantity || 0
+  if (currentQuantity < quantity) {
+    return { success: false, newQuantity: currentQuantity, error: 'Not enough items' }
+  }
+
+  const newQuantity = currentQuantity - quantity
+
+  // Use optimistic locking: only update if quantity hasn't changed since we read it
+  // This prevents race conditions where two concurrent operations both try to use the same item
+  if (newQuantity === 0) {
+    // Delete the row and use .select() to verify deletion happened
+    const { data, error } = await supabase
+      .from('inventory')
+      .delete()
+      .eq('player_id', playerId)
+      .eq('item_id', itemId)
+      .eq('quantity', currentQuantity) // Optimistic lock
+      .select()
+
+    // If no rows were deleted, another operation modified the quantity
+    if (error || !data || data.length === 0) {
+      return { success: false, newQuantity: currentQuantity, error: 'Item was modified, please try again' }
+    }
+  } else {
+    // Update and use .select() to verify update happened
+    const { data, error } = await supabase
+      .from('inventory')
+      .update({ quantity: newQuantity })
+      .eq('player_id', playerId)
+      .eq('item_id', itemId)
+      .eq('quantity', currentQuantity) // Optimistic lock
+      .select()
+
+    // If no rows were updated, another operation modified the quantity
+    if (error || !data || data.length === 0) {
+      return { success: false, newQuantity: currentQuantity, error: 'Item was modified, please try again' }
+    }
+  }
+
+  return { success: true, newQuantity }
+}
+
+// Get potion heal amount by item id
+export function getPotionHealAmount(itemId: string): number {
+  switch (itemId) {
+    case 'potion':
+      return 20
+    case 'super_potion':
+      return 50
+    case 'hyper_potion':
+      return 200
+    case 'max_potion':
+      return 9999 // Full heal
+    default:
+      return 0
+  }
 }
 
 interface ChatMessageRow {
