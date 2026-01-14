@@ -1,7 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect, type ReactNode } from 'react'
+import { useState, useRef, useLayoutEffect, useEffect, useId, type ReactNode } from 'react'
 import { cn } from '@/lib/ui'
+
+// Constants for positioning
+const VIEWPORT_PADDING = 8
+const TOOLTIP_OFFSET = 8
 
 interface TooltipProps {
   children: ReactNode
@@ -23,6 +27,7 @@ export function Tooltip({
   const triggerRef = useRef<HTMLDivElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const tooltipId = useId()
 
   const showTooltip = () => {
     timeoutRef.current = setTimeout(() => {
@@ -37,7 +42,22 @@ export function Tooltip({
     setIsVisible(false)
   }
 
+  // Handle Escape key to dismiss tooltip
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isVisible) {
+        hideTooltip()
+      }
+    }
+
+    if (isVisible) {
+      document.addEventListener('keydown', handleKeyDown)
+      return () => document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isVisible])
+
+  // Use useLayoutEffect to position tooltip before paint to avoid flicker
+  useLayoutEffect(() => {
     if (isVisible && triggerRef.current && tooltipRef.current) {
       const triggerRect = triggerRef.current.getBoundingClientRect()
       const tooltipRect = tooltipRef.current.getBoundingClientRect()
@@ -48,26 +68,25 @@ export function Tooltip({
       switch (position) {
         case 'top':
           x = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2
-          y = triggerRect.top - tooltipRect.height - 8
+          y = triggerRect.top - tooltipRect.height - TOOLTIP_OFFSET
           break
         case 'bottom':
           x = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2
-          y = triggerRect.bottom + 8
+          y = triggerRect.bottom + TOOLTIP_OFFSET
           break
         case 'left':
-          x = triggerRect.left - tooltipRect.width - 8
+          x = triggerRect.left - tooltipRect.width - TOOLTIP_OFFSET
           y = triggerRect.top + (triggerRect.height - tooltipRect.height) / 2
           break
         case 'right':
-          x = triggerRect.right + 8
+          x = triggerRect.right + TOOLTIP_OFFSET
           y = triggerRect.top + (triggerRect.height - tooltipRect.height) / 2
           break
       }
 
       // Keep tooltip within viewport
-      const padding = 8
-      x = Math.max(padding, Math.min(x, window.innerWidth - tooltipRect.width - padding))
-      y = Math.max(padding, Math.min(y, window.innerHeight - tooltipRect.height - padding))
+      x = Math.max(VIEWPORT_PADDING, Math.min(x, window.innerWidth - tooltipRect.width - VIEWPORT_PADDING))
+      y = Math.max(VIEWPORT_PADDING, Math.min(y, window.innerHeight - tooltipRect.height - VIEWPORT_PADDING))
 
       setCoords({ x, y })
     }
@@ -89,6 +108,7 @@ export function Tooltip({
         onMouseLeave={hideTooltip}
         onFocus={showTooltip}
         onBlur={hideTooltip}
+        aria-describedby={isVisible ? tooltipId : undefined}
         className={cn('inline-block', className)}
       >
         {children}
@@ -96,6 +116,8 @@ export function Tooltip({
       {isVisible && (
         <div
           ref={tooltipRef}
+          id={tooltipId}
+          role="tooltip"
           className="fixed z-50 pointer-events-none animate-fade-in"
           style={{ left: coords.x, top: coords.y }}
         >
