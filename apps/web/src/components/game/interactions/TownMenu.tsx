@@ -89,8 +89,8 @@ export function TownMenu({ onAction }: TownMenuProps) {
     }
 
     if (actionType === 'shop') {
-      const { setShopOpen } = useGameStore.getState()
-      setShopOpen(true)
+      // Request shop data from server (server will open shop when data is received)
+      gameSocket.getShop()
     }
 
     if (actionType === 'gym') {
