@@ -36,6 +36,8 @@ class GameSocket {
     this.handlers.set('gym_battle_result', this.handleGymBattleResult)
     this.handlers.set('chat_history', this.handleChatHistory)
     this.handlers.set('chat_message', this.handleChatMessage)
+    this.handlers.set('potion_used', this.handlePotionUsed)
+    this.handlers.set('pokecenter_heal', this.handlePokeCenterHeal)
     this.handlers.set('error', this.handleError)
   }
 
@@ -165,6 +167,16 @@ class GameSocket {
   // Send a chat message to the server
   sendChatMessage(channel: ChatChannel, content: string) {
     this.send('chat_message', { channel, content })
+  }
+
+  // Use a potion on a Pokemon
+  usePotion(pokemonId: string, itemId: string) {
+    this.send('use_potion', { pokemon_id: pokemonId, item_id: itemId })
+  }
+
+  // Heal all Pokemon at PokeCenter (free)
+  healAtPokeCenter() {
+    this.send('heal_at_pokecenter')
   }
 
   // Message handlers - using arrow functions to avoid binding issues
@@ -332,6 +344,34 @@ class GameSocket {
   private handleChatMessage = (payload: unknown) => {
     const chatMessage = this.mapChatPayload(payload as ChatPayload)
     useGameStore.getState().addChatMessage(chatMessage)
+  }
+
+  private handlePotionUsed = (payload: unknown) => {
+    const { success, pokemon_id, new_hp, inventory } = payload as {
+      success: boolean
+      pokemon_id: string
+      new_hp: number
+      max_hp: number
+      item_id: string
+      inventory: Record<string, number>
+    }
+    if (success) {
+      const store = useGameStore.getState()
+      store.updatePokemonInParty(pokemon_id, { current_hp: new_hp })
+      store.setInventory(inventory)
+    }
+  }
+
+  private handlePokeCenterHeal = (payload: unknown) => {
+    const { success, party } = payload as {
+      success: boolean
+      healed_pokemon: { id: string; new_hp: number }[]
+      party: Pokemon[]
+    }
+    if (success) {
+      const store = useGameStore.getState()
+      store.setParty(party)
+    }
   }
 
   private mapChatPayload(payload: ChatPayload): ChatMessageData {

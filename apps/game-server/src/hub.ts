@@ -14,6 +14,7 @@ import {
   updatePlayerLastOnline,
   updatePlayerZone,
   updatePokemonStats,
+  updatePokemonHP,
   saveCaughtPokemon,
   updatePokedex,
   swapPartyMember,
@@ -22,6 +23,8 @@ import {
   updatePlayerMoney,
   buyItem,
   getPlayerInventory,
+  useInventoryItem,
+  getPotionHealAmount,
   SHOP_ITEMS,
   getGymLeaderByZone,
   hasPlayerDefeatedGym,
@@ -206,6 +209,12 @@ export class GameHub {
           break
         case 'chat_message':
           this.handleChatMessage(client, msg.payload as { channel: ChatChannel; content: string })
+          break
+        case 'use_potion':
+          this.handleUsePotion(client, msg.payload as { pokemon_id: string; item_id: string })
+          break
+        case 'heal_at_pokecenter':
+          this.handleHealAtPokeCenter(client)
           break
         default:
           console.log('Unknown message type:', msg.type)
@@ -479,6 +488,85 @@ export class GameHub {
     }
 
     this.send(client, 'gym_battle_result', result)
+  }
+
+  private async handleUsePotion(client: Client, payload: { pokemon_id: string; item_id: string }) {
+    if (!client.session) return
+
+    const { pokemon_id, item_id } = payload
+
+    // Find the Pokemon in party
+    const pokemon = client.session.party.find(p => p?.id === pokemon_id)
+    if (!pokemon) {
+      this.sendError(client, 'Pokemon not found in party')
+      return
+    }
+
+    // Check if Pokemon needs healing
+    if (pokemon.current_hp >= pokemon.max_hp) {
+      this.sendError(client, 'Pokemon is already at full HP')
+      return
+    }
+
+    // Get heal amount for this potion type
+    const healAmount = getPotionHealAmount(item_id)
+    if (healAmount === 0) {
+      this.sendError(client, 'Invalid potion type')
+      return
+    }
+
+    // Use the item from inventory
+    const result = await useInventoryItem(client.session.player.id, item_id)
+    if (!result.success) {
+      this.sendError(client, result.error || 'Not enough potions')
+      return
+    }
+
+    // Calculate new HP (clamped to max)
+    const newHp = Math.min(pokemon.current_hp + healAmount, pokemon.max_hp)
+    pokemon.current_hp = newHp
+
+    // Save to database
+    await updatePokemonHP(pokemon.id, newHp)
+
+    // Get updated inventory
+    const inventory = await getPlayerInventory(client.session.player.id)
+
+    this.send(client, 'potion_used', {
+      success: true,
+      pokemon_id,
+      new_hp: newHp,
+      max_hp: pokemon.max_hp,
+      item_id,
+      inventory
+    })
+  }
+
+  private async handleHealAtPokeCenter(client: Client) {
+    if (!client.session) return
+
+    // Check if player is in a town
+    if (client.session.zone.zone_type !== 'town') {
+      this.sendError(client, 'You must be in a town to use the PokeCenter')
+      return
+    }
+
+    // Heal all party Pokemon to full HP
+    const healedPokemon: { id: string; new_hp: number }[] = []
+
+    for (const pokemon of client.session.party) {
+      if (pokemon && pokemon.current_hp < pokemon.max_hp) {
+        pokemon.current_hp = pokemon.max_hp
+        await updatePokemonHP(pokemon.id, pokemon.max_hp)
+        healedPokemon.push({ id: pokemon.id, new_hp: pokemon.max_hp })
+      }
+    }
+
+    this.send(client, 'pokecenter_heal', {
+      success: true,
+      healed_pokemon: healedPokemon,
+      party: client.session.party
+    })
   }
 
   private async processTicks() {

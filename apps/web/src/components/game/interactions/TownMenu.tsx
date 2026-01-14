@@ -79,9 +79,10 @@ export function TownMenu({ onAction }: TownMenuProps) {
   const actions = getTownActions(currentZone.name)
 
   const handleAction = async (actionType: string) => {
-    if (actionType === 'heal') {
+    if (actionType === 'pokecenter') {
       setIsHealing(true)
-      // TODO: Call heal endpoint
+      gameSocket.healAtPokeCenter()
+      // Brief animation delay
       setTimeout(() => {
         setIsHealing(false)
       }, 1500)
@@ -126,8 +127,8 @@ export function TownMenu({ onAction }: TownMenuProps) {
       {isHealing && (
         <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center z-10">
           <div className="text-center">
-            <div className="text-4xl animate-pulse mb-2">💊</div>
-            <div className="text-white font-medium">Healing...</div>
+            <div className="text-4xl animate-pulse mb-2">🏥</div>
+            <div className="text-white font-medium">Healing your Pokemon...</div>
           </div>
         </div>
       )}

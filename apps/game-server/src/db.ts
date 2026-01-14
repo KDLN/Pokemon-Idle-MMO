@@ -251,6 +251,14 @@ export async function updatePokemonStats(pokemon: Pokemon): Promise<void> {
     .eq('id', pokemon.id)
 }
 
+// Update only a Pokemon's current HP
+export async function updatePokemonHP(pokemonId: string, currentHp: number): Promise<void> {
+  await supabase
+    .from('pokemon')
+    .update({ current_hp: currentHp })
+    .eq('id', pokemonId)
+}
+
 export async function getPlayerBox(playerId: string): Promise<Pokemon[]> {
   const { data, error } = await supabase
     .from('pokemon')
@@ -379,6 +387,59 @@ export async function getPlayerInventory(playerId: string): Promise<Record<strin
     inventory[item.item_id] = item.quantity
   }
   return inventory
+}
+
+// Use an inventory item (decrement quantity)
+export async function useInventoryItem(
+  playerId: string,
+  itemId: string,
+  quantity: number = 1
+): Promise<{ success: boolean; newQuantity: number; error?: string }> {
+  const { data: existing } = await supabase
+    .from('inventory')
+    .select('quantity')
+    .eq('player_id', playerId)
+    .eq('item_id', itemId)
+    .single()
+
+  const currentQuantity = existing?.quantity || 0
+  if (currentQuantity < quantity) {
+    return { success: false, newQuantity: currentQuantity, error: 'Not enough items' }
+  }
+
+  const newQuantity = currentQuantity - quantity
+
+  if (newQuantity === 0) {
+    await supabase
+      .from('inventory')
+      .delete()
+      .eq('player_id', playerId)
+      .eq('item_id', itemId)
+  } else {
+    await supabase
+      .from('inventory')
+      .update({ quantity: newQuantity })
+      .eq('player_id', playerId)
+      .eq('item_id', itemId)
+  }
+
+  return { success: true, newQuantity }
+}
+
+// Get potion heal amount by item id
+export function getPotionHealAmount(itemId: string): number {
+  switch (itemId) {
+    case 'potion':
+      return 20
+    case 'super_potion':
+      return 50
+    case 'hyper_potion':
+      return 200
+    case 'max_potion':
+      return 9999 // Full heal
+    default:
+      return 0
+  }
 }
 
 interface ChatMessageRow {
