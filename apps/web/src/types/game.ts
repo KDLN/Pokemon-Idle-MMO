@@ -232,13 +232,26 @@ export const STARTER_POKEMON = [
   { id: 7, name: 'Squirtle', type: 'Water' },
 ] as const
 
+// Pokemon sprite variant options
+export type PokemonSpriteVariant = 'front' | 'back'
+
 // Pokemon sprite URL helper
-export function getPokemonSpriteUrl(speciesId: number, isShiny: boolean = false): string {
-  // Using PokeAPI sprites
-  if (isShiny) {
-    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${speciesId}.png`
+export function getPokemonSpriteUrl(
+  speciesId: number,
+  isShiny: boolean = false,
+  variant: PokemonSpriteVariant = 'front'
+): string {
+  const base = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon'
+
+  if (variant === 'back') {
+    return isShiny
+      ? `${base}/back/shiny/${speciesId}.png`
+      : `${base}/back/${speciesId}.png`
   }
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${speciesId}.png`
+
+  return isShiny
+    ? `${base}/shiny/${speciesId}.png`
+    : `${base}/${speciesId}.png`
 }
 
 // XP calculation helpers

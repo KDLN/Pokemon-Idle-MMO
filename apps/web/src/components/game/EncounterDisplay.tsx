@@ -203,7 +203,7 @@ export function EncounterDisplay() {
             level: leadPokemon?.level || 1,
             currentHp: Math.round((battle.playerHPPercent / 100) * (leadPokemon?.max_hp || 100)),
             maxHp: leadPokemon?.max_hp || 100,
-            sprite: leadPokemon ? getPokemonSpriteUrl(leadPokemon.species_id, leadPokemon.is_shiny) : '',
+            sprite: leadPokemon ? getPokemonSpriteUrl(leadPokemon.species_id, leadPokemon.is_shiny, 'back') : '',
             expPercent: 45,
           }}
           enemyPokemon={{

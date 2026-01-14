@@ -508,7 +508,7 @@ export function GymBattlePanel() {
                 level: currentMatchup.player_level,
                 currentHp: playerHP,
                 maxHp: playerMaxHP,
-                sprite: getPokemonSpriteUrl(currentMatchup.player_species_id),
+                sprite: getPokemonSpriteUrl(currentMatchup.player_species_id, false, 'back'),
                 expPercent: 45,
               }}
               enemyPokemon={{
