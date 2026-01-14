@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useLayoutEffect, useEffect, useId, type ReactNode } from 'react'
+import { useState, useRef, useLayoutEffect, useEffect, useId, useCallback, type ReactNode } from 'react'
 import { cn } from '@/lib/ui'
 
 // Constants for positioning
@@ -23,24 +23,26 @@ export function Tooltip({
   className,
 }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false)
+  const [isPositioned, setIsPositioned] = useState(false)
   const [coords, setCoords] = useState({ x: 0, y: 0 })
   const triggerRef = useRef<HTMLDivElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const tooltipId = useId()
 
-  const showTooltip = () => {
+  const showTooltip = useCallback(() => {
     timeoutRef.current = setTimeout(() => {
       setIsVisible(true)
     }, delay)
-  }
+  }, [delay])
 
-  const hideTooltip = () => {
+  const hideTooltip = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
     }
     setIsVisible(false)
-  }
+    setIsPositioned(false)
+  }, [])
 
   // Handle Escape key to dismiss tooltip
   useEffect(() => {
@@ -54,7 +56,7 @@ export function Tooltip({
       document.addEventListener('keydown', handleKeyDown)
       return () => document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isVisible])
+  }, [isVisible, hideTooltip])
 
   // Use useLayoutEffect to position tooltip before paint to avoid flicker
   useLayoutEffect(() => {
@@ -89,6 +91,7 @@ export function Tooltip({
       y = Math.max(VIEWPORT_PADDING, Math.min(y, window.innerHeight - tooltipRect.height - VIEWPORT_PADDING))
 
       setCoords({ x, y })
+      setIsPositioned(true)
     }
   }, [isVisible, position])
 
@@ -104,6 +107,7 @@ export function Tooltip({
     <>
       <div
         ref={triggerRef}
+        tabIndex={0}
         onMouseEnter={showTooltip}
         onMouseLeave={hideTooltip}
         onFocus={showTooltip}
@@ -118,7 +122,10 @@ export function Tooltip({
           ref={tooltipRef}
           id={tooltipId}
           role="tooltip"
-          className="fixed z-50 pointer-events-none animate-fade-in"
+          className={cn(
+            'fixed z-50 pointer-events-none',
+            isPositioned ? 'animate-fade-in' : 'opacity-0'
+          )}
           style={{ left: coords.x, top: coords.y }}
         >
           {content}
