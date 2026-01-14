@@ -413,6 +413,33 @@ export async function getPlayerInventory(playerId: string): Promise<Record<strin
   return inventory
 }
 
+// Add an inventory item (increment quantity) - used for refunds/compensation
+export async function addInventoryItem(
+  playerId: string,
+  itemId: string,
+  quantity: number = 1
+): Promise<boolean> {
+  const { data: existing } = await supabase
+    .from('inventory')
+    .select('quantity')
+    .eq('player_id', playerId)
+    .eq('item_id', itemId)
+    .single()
+
+  const currentQuantity = existing?.quantity || 0
+  const newQuantity = currentQuantity + quantity
+
+  const { error } = await supabase
+    .from('inventory')
+    .upsert({ player_id: playerId, item_id: itemId, quantity: newQuantity })
+
+  if (error) {
+    console.error('Failed to add inventory item:', error)
+    return false
+  }
+  return true
+}
+
 // Use an inventory item (decrement quantity) - uses optimistic locking to prevent race conditions
 export async function useInventoryItem(
   playerId: string,

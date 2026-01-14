@@ -24,6 +24,7 @@ import {
   buyItem,
   getPlayerInventory,
   useInventoryItem,
+  addInventoryItem,
   getPotionHealAmount,
   SHOP_ITEMS,
   getGymLeaderByZone,
@@ -528,7 +529,9 @@ export class GameHub {
     // Save to database - pass owner ID for security verification
     const hpUpdated = await updatePokemonHP(pokemon.id, newHp, client.session.player.id)
     if (!hpUpdated) {
-      this.sendError(client, 'Failed to heal Pokemon')
+      // Compensating transaction: refund the potion since HP update failed
+      await addInventoryItem(client.session.player.id, item_id, 1)
+      this.sendError(client, 'Failed to heal Pokemon, potion refunded')
       return
     }
 
@@ -578,24 +581,26 @@ export class GameHub {
       pokemonToHeal.map(pokemon => updatePokemonHP(pokemon.id, pokemon.max_hp, playerId))
     )
 
-    // Check if all updates succeeded
+    // Update in-memory state for successfully healed Pokemon (even if some failed)
+    const healedPokemon: { id: string; new_hp: number }[] = []
+    pokemonToHeal.forEach((pokemon, index) => {
+      if (healResults[index]) {
+        pokemon.current_hp = pokemon.max_hp
+        healedPokemon.push({ id: pokemon.id, new_hp: pokemon.max_hp })
+      }
+    })
+
+    // Report partial success if some Pokemon weren't healed
     const allSucceeded = healResults.every(result => result)
     if (!allSucceeded) {
-      this.sendError(client, 'Failed to heal some Pokemon')
-      return
-    }
-
-    // Update in-memory state only after all DB operations succeed
-    const healedPokemon: { id: string; new_hp: number }[] = []
-    for (const pokemon of pokemonToHeal) {
-      pokemon.current_hp = pokemon.max_hp
-      healedPokemon.push({ id: pokemon.id, new_hp: pokemon.max_hp })
+      console.warn(`PokeCenter partial failure: healed ${healedPokemon.length}/${pokemonToHeal.length} Pokemon`)
     }
 
     this.send(client, 'pokecenter_heal', {
-      success: true,
+      success: healedPokemon.length > 0,
       healed_pokemon: healedPokemon,
-      party: client.session.party
+      party: client.session.party,
+      partial_failure: !allSucceeded
     })
   }
 
