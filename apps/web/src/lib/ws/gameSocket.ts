@@ -228,7 +228,7 @@ class GameSocket {
   }
 
   private handleGameState = (payload: unknown) => {
-    const state = payload as GameState
+    const state = payload as GameState & { inventory?: Record<string, number> }
     const store = useGameStore.getState()
 
     store.setPlayer(state.player)
@@ -237,6 +237,9 @@ class GameSocket {
     store.setPokeballs(state.pokeballs)
     store.setPokedollars(state.pokedollars)
     store.setBox(state.box || [])
+    if (state.inventory) {
+      store.setInventory(state.inventory)
+    }
     store.setLoading(false)
   }
 

@@ -635,9 +635,10 @@ export class GameHub {
   private async sendGameState(client: Client) {
     if (!client.session) return
 
-    const [connectedZones, box] = await Promise.all([
+    const [connectedZones, box, inventory] = await Promise.all([
       getConnectedZones(client.session.zone.id),
-      getPlayerBox(client.session.player.id)
+      getPlayerBox(client.session.player.id),
+      getPlayerInventory(client.session.player.id)
     ])
 
     this.send(client, 'game_state', {
@@ -647,7 +648,8 @@ export class GameHub {
       connected_zones: connectedZones,
       pokeballs: client.session.pokeballs,
       pokedollars: client.session.pokedollars,
-      box
+      box,
+      inventory
     })
   }
 
