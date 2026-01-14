@@ -211,6 +211,7 @@ export interface PlayerSession {
   tickNumber: number
   encounterTable: EncounterTableEntry[]
   pokedollars: number
+  encounterCooldown: number // Ticks remaining before next encounter can occur
 }
 
 export interface WSMessage {

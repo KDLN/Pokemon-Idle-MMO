@@ -179,7 +179,8 @@ export class GameHub {
       great_balls,
       tickNumber: 0,
       encounterTable,
-      pokedollars: player.pokedollars
+      pokedollars: player.pokedollars,
+      encounterCooldown: 0
     }
   }
 
