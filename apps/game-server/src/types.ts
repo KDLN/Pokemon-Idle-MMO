@@ -230,3 +230,24 @@ export interface ChatMessageEntry {
   content: string
   created_at: string
 }
+
+// Friend system types
+export type FriendStatus = 'pending' | 'accepted' | 'blocked'
+
+export interface Friend {
+  friend_id: string
+  player_id: string
+  friend_player_id: string
+  status: FriendStatus
+  created_at: string
+  // Joined data for display
+  friend_username?: string
+  friend_last_online?: string
+}
+
+export interface FriendRequest {
+  friend_id: string
+  from_player_id: string
+  from_username: string
+  created_at: string
+}

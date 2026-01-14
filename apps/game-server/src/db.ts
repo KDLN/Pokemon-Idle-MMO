@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry } from './types.js'
+import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus } from './types.js'
 
 let supabase: SupabaseClient
 
@@ -774,4 +774,251 @@ export async function getPlayerBadges(playerId: string): Promise<string[]> {
 
   if (error) return []
   return data?.badges || []
+}
+
+// ============================================
+// FRIEND QUERIES
+// ============================================
+
+// Get player by username (for friend requests)
+export async function getPlayerByUsername(username: string): Promise<Player | null> {
+  const { data, error } = await supabase
+    .from('players')
+    .select('*')
+    .ilike('username', username)
+    .single()
+
+  if (error) return null
+  return {
+    ...data,
+    badges: data.badges || []
+  }
+}
+
+// Send a friend request
+export async function sendFriendRequest(
+  playerId: string,
+  friendPlayerId: string
+): Promise<{ success: boolean; error?: string; friend_id?: string }> {
+  // Check for existing relationship (in either direction)
+  const { data: existing } = await supabase
+    .from('friends')
+    .select('friend_id, status, player_id')
+    .or(`and(player_id.eq.${playerId},friend_player_id.eq.${friendPlayerId}),and(player_id.eq.${friendPlayerId},friend_player_id.eq.${playerId})`)
+
+  if (existing && existing.length > 0) {
+    const record = existing[0]
+    if (record.status === 'accepted') {
+      return { success: false, error: 'Already friends' }
+    }
+    if (record.status === 'pending') {
+      // If the other player sent us a request, auto-accept it
+      if (record.player_id === friendPlayerId) {
+        const { error } = await supabase
+          .from('friends')
+          .update({ status: 'accepted' })
+          .eq('friend_id', record.friend_id)
+
+        if (error) return { success: false, error: 'Failed to accept request' }
+        return { success: true, friend_id: record.friend_id }
+      }
+      return { success: false, error: 'Friend request already sent' }
+    }
+    if (record.status === 'blocked') {
+      return { success: false, error: 'Cannot send request' }
+    }
+  }
+
+  // Create new friend request
+  const { data, error } = await supabase
+    .from('friends')
+    .insert({
+      player_id: playerId,
+      friend_player_id: friendPlayerId,
+      status: 'pending'
+    })
+    .select('friend_id')
+    .single()
+
+  if (error) {
+    console.error('Failed to send friend request:', error)
+    return { success: false, error: 'Failed to send request' }
+  }
+
+  return { success: true, friend_id: data.friend_id }
+}
+
+// Accept a friend request
+export async function acceptFriendRequest(
+  playerId: string,
+  friendId: string
+): Promise<{ success: boolean; error?: string }> {
+  // Verify the request exists and is for this player
+  const { data: request, error: fetchError } = await supabase
+    .from('friends')
+    .select('*')
+    .eq('friend_id', friendId)
+    .eq('friend_player_id', playerId)
+    .eq('status', 'pending')
+    .single()
+
+  if (fetchError || !request) {
+    return { success: false, error: 'Friend request not found' }
+  }
+
+  const { error } = await supabase
+    .from('friends')
+    .update({ status: 'accepted' })
+    .eq('friend_id', friendId)
+
+  if (error) {
+    console.error('Failed to accept friend request:', error)
+    return { success: false, error: 'Failed to accept request' }
+  }
+
+  return { success: true }
+}
+
+// Decline or cancel a friend request
+export async function declineFriendRequest(
+  playerId: string,
+  friendId: string
+): Promise<{ success: boolean; error?: string }> {
+  // Can decline if you received it OR cancel if you sent it
+  const { data, error } = await supabase
+    .from('friends')
+    .delete()
+    .eq('friend_id', friendId)
+    .eq('status', 'pending')
+    .or(`player_id.eq.${playerId},friend_player_id.eq.${playerId}`)
+    .select()
+
+  if (error || !data || data.length === 0) {
+    return { success: false, error: 'Friend request not found' }
+  }
+
+  return { success: true }
+}
+
+// Helper to extract username from Supabase join result
+function extractUsernameFromJoin(player: unknown): string {
+  if (!player) return 'Unknown'
+  if (Array.isArray(player)) {
+    return (player[0] as { username?: string })?.username || 'Unknown'
+  }
+  return (player as { username?: string }).username || 'Unknown'
+}
+
+// Get incoming friend requests
+export async function getIncomingFriendRequests(playerId: string): Promise<FriendRequest[]> {
+  const { data, error } = await supabase
+    .from('friends')
+    .select(`
+      friend_id,
+      player_id,
+      created_at,
+      sender:players!friends_player_id_fkey(username)
+    `)
+    .eq('friend_player_id', playerId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+
+  if (error || !data) return []
+
+  return data.map(row => ({
+    friend_id: row.friend_id,
+    from_player_id: row.player_id,
+    from_username: extractUsernameFromJoin(row.sender),
+    created_at: row.created_at
+  }))
+}
+
+// Get outgoing friend requests
+export async function getOutgoingFriendRequests(playerId: string): Promise<FriendRequest[]> {
+  const { data, error } = await supabase
+    .from('friends')
+    .select(`
+      friend_id,
+      friend_player_id,
+      created_at,
+      recipient:players!friends_friend_player_id_fkey(username)
+    `)
+    .eq('player_id', playerId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+
+  if (error || !data) return []
+
+  return data.map(row => ({
+    friend_id: row.friend_id,
+    from_player_id: row.friend_player_id,
+    from_username: extractUsernameFromJoin(row.recipient),
+    created_at: row.created_at
+  }))
+}
+
+// Get accepted friends list
+export async function getFriendsList(playerId: string): Promise<Friend[]> {
+  // Query friends where player is either the requester or recipient
+  const { data, error } = await supabase
+    .from('friends')
+    .select(`
+      friend_id,
+      player_id,
+      friend_player_id,
+      status,
+      created_at
+    `)
+    .eq('status', 'accepted')
+    .or(`player_id.eq.${playerId},friend_player_id.eq.${playerId}`)
+    .order('created_at', { ascending: false })
+
+  if (error || !data) return []
+
+  // Get unique friend player IDs
+  const friendPlayerIds = data.map(row =>
+    row.player_id === playerId ? row.friend_player_id : row.player_id
+  )
+
+  // Fetch friend usernames and last online
+  const { data: players } = await supabase
+    .from('players')
+    .select('id, username, last_online')
+    .in('id', friendPlayerIds)
+
+  const playerMap = new Map(players?.map(p => [p.id, p]) || [])
+
+  return data.map(row => {
+    const friendId = row.player_id === playerId ? row.friend_player_id : row.player_id
+    const friendData = playerMap.get(friendId)
+    return {
+      friend_id: row.friend_id,
+      player_id: row.player_id,
+      friend_player_id: row.friend_player_id,
+      status: row.status as FriendStatus,
+      created_at: row.created_at,
+      friend_username: friendData?.username,
+      friend_last_online: friendData?.last_online
+    }
+  })
+}
+
+// Remove a friend
+export async function removeFriend(
+  playerId: string,
+  friendId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase
+    .from('friends')
+    .delete()
+    .eq('friend_id', friendId)
+    .eq('status', 'accepted')
+    .or(`player_id.eq.${playerId},friend_player_id.eq.${playerId}`)
+    .select()
+
+  if (error || !data || data.length === 0) {
+    return { success: false, error: 'Friend not found' }
+  }
+
+  return { success: true }
 }
