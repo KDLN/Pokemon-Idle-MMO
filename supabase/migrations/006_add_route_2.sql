@@ -19,6 +19,9 @@ INSERT INTO pokemon_species (id, name, type1, type2, base_hp, base_attack, base_
 INSERT INTO zones (id, name, zone_type, base_encounter_rate, min_level, max_level) VALUES
   (4, 'Route 2', 'route', 0.0333, 3, 7);
 
+-- Reset sequence to continue from 5
+SELECT setval('zones_id_seq', 4);
+
 -- ============================================
 -- 3. Add zone connections (bidirectional)
 -- ============================================
