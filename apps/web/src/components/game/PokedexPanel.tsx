@@ -4,25 +4,22 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getPokemonSpriteUrl } from '@/types/game'
 import type { PokedexEntry } from '@/types/game'
+import { SPECIES_DATA, getTypeColor } from '@/lib/ui'
 
-// All available Pokemon species with type colors
-const ALL_SPECIES = [
-  { id: 1, name: 'Bulbasaur', type: 'GRASS', color: '#78C850' },
-  { id: 4, name: 'Charmander', type: 'FIRE', color: '#F08030' },
-  { id: 7, name: 'Squirtle', type: 'WATER', color: '#6890F0' },
-  { id: 10, name: 'Caterpie', type: 'BUG', color: '#A8B820' },
-  { id: 11, name: 'Metapod', type: 'BUG', color: '#A8B820' },
-  { id: 13, name: 'Weedle', type: 'BUG', color: '#A8B820' },
-  { id: 14, name: 'Kakuna', type: 'BUG', color: '#A8B820' },
-  { id: 16, name: 'Pidgey', type: 'FLYING', color: '#A890F0' },
-  { id: 17, name: 'Pidgeotto', type: 'FLYING', color: '#A890F0' },
-  { id: 19, name: 'Rattata', type: 'NORMAL', color: '#A8A878' },
-  { id: 20, name: 'Raticate', type: 'NORMAL', color: '#A8A878' },
-  { id: 21, name: 'Spearow', type: 'FLYING', color: '#A890F0' },
-  { id: 29, name: 'Nidoran F', type: 'POISON', color: '#A040A0' },
-  { id: 32, name: 'Nidoran M', type: 'POISON', color: '#A040A0' },
-  { id: 43, name: 'Oddish', type: 'GRASS', color: '#78C850' },
-]
+// Available Pokemon IDs in the game (sorted by dex number)
+const AVAILABLE_SPECIES_IDS = [1, 4, 7, 10, 11, 13, 14, 16, 17, 19, 20, 21, 29, 32, 43]
+
+// Build species list from centralized SPECIES_DATA
+const ALL_SPECIES = AVAILABLE_SPECIES_IDS.map(id => {
+  const data = SPECIES_DATA[id]
+  return {
+    id,
+    name: data.name,
+    type: data.type,
+    type2: data.type2,
+    color: data.color,
+  }
+})
 
 interface PokedexPanelProps {
   isOpen: boolean
@@ -252,15 +249,23 @@ export function PokedexPanel({ isOpen, onClose }: PokedexPanelProps) {
                           {seen ? species.name : '???'}
                         </div>
 
-                        {/* Type badge */}
+                        {/* Type badges */}
                         {seen && (
-                          <div className="mt-2">
+                          <div className="mt-2 flex justify-center gap-1 flex-wrap">
                             <span
                               className="type-badge text-white"
-                              style={{ backgroundColor: species.color }}
+                              style={{ backgroundColor: getTypeColor(species.type) }}
                             >
                               {species.type}
                             </span>
+                            {species.type2 && (
+                              <span
+                                className="type-badge text-white"
+                                style={{ backgroundColor: getTypeColor(species.type2) }}
+                              >
+                                {species.type2}
+                              </span>
+                            )}
                           </div>
                         )}
 
