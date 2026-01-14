@@ -685,6 +685,10 @@ export function processEncounter(
   return { encounter, newPokeballs, newGreatBalls }
 }
 
+// Encounter cooldown duration in ticks (seconds)
+// This prevents rapid-fire encounters from overwhelming the client animation
+const ENCOUNTER_COOLDOWN_TICKS = 8
+
 // Process tick
 export function processTick(
   session: PlayerSession,
@@ -700,6 +704,12 @@ export function processTick(
 
   // Only process encounters in route zones
   if (session.zone.zone_type !== 'route') {
+    return result
+  }
+
+  // Decrement encounter cooldown if active
+  if (session.encounterCooldown > 0) {
+    session.encounterCooldown--
     return result
   }
 
@@ -721,6 +731,9 @@ export function processTick(
   if (!encounter) {
     return result
   }
+
+  // Set cooldown to prevent rapid-fire encounters
+  session.encounterCooldown = ENCOUNTER_COOLDOWN_TICKS
 
   session.pokeballs = newPokeballs
   session.great_balls = newGreatBalls
