@@ -5,18 +5,23 @@ import { createClient } from '@/lib/supabase/client'
 import { getPokemonSpriteUrl } from '@/types/game'
 import type { PokedexEntry } from '@/types/game'
 
-// All 10 MVP Pokemon species with type colors
+// All available Pokemon species with type colors
 const ALL_SPECIES = [
   { id: 1, name: 'Bulbasaur', type: 'GRASS', color: '#78C850' },
   { id: 4, name: 'Charmander', type: 'FIRE', color: '#F08030' },
   { id: 7, name: 'Squirtle', type: 'WATER', color: '#6890F0' },
   { id: 10, name: 'Caterpie', type: 'BUG', color: '#A8B820' },
+  { id: 11, name: 'Metapod', type: 'BUG', color: '#A8B820' },
   { id: 13, name: 'Weedle', type: 'BUG', color: '#A8B820' },
+  { id: 14, name: 'Kakuna', type: 'BUG', color: '#A8B820' },
   { id: 16, name: 'Pidgey', type: 'FLYING', color: '#A890F0' },
+  { id: 17, name: 'Pidgeotto', type: 'FLYING', color: '#A890F0' },
   { id: 19, name: 'Rattata', type: 'NORMAL', color: '#A8A878' },
+  { id: 20, name: 'Raticate', type: 'NORMAL', color: '#A8A878' },
   { id: 21, name: 'Spearow', type: 'FLYING', color: '#A890F0' },
   { id: 29, name: 'Nidoran F', type: 'POISON', color: '#A040A0' },
   { id: 32, name: 'Nidoran M', type: 'POISON', color: '#A040A0' },
+  { id: 43, name: 'Oddish', type: 'GRASS', color: '#78C850' },
 ]
 
 interface PokedexPanelProps {
