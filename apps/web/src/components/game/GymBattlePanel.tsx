@@ -529,6 +529,21 @@ export function GymBattlePanel() {
                   ? damageTarget === 'player' ? 'player' : 'enemy'
                   : null
               }
+              showFaint={
+                battlePhase === 'matchup_transition' && currentMatchup.outcome === 'gym_pokemon_faint' ? 'enemy' :
+                battlePhase === 'matchup_transition' && currentMatchup.outcome === 'player_pokemon_faint' ? 'player' :
+                null
+              }
+              showAttackSlash={
+                battlePhase === 'turn_damage' && currentTurn
+                  ? damageTarget === 'player' ? 'player' : 'enemy'
+                  : null
+              }
+              showHpDrain={
+                battlePhase === 'turn_damage'
+                  ? damageTarget === 'player' ? 'player' : 'enemy'
+                  : null
+              }
             >
               {/* Move info overlay */}
               {currentTurn && (

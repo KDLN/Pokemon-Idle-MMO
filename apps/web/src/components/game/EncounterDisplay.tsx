@@ -224,6 +224,21 @@ export function EncounterDisplay() {
               ? battle.damageTarget === 'player' ? 'player' : 'enemy'
               : null
           }
+          showFaint={
+            battle.phase === 'battle_end' && currentEncounter.battle_result === 'win' ? 'enemy' :
+            battle.phase === 'battle_end' && currentEncounter.battle_result === 'wipe' ? 'player' :
+            null
+          }
+          showAttackSlash={
+            battle.phase === 'turn_damage' && currentTurn
+              ? battle.damageTarget === 'player' ? 'player' : 'enemy'
+              : null
+          }
+          showHpDrain={
+            battle.phase === 'turn_damage'
+              ? battle.damageTarget === 'player' ? 'player' : 'enemy'
+              : null
+          }
         >
           {/* Move type badge in message box */}
           {currentTurn && battle.isInBattle && (
@@ -284,8 +299,8 @@ export function EncounterDisplay() {
                 battle.isCritical && 'critical'
               )}
               style={{
-                top: battle.damageTarget === 'wild' ? '20%' : '50%',
-                left: battle.damageTarget === 'wild' ? '70%' : '25%',
+                top: battle.damageTarget === 'wild' ? '25%' : '55%',
+                left: battle.damageTarget === 'wild' ? '70%' : '30%',
               }}
             >
               -{battle.damageAmount}
@@ -321,7 +336,7 @@ export function EncounterDisplay() {
 
           {/* Battle result overlay */}
           {(battle.phase === 'battle_end' || battle.phase === 'catch_result') && (
-            <div className="absolute top-[35%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-25">
+            <div className="absolute top-[35%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
               {battle.phase === 'battle_end' && currentEncounter.battle_result === 'win' && !currentEncounter.catch_result && (
                 <div className="px-8 py-4 rounded bg-[#3B4CCA] border-4 border-[#2A3A99] animate-pop-in">
                   <span className="font-pixel text-xl text-white tracking-wider">
@@ -362,7 +377,7 @@ export function EncounterDisplay() {
 
           {/* Rewards overlay */}
           {battle.phase === 'rewards' && currentEncounter.battle_result === 'win' && (
-            <div className="absolute top-[35%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-25">
+            <div className="absolute top-[35%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
               <div className="flex flex-col items-center gap-2">
                 {battleSeq && battleSeq.xp_earned > 0 && (
                   <div className="animate-reward-float px-4 py-2 bg-[#F8D030] border-2 border-[#A1871F] rounded font-pixel text-lg text-[#282828]">
@@ -381,9 +396,9 @@ export function EncounterDisplay() {
           {/* Sparkles for shiny/catch */}
           {(isShiny || caught) && battle.phase === 'catch_result' && (
             <>
-              <div className="absolute top-[20%] left-[20%] text-yellow-400 text-xl animate-sparkle">✦</div>
-              <div className="absolute top-[25%] right-[20%] text-yellow-300 text-lg animate-sparkle delay-200">✦</div>
-              <div className="absolute top-[45%] left-[25%] text-yellow-400 text-lg animate-sparkle delay-500">✦</div>
+              <div className="absolute top-[25%] left-[30%] text-yellow-400 text-lg animate-sparkle">✦</div>
+              <div className="absolute top-[20%] right-[30%] text-yellow-300 text-base animate-sparkle delay-200">✦</div>
+              <div className="absolute top-[40%] left-[35%] text-yellow-400 text-base animate-sparkle delay-500">✦</div>
             </>
           )}
         </div>

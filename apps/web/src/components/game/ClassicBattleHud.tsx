@@ -12,6 +12,7 @@ interface ClassicBattleHudProps {
   expPercent?: number
   side: 'enemy' | 'player'
   gender?: 'male' | 'female' | null
+  showHpDrain?: boolean
 }
 
 function getHpBarColor(percent: number): string {
@@ -29,7 +30,8 @@ export function ClassicBattleHud({
   showExpBar = false,
   expPercent = 0,
   side,
-  gender
+  gender,
+  showHpDrain = false
 }: ClassicBattleHudProps) {
   const hpPercent = maxHp > 0 ? (currentHp / maxHp) * 100 : 0
 
@@ -61,7 +63,11 @@ export function ClassicBattleHud({
           <div className="classic-hp-bar-container flex-1">
             <div className="classic-hp-bar-bg">
               <div
-                className={cn('classic-hp-bar-fill', getHpBarColor(hpPercent))}
+                className={cn(
+                  'classic-hp-bar-fill',
+                  getHpBarColor(hpPercent),
+                  showHpDrain && 'draining'
+                )}
                 style={{ width: `${Math.max(0, Math.min(100, hpPercent))}%` }}
               />
             </div>
@@ -120,6 +126,9 @@ interface ClassicBattleArenaProps {
   children?: React.ReactNode
   showAttackAnimation?: 'player' | 'enemy' | null
   showDamageFlash?: 'player' | 'enemy' | null
+  showFaint?: 'player' | 'enemy' | null
+  showAttackSlash?: 'player' | 'enemy' | null
+  showHpDrain?: 'player' | 'enemy' | null
 }
 
 export function ClassicBattleArena({
@@ -128,7 +137,10 @@ export function ClassicBattleArena({
   messageText,
   children,
   showAttackAnimation,
-  showDamageFlash
+  showDamageFlash,
+  showFaint,
+  showAttackSlash,
+  showHpDrain
 }: ClassicBattleArenaProps) {
   return (
     <div className="classic-battle-arena">
@@ -145,17 +157,25 @@ export function ClassicBattleArena({
             currentHp={enemyPokemon.currentHp}
             maxHp={enemyPokemon.maxHp}
             side="enemy"
+            showHpDrain={showHpDrain === 'enemy'}
           />
         </div>
 
         {/* Enemy Pokemon + Platform - right side */}
         <div className="classic-enemy-pokemon-area">
           <div className="classic-platform-enemy" />
+          {/* Attack slash effect */}
+          {showAttackSlash === 'enemy' && (
+            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+              <div className="animate-attack-slash text-4xl text-white opacity-80">✦</div>
+            </div>
+          )}
           <div
             className={cn(
               'classic-enemy-sprite',
               showAttackAnimation === 'enemy' && 'animate-attack-lunge-wild',
-              showDamageFlash === 'enemy' && 'animate-damage-flash'
+              showDamageFlash === 'enemy' && 'animate-damage-flash',
+              showFaint === 'enemy' && 'animate-pokemon-faint'
             )}
           >
             <img
@@ -173,11 +193,18 @@ export function ClassicBattleArena({
         {/* Player Pokemon + Platform - left side */}
         <div className="classic-player-pokemon-area">
           <div className="classic-platform-player" />
+          {/* Attack slash effect */}
+          {showAttackSlash === 'player' && (
+            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+              <div className="animate-attack-slash text-4xl text-white opacity-80">✦</div>
+            </div>
+          )}
           <div
             className={cn(
               'classic-player-sprite',
               showAttackAnimation === 'player' && 'animate-attack-lunge',
-              showDamageFlash === 'player' && 'animate-damage-flash'
+              showDamageFlash === 'player' && 'animate-damage-flash',
+              showFaint === 'player' && 'animate-pokemon-faint'
             )}
           >
             <img
@@ -200,6 +227,7 @@ export function ClassicBattleArena({
             showExpBar
             expPercent={playerPokemon.expPercent ?? 0}
             side="player"
+            showHpDrain={showHpDrain === 'player'}
           />
         </div>
       </div>
