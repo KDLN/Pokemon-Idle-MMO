@@ -22,6 +22,11 @@ const ZONE_DATA: Record<string, { description: string; icon: string; features: s
     icon: '🏛️',
     features: ['Pokemon Center', 'Poke Mart', 'Gym (Closed)'],
   },
+  'Route 2': {
+    description: 'A path through tall grass north of Viridian City.',
+    icon: '🌲',
+    features: ['Tall Grass', 'Wild Pokemon', 'Bug Catchers'],
+  },
 }
 
 export function ZoneDisplay() {
