@@ -177,24 +177,13 @@ export function GymBattlePanel() {
     setCurrentMatchupIndex(0)
     setCurrentTurnIndex(0)
     setMessageText(`Go, ${firstMatchup.player_pokemon_name}!`)
+    // Set to battling phase - the effect will handle starting turns after a delay
     setBattlePhase('battling')
-
-    // Start the turn sequence after a short delay
-    timeoutRef.current = setTimeout(() => {
-      if (firstMatchup.turns.length > 0) {
-        const turn = firstMatchup.turns[0]
-        setCurrentTurn(turn)
-        setMessageText(`${turn.attacker_name} attacks!`)
-        setBattlePhase('turn_attack')
-      }
-    }, 1000)
   }, [])
 
   // Battle animation state machine
   useEffect(() => {
     if (!battleResult?.matchups || battlePhase === 'intro' || battlePhase === 'result') return
-    // Don't interfere with the initial battling phase - let the timeout from startBattleAnimation run
-    if (battlePhase === 'battling') return
 
     const matchups = battleResult.matchups
     const currentMatchup = matchups[currentMatchupIndex]
@@ -206,6 +195,21 @@ export function GymBattlePanel() {
     clearPendingTimeout()
 
     switch (battlePhase) {
+      case 'battling':
+        // Start turns for current matchup after a short delay
+        timeoutRef.current = setTimeout(() => {
+          if (currentMatchup.turns.length > 0) {
+            const turn = currentMatchup.turns[0]
+            setCurrentTurn(turn)
+            setMessageText(`${turn.attacker_name} attacks!`)
+            setBattlePhase('turn_attack')
+          } else {
+            // No turns (shouldn't happen), go to result
+            setBattlePhase('result')
+          }
+        }, 1000)
+        break
+
       case 'turn_attack':
         // After attack animation, show damage
         if (currentTurn) {
@@ -292,15 +296,8 @@ export function GymBattlePanel() {
               setMessageText(`${currentGymLeader?.name} sent out ${nextMatchup.gym_pokemon_name}!`)
             }
 
-            // Start next matchup's turns
-            timeoutRef.current = setTimeout(() => {
-              if (nextMatchup.turns.length > 0) {
-                const turn = nextMatchup.turns[0]
-                setCurrentTurn(turn)
-                setMessageText(`${turn.attacker_name} attacks!`)
-                setBattlePhase('turn_attack')
-              }
-            }, 1000)
+            // Transition to battling phase - let startNextMatchupTurns handle the rest
+            setBattlePhase('battling')
           } else {
             setBattlePhase('result')
           }
