@@ -77,10 +77,13 @@ export interface CatchSequence {
   break_free_shake?: number // Which shake it broke free on (if failed)
 }
 
+export type BallType = 'pokeball' | 'great_ball'
+
 export interface CatchResult {
   success: boolean
   pokemon_id?: string
   balls_used: number
+  ball_type: BallType
   caught_pokemon?: Pokemon & { species: PokemonSpecies }
   catch_sequence?: CatchSequence  // Animation data for frontend
   catch_strength?: number
@@ -186,6 +189,7 @@ export interface TickResult {
   xp_gained?: Record<string, number>
   level_ups?: LevelUpEvent[]
   pokeballs: number
+  great_balls: number
   money_earned?: number
   total_money?: number
 }
@@ -203,6 +207,7 @@ export interface PlayerSession {
   party: (Pokemon | null)[]
   zone: Zone
   pokeballs: number
+  great_balls: number
   tickNumber: number
   encounterTable: EncounterTableEntry[]
   pokedollars: number

@@ -6,11 +6,13 @@ import {
   getPlayerByUserId,
   getPlayerParty,
   getPlayerPokeballs,
+  getPlayerGreatBalls,
   getZone,
   getConnectedZones,
   getEncounterTable,
   getPlayerBox,
   updatePlayerPokeballs,
+  updatePlayerGreatBalls,
   updatePlayerLastOnline,
   updatePlayerZone,
   updatePokemonStats,
@@ -143,10 +145,11 @@ export class GameHub {
       throw new Error('Player not found')
     }
 
-    const [party, zone, pokeballs, encounterTable] = await Promise.all([
+    const [party, zone, pokeballs, great_balls, encounterTable] = await Promise.all([
       getPlayerParty(player.id),
       getZone(player.current_zone_id),
       getPlayerPokeballs(player.id),
+      getPlayerGreatBalls(player.id),
       getEncounterTable(player.current_zone_id)
     ])
 
@@ -173,6 +176,7 @@ export class GameHub {
       party,
       zone,
       pokeballs,
+      great_balls,
       tickNumber: 0,
       encounterTable,
       pokedollars: player.pokedollars
@@ -610,27 +614,41 @@ export class GameHub {
 
       const result = processTick(client.session, this.speciesMap)
 
-      // Handle caught pokemon
-      if (result.encounter?.catch_result?.success) {
+      // Handle catch attempt (save ball consumption regardless of success)
+      if (result.encounter?.catch_result) {
+        const catchResult = result.encounter.catch_result
         const wild = result.encounter.wild_pokemon
-        const pokemon = await saveCaughtPokemon(
-          client.session.player.id,
-          wild.species,
-          wild.level,
-          wild.is_shiny
-        )
-        if (pokemon) {
-          result.encounter.catch_result.pokemon_id = pokemon.id
-          // Add the caught pokemon to the result so the client can add it to their box
-          result.encounter.catch_result.caught_pokemon = {
-            ...pokemon,
-            species: wild.species
-          }
-          await updatePokedex(client.session.player.id, wild.species_id, true)
+
+        // Save the ball that was consumed
+        if (catchResult.ball_type === 'great_ball') {
+          await updatePlayerGreatBalls(client.session.player.id, client.session.great_balls)
+        } else {
+          await updatePlayerPokeballs(client.session.player.id, client.session.pokeballs)
         }
-        await updatePlayerPokeballs(client.session.player.id, client.session.pokeballs)
+
+        // Handle successful catch
+        if (catchResult.success) {
+          const pokemon = await saveCaughtPokemon(
+            client.session.player.id,
+            wild.species,
+            wild.level,
+            wild.is_shiny
+          )
+          if (pokemon) {
+            result.encounter.catch_result.pokemon_id = pokemon.id
+            // Add the caught pokemon to the result so the client can add it to their box
+            result.encounter.catch_result.caught_pokemon = {
+              ...pokemon,
+              species: wild.species
+            }
+            await updatePokedex(client.session.player.id, wild.species_id, true)
+          }
+        } else {
+          // Failed catch - still mark as seen
+          await updatePokedex(client.session.player.id, wild.species_id, false)
+        }
       } else if (result.encounter) {
-        // Mark as seen in pokedex
+        // Lost battle - mark as seen in pokedex
         await updatePokedex(client.session.player.id, result.encounter.wild_pokemon.species_id, false)
       }
 

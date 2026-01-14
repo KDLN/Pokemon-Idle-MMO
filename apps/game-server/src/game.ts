@@ -13,7 +13,8 @@ import type {
   BattleSequence,
   CatchSequence,
   GymBattleMatchup,
-  Move
+  Move,
+  BallType
 } from './types.js'
 import type { GymLeader, GymLeaderPokemon } from './db.js'
 
@@ -492,14 +493,24 @@ export function resolveBattle(
   }
 }
 
+// Ball type modifiers
+const BALL_MODIFIERS: Record<BallType, number> = {
+  pokeball: 1.0,
+  great_ball: 1.5
+}
+
 // Catch attempt with animation sequence data
-export function attemptCatch(wild: WildPokemon, pokeballs: number): { result: CatchResult; newPokeballs: number } {
-  if (pokeballs <= 0) {
-    return { result: { success: false, balls_used: 0 }, newPokeballs: pokeballs }
+export function attemptCatch(
+  wild: WildPokemon,
+  ballCount: number,
+  ballType: BallType
+): { result: CatchResult; newBallCount: number } {
+  if (ballCount <= 0) {
+    return { result: { success: false, balls_used: 0, ball_type: ballType }, newBallCount: ballCount }
   }
 
   const baseCatchRate = wild.species.base_catch_rate
-  const ballModifier = 1.0 // Pokeball
+  const ballModifier = BALL_MODIFIERS[ballType]
 
   let catchChance = (baseCatchRate * ballModifier) / 255.0
 
@@ -510,7 +521,7 @@ export function attemptCatch(wild: WildPokemon, pokeballs: number): { result: Ca
   // Clamp
   catchChance = Math.max(0.05, Math.min(0.95, catchChance))
 
-  const newPokeballs = pokeballs - 1
+  const newBallCount = ballCount - 1
   const success = Math.random() < catchChance
 
   // Calculate shake count for animation
@@ -549,12 +560,13 @@ export function attemptCatch(wild: WildPokemon, pokeballs: number): { result: Ca
     result: {
       success,
       balls_used: 1,
+      ball_type: ballType,
       catch_sequence: catchSequence,
       catch_strength: catchStrength,
       close_call: closeCall,
       critical
     },
-    newPokeballs
+    newBallCount
   }
 }
 
@@ -633,11 +645,12 @@ export function processEncounter(
   zone: Zone,
   encounterTable: EncounterTableEntry[],
   pokeballs: number,
+  great_balls: number,
   speciesMap: Map<number, PokemonSpecies>
-): { encounter: EncounterEvent | null; newPokeballs: number } {
+): { encounter: EncounterEvent | null; newPokeballs: number; newGreatBalls: number } {
   const species = rollEncounterSpecies(encounterTable)
   if (!species) {
-    return { encounter: null, newPokeballs: pokeballs }
+    return { encounter: null, newPokeballs: pokeballs, newGreatBalls: great_balls }
   }
 
   const level = rollLevel(zone.min_level, zone.max_level)
@@ -653,15 +666,23 @@ export function processEncounter(
   }
 
   let newPokeballs = pokeballs
+  let newGreatBalls = great_balls
 
-  // If won and have pokeballs, attempt catch
-  if (battleResult.outcome === 'win' && pokeballs > 0) {
-    const { result, newPokeballs: remaining } = attemptCatch(wild, pokeballs)
-    encounter.catch_result = result
-    newPokeballs = remaining
+  // If won and have any balls, attempt catch
+  // Prefer Great Balls over Poke Balls for better catch rate
+  if (battleResult.outcome === 'win') {
+    if (great_balls > 0) {
+      const { result, newBallCount } = attemptCatch(wild, great_balls, 'great_ball')
+      encounter.catch_result = result
+      newGreatBalls = newBallCount
+    } else if (pokeballs > 0) {
+      const { result, newBallCount } = attemptCatch(wild, pokeballs, 'pokeball')
+      encounter.catch_result = result
+      newPokeballs = newBallCount
+    }
   }
 
-  return { encounter, newPokeballs }
+  return { encounter, newPokeballs, newGreatBalls }
 }
 
 // Process tick
@@ -673,7 +694,8 @@ export function processTick(
 
   const result: TickResult = {
     tick_number: session.tickNumber,
-    pokeballs: session.pokeballs
+    pokeballs: session.pokeballs,
+    great_balls: session.great_balls
   }
 
   // Only process encounters in route zones
@@ -687,11 +709,12 @@ export function processTick(
   }
 
   // Process encounter
-  const { encounter, newPokeballs } = processEncounter(
+  const { encounter, newPokeballs, newGreatBalls } = processEncounter(
     session.party,
     session.zone,
     session.encounterTable,
     session.pokeballs,
+    session.great_balls,
     speciesMap
   )
 
@@ -700,8 +723,10 @@ export function processTick(
   }
 
   session.pokeballs = newPokeballs
+  session.great_balls = newGreatBalls
   result.encounter = encounter
   result.pokeballs = newPokeballs
+  result.great_balls = newGreatBalls
 
   // Apply XP and money if battle won
   if (encounter.battle_result === 'win') {

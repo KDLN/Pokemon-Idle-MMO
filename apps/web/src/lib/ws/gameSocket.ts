@@ -187,6 +187,16 @@ class GameSocket {
     // Update pokeball count
     store.setPokeballs(result.pokeballs)
 
+    // Update inventory with current ball counts
+    if (result.great_balls !== undefined) {
+      const currentInventory = store.inventory
+      store.setInventory({
+        ...currentInventory,
+        pokeball: result.pokeballs,
+        great_ball: result.great_balls
+      })
+    }
+
     // Update money if earned
     if (result.total_money !== undefined) {
       store.setPokedollars(result.total_money)

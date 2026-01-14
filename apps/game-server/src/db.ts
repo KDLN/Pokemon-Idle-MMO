@@ -75,6 +75,24 @@ export async function updatePlayerPokeballs(playerId: string, quantity: number):
     .upsert({ player_id: playerId, item_id: 'pokeball', quantity })
 }
 
+export async function getPlayerGreatBalls(playerId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('inventory')
+    .select('quantity')
+    .eq('player_id', playerId)
+    .eq('item_id', 'great_ball')
+    .single()
+
+  if (error) return 0
+  return data?.quantity || 0
+}
+
+export async function updatePlayerGreatBalls(playerId: string, quantity: number): Promise<void> {
+  await supabase
+    .from('inventory')
+    .upsert({ player_id: playerId, item_id: 'great_ball', quantity })
+}
+
 export async function updatePlayerLastOnline(playerId: string): Promise<void> {
   await supabase
     .from('players')

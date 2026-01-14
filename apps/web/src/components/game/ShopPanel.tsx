@@ -1,16 +1,52 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import type { ShopItem } from '@/types/game'
 
-// Item icons based on effect type
+// PokeAPI item sprite URLs
+const ITEM_SPRITES: Record<string, string> = {
+  pokeball: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png',
+  great_ball: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png',
+  potion: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/potion.png',
+  super_potion: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/super-potion.png',
+}
+
+// Fallback emojis if sprite fails to load
 const ITEM_ICONS: Record<string, string> = {
   ball: '🔴',
   great_ball: '🔵',
   potion: '💜',
   super_potion: '💗',
+}
+
+// Get sprite URL by item ID
+function getItemSprite(itemId: string): string | null {
+  return ITEM_SPRITES[itemId] || null
+}
+
+// Item sprite component with fallback
+function ItemSprite({ itemId, effectType, size = 32 }: { itemId: string; effectType: string; size?: number }) {
+  const spriteUrl = getItemSprite(itemId)
+  const [imageError, setImageError] = useState(false)
+
+  if (!spriteUrl || imageError) {
+    return <span className="text-2xl">{ITEM_ICONS[effectType] || '📦'}</span>
+  }
+
+  return (
+    <Image
+      src={spriteUrl}
+      alt={itemId}
+      width={size}
+      height={size}
+      className="pixelated"
+      onError={() => setImageError(true)}
+      unoptimized
+    />
+  )
 }
 
 export function ShopPanel() {
@@ -100,15 +136,18 @@ export function ShopPanel() {
           <div className="text-xs text-[#606080] mb-2 uppercase tracking-wider">Your Inventory</div>
           <div className="flex flex-wrap gap-2">
             {Object.entries(inventory).length > 0 ? (
-              Object.entries(inventory).map(([itemId, qty]) => (
-                <div
-                  key={itemId}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#0f0f1a] border border-[#2a2a4a]"
-                >
-                  <span>{ITEM_ICONS[shopItems.find(i => i.id === itemId)?.effect_type || 'ball']}</span>
-                  <span className="text-xs text-[#a0a0c0]">{qty}</span>
-                </div>
-              ))
+              Object.entries(inventory).map(([itemId, qty]) => {
+                const shopItem = shopItems.find(i => i.id === itemId)
+                return (
+                  <div
+                    key={itemId}
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#0f0f1a] border border-[#2a2a4a]"
+                  >
+                    <ItemSprite itemId={itemId} effectType={shopItem?.effect_type || 'ball'} size={20} />
+                    <span className="text-xs text-[#a0a0c0]">{qty}</span>
+                  </div>
+                )
+              })
             ) : (
               <span className="text-xs text-[#606080]">No items yet</span>
             )}
@@ -137,8 +176,8 @@ export function ShopPanel() {
                 >
                   <div className="flex items-center gap-4">
                     {/* Item Icon */}
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#2a2a4a] to-[#1a1a2e] flex items-center justify-center text-2xl">
-                      {ITEM_ICONS[item.effect_type]}
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#2a2a4a] to-[#1a1a2e] flex items-center justify-center">
+                      <ItemSprite itemId={item.id} effectType={item.effect_type} size={32} />
                     </div>
 
                     {/* Item Info */}

@@ -1,6 +1,9 @@
 'use client'
 
+import Image from 'next/image'
 import { useGameStore } from '@/stores/gameStore'
+
+const POKEBALL_SPRITE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'
 
 interface CurrencyDisplayProps {
   compact?: boolean
@@ -33,7 +36,14 @@ export function CurrencyDisplay({ compact = false }: CurrencyDisplayProps) {
 
         {/* Pokeballs */}
         <div className="flex items-center gap-1.5 bg-[#1a1a2e] px-2.5 py-1 rounded-full border border-[#2a2a4a]">
-          <span className="text-lg">🔴</span>
+          <Image
+            src={POKEBALL_SPRITE}
+            alt="Pokeball"
+            width={20}
+            height={20}
+            className="pixelated"
+            unoptimized
+          />
           <span className="text-white text-sm font-medium">{pokeballs}</span>
         </div>
       </div>
@@ -66,13 +76,14 @@ export function CurrencyDisplay({ compact = false }: CurrencyDisplayProps) {
 
       {/* Pokeballs (compact in header) */}
       <div className="flex items-center gap-1.5 bg-[#1a1a2e] px-2.5 py-1.5 rounded-lg border border-[#2a2a4a]">
-        <div className="w-5 h-5 relative">
-          <div className="absolute inset-0 rounded-full bg-gradient-to-b from-red-500 to-red-600" style={{ clipPath: 'inset(0 0 50% 0)' }} />
-          <div className="absolute inset-0 rounded-full bg-white" style={{ clipPath: 'inset(50% 0 0 0)' }} />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-1.5 h-1.5 rounded-full bg-white border border-gray-400" />
-          </div>
-        </div>
+        <Image
+          src={POKEBALL_SPRITE}
+          alt="Pokeball"
+          width={20}
+          height={20}
+          className="pixelated"
+          unoptimized
+        />
         <span className="text-white text-sm font-medium">{pokeballs}</span>
       </div>
     </div>
