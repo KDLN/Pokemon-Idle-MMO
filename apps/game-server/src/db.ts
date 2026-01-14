@@ -251,17 +251,35 @@ export async function updatePokemonStats(pokemon: Pokemon): Promise<void> {
     .eq('id', pokemon.id)
 }
 
-// Update only a Pokemon's current HP
-export async function updatePokemonHP(pokemonId: string, currentHp: number): Promise<boolean> {
-  const { error } = await supabase
+// Update only a Pokemon's current HP - includes ownership check for security
+export async function updatePokemonHP(
+  pokemonId: string,
+  currentHp: number,
+  ownerId?: string
+): Promise<boolean> {
+  let query = supabase
     .from('pokemon')
     .update({ current_hp: currentHp })
     .eq('id', pokemonId)
+
+  // If ownerId provided, verify ownership (defense in depth)
+  if (ownerId) {
+    query = query.eq('owner_id', ownerId)
+  }
+
+  const { data, error } = await query.select()
 
   if (error) {
     console.error('Failed to update Pokemon HP:', error)
     return false
   }
+
+  // If no rows were updated, either Pokemon doesn't exist or ownership check failed
+  if (!data || data.length === 0) {
+    console.error('Pokemon HP update failed: no matching Pokemon found')
+    return false
+  }
+
   return true
 }
 
@@ -419,27 +437,31 @@ export async function useInventoryItem(
   // Use optimistic locking: only update if quantity hasn't changed since we read it
   // This prevents race conditions where two concurrent operations both try to use the same item
   if (newQuantity === 0) {
-    const { error, count } = await supabase
+    // Delete the row and use .select() to verify deletion happened
+    const { data, error } = await supabase
       .from('inventory')
       .delete()
       .eq('player_id', playerId)
       .eq('item_id', itemId)
       .eq('quantity', currentQuantity) // Optimistic lock
+      .select()
 
     // If no rows were deleted, another operation modified the quantity
-    if (error || count === 0) {
+    if (error || !data || data.length === 0) {
       return { success: false, newQuantity: currentQuantity, error: 'Item was modified, please try again' }
     }
   } else {
-    const { error, count } = await supabase
+    // Update and use .select() to verify update happened
+    const { data, error } = await supabase
       .from('inventory')
       .update({ quantity: newQuantity })
       .eq('player_id', playerId)
       .eq('item_id', itemId)
       .eq('quantity', currentQuantity) // Optimistic lock
+      .select()
 
     // If no rows were updated, another operation modified the quantity
-    if (error || count === 0) {
+    if (error || !data || data.length === 0) {
       return { success: false, newQuantity: currentQuantity, error: 'Item was modified, please try again' }
     }
   }

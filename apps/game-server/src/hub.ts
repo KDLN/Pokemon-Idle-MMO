@@ -525,8 +525,8 @@ export class GameHub {
     // Calculate new HP (clamped to max)
     const newHp = Math.min(pokemon.current_hp + healAmount, pokemon.max_hp)
 
-    // Save to database
-    const hpUpdated = await updatePokemonHP(pokemon.id, newHp)
+    // Save to database - pass owner ID for security verification
+    const hpUpdated = await updatePokemonHP(pokemon.id, newHp, client.session.player.id)
     if (!hpUpdated) {
       this.sendError(client, 'Failed to heal Pokemon')
       return
@@ -572,9 +572,10 @@ export class GameHub {
       return
     }
 
-    // Heal all Pokemon in parallel for better performance
+    // Heal all Pokemon in parallel for better performance - pass owner ID for security
+    const playerId = client.session.player.id
     const healResults = await Promise.all(
-      pokemonToHeal.map(pokemon => updatePokemonHP(pokemon.id, pokemon.max_hp))
+      pokemonToHeal.map(pokemon => updatePokemonHP(pokemon.id, pokemon.max_hp, playerId))
     )
 
     // Check if all updates succeeded
