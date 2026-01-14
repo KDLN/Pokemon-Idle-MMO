@@ -118,6 +118,7 @@ export function GymBattlePanel() {
   const [damageTarget, setDamageTarget] = useState<'player' | 'gym'>('gym')
   const [isCritical, setIsCritical] = useState(false)
   const [messageText, setMessageText] = useState('')
+  const [faintingPokemon, setFaintingPokemon] = useState<'player' | 'enemy' | null>(null)
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -141,6 +142,7 @@ export function GymBattlePanel() {
       setCurrentTurn(null)
       setShowDamageNumber(false)
       setMessageText('')
+      setFaintingPokemon(null)
     }
   }, [isGymOpen, currentGymLeader])
 
@@ -235,11 +237,13 @@ export function GymBattlePanel() {
 
           // Check if current matchup is over
           if (nextTurnIndex >= currentMatchup.turns.length) {
-            // Matchup over - show result message
+            // Matchup over - show result message and set faint animation
             if (currentMatchup.outcome === 'gym_pokemon_faint') {
               setMessageText(`${currentMatchup.gym_pokemon_name} fainted!`)
+              setFaintingPokemon('enemy')
             } else {
               setMessageText(`${currentMatchup.player_pokemon_name} fainted!`)
+              setFaintingPokemon('player')
             }
 
             // Check if there's another matchup
@@ -271,6 +275,8 @@ export function GymBattlePanel() {
           const nextMatchup = matchups[nextMatchupIndex]
 
           if (nextMatchup) {
+            // Clear faint animation before showing new Pokemon
+            setFaintingPokemon(null)
             setCurrentMatchupIndex(nextMatchupIndex)
             setCurrentTurnIndex(0)
             setPlayerHP(nextMatchup.player_starting_hp)
@@ -529,11 +535,7 @@ export function GymBattlePanel() {
                   ? damageTarget === 'player' ? 'player' : 'enemy'
                   : null
               }
-              showFaint={
-                battlePhase === 'matchup_transition' && currentMatchup.outcome === 'gym_pokemon_faint' ? 'enemy' :
-                battlePhase === 'matchup_transition' && currentMatchup.outcome === 'player_pokemon_faint' ? 'player' :
-                null
-              }
+              showFaint={faintingPokemon}
               showAttackSlash={
                 battlePhase === 'turn_damage' && currentTurn
                   ? damageTarget === 'player' ? 'player' : 'enemy'
