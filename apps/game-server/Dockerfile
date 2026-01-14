@@ -6,13 +6,13 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (need dev deps for build)
-RUN npm ci
+RUN echo "Installing dependencies..." && npm ci && echo "Dependencies installed"
 
 # Copy source code
 COPY . .
 
 # Build TypeScript
-RUN npm run build
+RUN echo "Building TypeScript..." && npm run build && echo "Build complete"
 
 # Remove dev dependencies
 RUN npm prune --production
