@@ -205,3 +205,81 @@ export function getHeldItem(itemId: string | null | undefined): HeldItem | null 
   if (!itemId) return null
   return HELD_ITEMS[itemId] ?? null
 }
+
+// ============================================
+// SHOP/INVENTORY ITEMS
+// ============================================
+
+export interface ItemData {
+  name: string
+  description: string
+  effect: string
+  category: 'ball' | 'potion' | 'battle' | 'misc'
+}
+
+export const ITEM_DATA: Record<string, ItemData> = {
+  pokeball: {
+    name: 'Poke Ball',
+    description: 'A device for catching wild Pokemon. A Pokemon trainer must have these.',
+    effect: 'Standard catch rate (1x)',
+    category: 'ball',
+  },
+  great_ball: {
+    name: 'Great Ball',
+    description: 'A good, high-performance Ball with a higher catch rate than a standard Poke Ball.',
+    effect: 'Improved catch rate (1.5x)',
+    category: 'ball',
+  },
+  ultra_ball: {
+    name: 'Ultra Ball',
+    description: 'An ultra-high-performance Ball that provides a higher catch rate than a Great Ball.',
+    effect: 'High catch rate (2x)',
+    category: 'ball',
+  },
+  master_ball: {
+    name: 'Master Ball',
+    description: 'The best Ball with the ultimate level of performance. It will catch any wild Pokemon without fail.',
+    effect: 'Guaranteed catch (100%)',
+    category: 'ball',
+  },
+  potion: {
+    name: 'Potion',
+    description: 'A spray-type medicine for treating wounds. It restores the HP of one Pokemon by 20 points.',
+    effect: 'Restores 20 HP',
+    category: 'potion',
+  },
+  super_potion: {
+    name: 'Super Potion',
+    description: 'A spray-type medicine for treating wounds. It restores the HP of one Pokemon by 50 points.',
+    effect: 'Restores 50 HP',
+    category: 'potion',
+  },
+  hyper_potion: {
+    name: 'Hyper Potion',
+    description: 'A spray-type medicine for treating wounds. It restores the HP of one Pokemon by 200 points.',
+    effect: 'Restores 200 HP',
+    category: 'potion',
+  },
+  max_potion: {
+    name: 'Max Potion',
+    description: 'A spray-type medicine for treating wounds. It fully restores the HP of a single Pokemon.',
+    effect: 'Fully restores HP',
+    category: 'potion',
+  },
+  revive: {
+    name: 'Revive',
+    description: 'A medicine that revives a fainted Pokemon. It restores half the Pokemon\'s maximum HP.',
+    effect: 'Revives with 50% HP',
+    category: 'potion',
+  },
+  max_revive: {
+    name: 'Max Revive',
+    description: 'A medicine that revives a fainted Pokemon. It fully restores the Pokemon\'s HP.',
+    effect: 'Revives with full HP',
+    category: 'potion',
+  },
+}
+
+export function getItemData(itemId: string): ItemData | null {
+  return ITEM_DATA[itemId] ?? null
+}

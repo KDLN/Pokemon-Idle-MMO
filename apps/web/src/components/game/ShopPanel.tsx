@@ -4,6 +4,8 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
+import { getItemData } from '@/lib/ui'
+import { Tooltip, ItemTooltipContent } from '@/components/ui/Tooltip'
 import type { ShopItem } from '@/types/game'
 
 // PokeAPI item sprite URLs
@@ -138,14 +140,25 @@ export function ShopPanel() {
             {Object.entries(inventory).length > 0 ? (
               Object.entries(inventory).map(([itemId, qty]) => {
                 const shopItem = shopItems.find(i => i.id === itemId)
+                const itemData = getItemData(itemId)
                 return (
-                  <div
+                  <Tooltip
                     key={itemId}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#0f0f1a] border border-[#2a2a4a]"
+                    position="bottom"
+                    content={
+                      <ItemTooltipContent
+                        name={itemData?.name || shopItem?.name || itemId}
+                        description={itemData?.description || shopItem?.description || ''}
+                        effect={itemData?.effect}
+                        quantity={qty}
+                      />
+                    }
                   >
-                    <ItemSprite itemId={itemId} effectType={shopItem?.effect_type || 'ball'} size={20} />
-                    <span className="text-xs text-[#a0a0c0]">{qty}</span>
-                  </div>
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#0f0f1a] border border-[#2a2a4a] cursor-help hover:border-[#3a3a6a] transition-colors">
+                      <ItemSprite itemId={itemId} effectType={shopItem?.effect_type || 'ball'} size={20} />
+                      <span className="text-xs text-[#a0a0c0]">{qty}</span>
+                    </div>
+                  </Tooltip>
                 )
               })
             ) : (
@@ -175,10 +188,23 @@ export function ShopPanel() {
                   `}
                 >
                   <div className="flex items-center gap-4">
-                    {/* Item Icon */}
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#2a2a4a] to-[#1a1a2e] flex items-center justify-center">
-                      <ItemSprite itemId={item.id} effectType={item.effect_type} size={32} />
-                    </div>
+                    {/* Item Icon with Tooltip */}
+                    <Tooltip
+                      position="right"
+                      content={
+                        <ItemTooltipContent
+                          name={getItemData(item.id)?.name || item.name}
+                          description={getItemData(item.id)?.description || item.description}
+                          effect={getItemData(item.id)?.effect}
+                          price={item.price}
+                          quantity={inventory[item.id] || 0}
+                        />
+                      }
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#2a2a4a] to-[#1a1a2e] flex items-center justify-center cursor-help hover:from-[#3a3a5a] hover:to-[#2a2a3e] transition-colors">
+                        <ItemSprite itemId={item.id} effectType={item.effect_type} size={32} />
+                      </div>
+                    </Tooltip>
 
                     {/* Item Info */}
                     <div className="flex-1 min-w-0">
@@ -186,7 +212,7 @@ export function ShopPanel() {
                         <span className="font-medium text-white">{item.name}</span>
                         <span className="text-xs text-[#FFDE00]">${item.price}</span>
                       </div>
-                      <p className="text-xs text-[#606080] truncate">{item.description}</p>
+                      <p className="text-xs text-[#606080] truncate">{getItemData(item.id)?.effect || item.description}</p>
                     </div>
 
                     {/* Quantity Controls */}
