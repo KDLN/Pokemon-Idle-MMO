@@ -121,6 +121,7 @@ export const SPECIES_DATA: Record<number, SpeciesData> = {
   40: { name: 'Wigglytuff', type: 'NORMAL', type2: 'FAIRY', color: '#EE99AC' },
   41: { name: 'Zubat', type: 'POISON', type2: 'FLYING', color: '#A040A0' },
   42: { name: 'Golbat', type: 'POISON', type2: 'FLYING', color: '#A040A0' },
+  43: { name: 'Oddish', type: 'GRASS', type2: 'POISON', color: '#78C850' },
 }
 
 export function getSpeciesData(speciesId: number): SpeciesData {
