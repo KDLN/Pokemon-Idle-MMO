@@ -515,7 +515,7 @@ export class GameHub {
       return
     }
 
-    // Use the item from inventory
+    // Use the item from inventory (atomic operation with optimistic locking)
     const result = await useInventoryItem(client.session.player.id, item_id)
     if (!result.success) {
       this.sendError(client, result.error || 'Not enough potions')
@@ -524,10 +524,16 @@ export class GameHub {
 
     // Calculate new HP (clamped to max)
     const newHp = Math.min(pokemon.current_hp + healAmount, pokemon.max_hp)
-    pokemon.current_hp = newHp
 
     // Save to database
-    await updatePokemonHP(pokemon.id, newHp)
+    const hpUpdated = await updatePokemonHP(pokemon.id, newHp)
+    if (!hpUpdated) {
+      this.sendError(client, 'Failed to heal Pokemon')
+      return
+    }
+
+    // Update in-memory state only after DB success
+    pokemon.current_hp = newHp
 
     // Get updated inventory
     const inventory = await getPlayerInventory(client.session.player.id)
@@ -551,15 +557,38 @@ export class GameHub {
       return
     }
 
-    // Heal all party Pokemon to full HP
-    const healedPokemon: { id: string; new_hp: number }[] = []
+    // Collect Pokemon that need healing
+    const pokemonToHeal = client.session.party.filter(
+      (p): p is NonNullable<typeof p> => p !== null && p.current_hp < p.max_hp
+    )
 
-    for (const pokemon of client.session.party) {
-      if (pokemon && pokemon.current_hp < pokemon.max_hp) {
-        pokemon.current_hp = pokemon.max_hp
-        await updatePokemonHP(pokemon.id, pokemon.max_hp)
-        healedPokemon.push({ id: pokemon.id, new_hp: pokemon.max_hp })
-      }
+    if (pokemonToHeal.length === 0) {
+      // All Pokemon already at full HP, still send success
+      this.send(client, 'pokecenter_heal', {
+        success: true,
+        healed_pokemon: [],
+        party: client.session.party
+      })
+      return
+    }
+
+    // Heal all Pokemon in parallel for better performance
+    const healResults = await Promise.all(
+      pokemonToHeal.map(pokemon => updatePokemonHP(pokemon.id, pokemon.max_hp))
+    )
+
+    // Check if all updates succeeded
+    const allSucceeded = healResults.every(result => result)
+    if (!allSucceeded) {
+      this.sendError(client, 'Failed to heal some Pokemon')
+      return
+    }
+
+    // Update in-memory state only after all DB operations succeed
+    const healedPokemon: { id: string; new_hp: number }[] = []
+    for (const pokemon of pokemonToHeal) {
+      pokemon.current_hp = pokemon.max_hp
+      healedPokemon.push({ id: pokemon.id, new_hp: pokemon.max_hp })
     }
 
     this.send(client, 'pokecenter_heal', {

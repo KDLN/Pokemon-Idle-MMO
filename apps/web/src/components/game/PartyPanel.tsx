@@ -38,14 +38,19 @@ export function PartyPanel() {
   const powerStars = Math.min(5, Math.floor(activePartyCount * 0.8) + 1)
 
   // Check if player has any healing potions
-  const potionCount = (inventory.potion || 0) + (inventory.super_potion || 0)
-  const hasPotions = potionCount > 0
+  const regularPotionCount = inventory.potion || 0
+  const superPotionCount = inventory.super_potion || 0
+  const hasPotions = regularPotionCount > 0 || superPotionCount > 0
 
-  // Use the best available potion
+  // Use the best available potion - verify we actually have one before sending
   const handleUsePotion = (pokemonId: string) => {
     // Prefer regular potion first (more economical), fall back to super potion
-    const potionToUse = (inventory.potion || 0) > 0 ? 'potion' : 'super_potion'
-    gameSocket.usePotion(pokemonId, potionToUse)
+    if (regularPotionCount > 0) {
+      gameSocket.usePotion(pokemonId, 'potion')
+    } else if (superPotionCount > 0) {
+      gameSocket.usePotion(pokemonId, 'super_potion')
+    }
+    // If neither exists, do nothing (button shouldn't be visible anyway)
   }
 
   return (

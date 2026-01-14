@@ -252,11 +252,17 @@ export async function updatePokemonStats(pokemon: Pokemon): Promise<void> {
 }
 
 // Update only a Pokemon's current HP
-export async function updatePokemonHP(pokemonId: string, currentHp: number): Promise<void> {
-  await supabase
+export async function updatePokemonHP(pokemonId: string, currentHp: number): Promise<boolean> {
+  const { error } = await supabase
     .from('pokemon')
     .update({ current_hp: currentHp })
     .eq('id', pokemonId)
+
+  if (error) {
+    console.error('Failed to update Pokemon HP:', error)
+    return false
+  }
+  return true
 }
 
 export async function getPlayerBox(playerId: string): Promise<Pokemon[]> {
@@ -389,12 +395,13 @@ export async function getPlayerInventory(playerId: string): Promise<Record<strin
   return inventory
 }
 
-// Use an inventory item (decrement quantity)
+// Use an inventory item (decrement quantity) - uses optimistic locking to prevent race conditions
 export async function useInventoryItem(
   playerId: string,
   itemId: string,
   quantity: number = 1
 ): Promise<{ success: boolean; newQuantity: number; error?: string }> {
+  // Read current quantity
   const { data: existing } = await supabase
     .from('inventory')
     .select('quantity')
@@ -409,18 +416,32 @@ export async function useInventoryItem(
 
   const newQuantity = currentQuantity - quantity
 
+  // Use optimistic locking: only update if quantity hasn't changed since we read it
+  // This prevents race conditions where two concurrent operations both try to use the same item
   if (newQuantity === 0) {
-    await supabase
+    const { error, count } = await supabase
       .from('inventory')
       .delete()
       .eq('player_id', playerId)
       .eq('item_id', itemId)
+      .eq('quantity', currentQuantity) // Optimistic lock
+
+    // If no rows were deleted, another operation modified the quantity
+    if (error || count === 0) {
+      return { success: false, newQuantity: currentQuantity, error: 'Item was modified, please try again' }
+    }
   } else {
-    await supabase
+    const { error, count } = await supabase
       .from('inventory')
       .update({ quantity: newQuantity })
       .eq('player_id', playerId)
       .eq('item_id', itemId)
+      .eq('quantity', currentQuantity) // Optimistic lock
+
+    // If no rows were updated, another operation modified the quantity
+    if (error || count === 0) {
+      return { success: false, newQuantity: currentQuantity, error: 'Item was modified, please try again' }
+    }
   }
 
   return { success: true, newQuantity }
