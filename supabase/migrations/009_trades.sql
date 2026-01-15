@@ -154,12 +154,17 @@ CREATE TRIGGER trades_updated_at
 
 -- Atomically completes a trade by transferring Pokemon ownership
 -- This runs as SECURITY DEFINER to bypass RLS during the transfer
+-- SAFETY: Prevents trades that would leave either player with an empty party
 CREATE OR REPLACE FUNCTION complete_trade(p_trade_id UUID)
 RETURNS JSON AS $$
 DECLARE
   v_trade RECORD;
   v_sender_offers UUID[];
   v_receiver_offers UUID[];
+  v_sender_party_count INT;
+  v_receiver_party_count INT;
+  v_sender_party_traded INT;
+  v_receiver_party_traded INT;
   v_transferred_count INT := 0;
 BEGIN
   -- Lock the trade row for update
@@ -186,6 +191,45 @@ BEGIN
   SELECT array_agg(pokemon_id) INTO v_receiver_offers
   FROM trade_offers
   WHERE trade_id = p_trade_id AND offered_by = v_trade.receiver_id;
+
+  -- Count current party members for each player
+  SELECT COUNT(*) INTO v_sender_party_count
+  FROM pokemon
+  WHERE owner_id = v_trade.sender_id AND party_slot IS NOT NULL;
+
+  SELECT COUNT(*) INTO v_receiver_party_count
+  FROM pokemon
+  WHERE owner_id = v_trade.receiver_id AND party_slot IS NOT NULL;
+
+  -- Count how many party Pokemon each player is trading away
+  SELECT COUNT(*) INTO v_sender_party_traded
+  FROM pokemon
+  WHERE id = ANY(COALESCE(v_sender_offers, ARRAY[]::UUID[]))
+    AND party_slot IS NOT NULL;
+
+  SELECT COUNT(*) INTO v_receiver_party_traded
+  FROM pokemon
+  WHERE id = ANY(COALESCE(v_receiver_offers, ARRAY[]::UUID[]))
+    AND party_slot IS NOT NULL;
+
+  -- SAFETY CHECK: Ensure neither player ends up with empty party
+  -- Each player must have at least 1 party member after the trade
+  -- They keep: (current party) - (party traded away) + (party received from other)
+  -- Note: Received Pokemon don't auto-join party, so we only check they don't lose all
+
+  IF v_sender_party_count - v_sender_party_traded < 1 THEN
+    RETURN json_build_object(
+      'success', false,
+      'error', 'Trade would leave sender with no party Pokemon. Remove some Pokemon from the trade offer.'
+    );
+  END IF;
+
+  IF v_receiver_party_count - v_receiver_party_traded < 1 THEN
+    RETURN json_build_object(
+      'success', false,
+      'error', 'Trade would leave receiver with no party Pokemon. Remove some Pokemon from the trade offer.'
+    );
+  END IF;
 
   -- Transfer sender's Pokemon to receiver
   IF v_sender_offers IS NOT NULL AND array_length(v_sender_offers, 1) > 0 THEN

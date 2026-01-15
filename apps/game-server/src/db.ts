@@ -1442,17 +1442,53 @@ export async function addTradeOffer(
   tradeId: string,
   pokemonId: string,
   playerId: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; warning?: string }> {
   // Verify the Pokemon belongs to the player
   const { data: pokemon, error: pokemonError } = await supabase
     .from('pokemon')
-    .select('id, owner_id')
+    .select('id, owner_id, party_slot')
     .eq('id', pokemonId)
     .eq('owner_id', playerId)
     .single()
 
   if (pokemonError || !pokemon) {
     return { success: false, error: 'Pokemon not found or not owned by you' }
+  }
+
+  // Check if this is a party Pokemon and warn about party safety
+  let warning: string | undefined
+  if (pokemon.party_slot !== null) {
+    // Count how many party Pokemon the player has
+    const { count: partyCount } = await supabase
+      .from('pokemon')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', playerId)
+      .not('party_slot', 'is', null)
+
+    // Count how many party Pokemon are already in this trade
+    const { data: existingOffers } = await supabase
+      .from('trade_offers')
+      .select('pokemon_id')
+      .eq('trade_id', tradeId)
+      .eq('offered_by', playerId)
+
+    const offeredPokemonIds = (existingOffers || []).map(o => o.pokemon_id)
+
+    // Count how many of those are party Pokemon
+    const { count: alreadyOfferedPartyCount } = await supabase
+      .from('pokemon')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', playerId)
+      .not('party_slot', 'is', null)
+      .in('id', offeredPokemonIds.length > 0 ? offeredPokemonIds : ['00000000-0000-0000-0000-000000000000'])
+
+    const totalPartyOffered = (alreadyOfferedPartyCount || 0) + 1 // +1 for the one we're adding now
+
+    if (partyCount && totalPartyOffered >= partyCount) {
+      warning = 'Warning: This would offer all your party Pokemon. Trade will fail if completed.'
+    } else if (partyCount && totalPartyOffered === partyCount - 1) {
+      warning = 'Warning: You would only have 1 party Pokemon left if this trade completes.'
+    }
   }
 
   // Add the offer
@@ -1472,7 +1508,7 @@ export async function addTradeOffer(
     return { success: false, error: 'Failed to add offer' }
   }
 
-  return { success: true }
+  return { success: true, warning }
 }
 
 // Remove a Pokemon offer from a trade
