@@ -2,6 +2,7 @@ import { useGameStore } from '@/stores/gameStore'
 import type { TickResult, GameState, Zone, Pokemon, ShopItem } from '@/types/game'
 import type { GymLeader, GymBattleResult } from '@/components/game/GymBattlePanel'
 import type { ChatMessageData, ChatChannel } from '@/types/chat'
+import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
 
 type MessageHandler = (payload: unknown) => void
 
@@ -16,6 +17,12 @@ type ChatPayload = {
 
 const CHAT_CHANNELS: ChatChannel[] = ['global', 'trade', 'guild', 'system']
 
+// Constants - exported for use in other components
+export const ONLINE_THRESHOLD_MS = 2 * 60 * 1000 // 2 minutes
+
+// Friend request callback type
+type FriendRequestCallback = (result: { success: boolean; error?: string; username?: string }) => void
+
 class GameSocket {
   private ws: WebSocket | null = null
   private reconnectAttempts = 0
@@ -23,6 +30,8 @@ class GameSocket {
   private reconnectDelay = 1000
   private token: string | null = null
   private handlers: Map<string, MessageHandler> = new Map()
+  // Map-based tracking for friend request callbacks to prevent race conditions
+  private pendingFriendRequests: Map<string, FriendRequestCallback> = new Map()
 
   constructor() {
     // Set up default handlers
@@ -39,6 +48,12 @@ class GameSocket {
     this.handlers.set('potion_used', this.handlePotionUsed)
     this.handlers.set('pokecenter_heal', this.handlePokeCenterHeal)
     this.handlers.set('error', this.handleError)
+    // Friends handlers
+    this.handlers.set('friends_data', this.handleFriendsData)
+    this.handlers.set('friends_update', this.handleFriendsUpdate)
+    this.handlers.set('friend_request_received', this.handleFriendRequestReceived)
+    this.handlers.set('friend_request_sent', this.handleFriendRequestSent)
+    this.handlers.set('friend_zone_update', this.handleFriendZoneUpdate)
   }
 
   connect(token: string) {
@@ -115,13 +130,19 @@ class GameSocket {
     }, delay)
   }
 
+  // Check if WebSocket is connected
+  isConnected(): boolean {
+    return this.ws?.readyState === WebSocket.OPEN
+  }
+
   send(type: string, payload: unknown = {}) {
-    if (this.ws?.readyState !== WebSocket.OPEN) {
+    if (!this.isConnected()) {
       console.error('WebSocket not connected')
-      return
+      return false
     }
 
-    this.ws.send(JSON.stringify({ type, payload }))
+    this.ws!.send(JSON.stringify({ type, payload }))
+    return true
   }
 
   // Move to a different zone
@@ -177,6 +198,45 @@ class GameSocket {
   // Heal all Pokemon at PokeCenter (free)
   healAtPokeCenter() {
     this.send('heal_at_pokecenter')
+  }
+
+  // ============================================
+  // FRIEND METHODS
+  // ============================================
+
+  // Request friends list data
+  getFriends() {
+    this.send('get_friends')
+  }
+
+  // Send a friend request by username with optional callback
+  // Uses Map-based tracking keyed by lowercase username to prevent race conditions
+  sendFriendRequest(username: string, callback?: FriendRequestCallback): boolean {
+    if (!this.isConnected()) {
+      callback?.({ success: false, error: 'Not connected to server' })
+      return false
+    }
+    const normalizedUsername = username.toLowerCase()
+    if (callback) {
+      this.pendingFriendRequests.set(normalizedUsername, callback)
+    }
+    this.send('send_friend_request', { username })
+    return true
+  }
+
+  // Accept a pending friend request
+  acceptFriendRequest(friendId: string) {
+    this.send('accept_friend_request', { friend_id: friendId })
+  }
+
+  // Decline a pending friend request
+  declineFriendRequest(friendId: string) {
+    this.send('decline_friend_request', { friend_id: friendId })
+  }
+
+  // Remove an accepted friend
+  removeFriend(friendId: string) {
+    this.send('remove_friend', { friend_id: friendId })
   }
 
   // Message handlers - using arrow functions to avoid binding issues
@@ -270,9 +330,17 @@ class GameSocket {
   }
 
   private handleError = (payload: unknown) => {
-    const { message } = payload as { message: string }
+    const { message, context } = payload as { message: string; context?: { username?: string } }
     console.error('Server error:', message)
-    // Could show toast notification here
+    // If error has username context, find and invoke the corresponding callback
+    if (context?.username) {
+      const normalizedUsername = context.username.toLowerCase()
+      const callback = this.pendingFriendRequests.get(normalizedUsername)
+      if (callback) {
+        callback({ success: false, error: message })
+        this.pendingFriendRequests.delete(normalizedUsername)
+      }
+    }
   }
 
   private handleShopData = (payload: unknown) => {
@@ -399,6 +467,58 @@ class GameSocket {
       createdAt: new Date(payload.created_at),
       isSystem: payload.player_id === 'system',
     }
+  }
+
+  // ============================================
+  // FRIEND HANDLERS
+  // ============================================
+
+  private handleFriendsData = (payload: unknown) => {
+    const { friends, incoming, outgoing } = payload as {
+      friends: Friend[]
+      incoming: FriendRequest[]
+      outgoing: OutgoingFriendRequest[]
+    }
+    useGameStore.getState().setAllFriendsData({ friends, incoming, outgoing })
+  }
+
+  private handleFriendsUpdate = (payload: unknown) => {
+    const { friends, incoming, outgoing } = payload as {
+      friends: Friend[]
+      incoming: FriendRequest[]
+      outgoing: OutgoingFriendRequest[]
+    }
+    useGameStore.getState().setAllFriendsData({ friends, incoming, outgoing })
+  }
+
+  private handleFriendRequestReceived = (payload: unknown) => {
+    const request = payload as FriendRequest
+    const store = useGameStore.getState()
+    // Add to incoming requests
+    store.setIncomingFriendRequests([request, ...store.incomingFriendRequests])
+  }
+
+  private handleFriendRequestSent = (payload: unknown) => {
+    const { success, username, error } = payload as { success: boolean; username: string; error?: string }
+    const normalizedUsername = username.toLowerCase()
+    const callback = this.pendingFriendRequests.get(normalizedUsername)
+    if (callback) {
+      callback({ success, username, error })
+      this.pendingFriendRequests.delete(normalizedUsername)
+    }
+    if (success) {
+      // Refresh friends data to get the new outgoing request
+      this.getFriends()
+    }
+  }
+
+  private handleFriendZoneUpdate = (payload: unknown) => {
+    const { player_id, zone_id, zone_name } = payload as {
+      player_id: string
+      zone_id: number
+      zone_name: string
+    }
+    useGameStore.getState().updateFriendZone(player_id, zone_id, zone_name)
   }
 }
 

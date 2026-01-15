@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Player, Pokemon, Zone, EncounterEvent, LevelUpEvent, ShopItem } from '@/types/game'
 import type { ChatMessageData, ChatChannel } from '@/types/chat'
+import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
 import type { LogEntry } from '@/components/game/interactions/WorldLog'
 import type { WorldEvent } from '@/components/game/social/WorldEventsTicker'
 import type { GymLeader } from '@/components/game/GymBattlePanel'
@@ -143,6 +144,16 @@ interface GameStore {
   isLoading: boolean
   setLoading: (loading: boolean) => void
 
+  // Friends state
+  friends: Friend[]
+  incomingFriendRequests: FriendRequest[]
+  outgoingFriendRequests: OutgoingFriendRequest[]
+  setFriends: (friends: Friend[]) => void
+  setIncomingFriendRequests: (requests: FriendRequest[]) => void
+  setOutgoingFriendRequests: (requests: OutgoingFriendRequest[]) => void
+  setAllFriendsData: (data: { friends: Friend[]; incoming: FriendRequest[]; outgoing: OutgoingFriendRequest[] }) => void
+  updateFriendZone: (friendPlayerId: string, zoneId: number, zoneName: string) => void
+
   // Reset store
   reset: () => void
 }
@@ -205,6 +216,10 @@ const initialState = {
   eventCosmetics: {} as EventCosmetics,
   isConnected: false,
   isLoading: true,
+  // Friends state
+  friends: [] as Friend[],
+  incomingFriendRequests: [] as FriendRequest[],
+  outgoingFriendRequests: [] as OutgoingFriendRequest[],
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -388,6 +403,31 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setConnected: (connected) => set({ isConnected: connected }),
 
   setLoading: (loading) => set({ isLoading: loading }),
+
+  // Friends methods
+  setFriends: (friends) => set({ friends }),
+
+  setIncomingFriendRequests: (requests) => set({ incomingFriendRequests: requests }),
+
+  setOutgoingFriendRequests: (requests) => set({ outgoingFriendRequests: requests }),
+
+  setAllFriendsData: (data) => set({
+    friends: data.friends,
+    incomingFriendRequests: data.incoming,
+    outgoingFriendRequests: data.outgoing,
+  }),
+
+  updateFriendZone: (friendPlayerId, zoneId, zoneName) =>
+    set((state) => ({
+      friends: state.friends.map((friend) => {
+        // Check if this friend matches the player who moved
+        const isFriend = friend.friend_player_id === friendPlayerId || friend.player_id === friendPlayerId
+        if (isFriend) {
+          return { ...friend, zone_id: zoneId, zone_name: zoneName }
+        }
+        return friend
+      }),
+    })),
 
   reset: () => set(initialState),
 }))

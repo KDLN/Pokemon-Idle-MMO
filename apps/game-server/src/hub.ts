@@ -343,6 +343,39 @@ export class GameHub {
       zone: newZone,
       connected_zones: newConnectedZones
     })
+
+    // Notify online friends about zone change (Issue #14)
+    this.notifyFriendsOfZoneChange(client, newZone)
+  }
+
+  // Notify online friends when a player changes zones (Issue #14)
+  private async notifyFriendsOfZoneChange(client: Client, zone: Zone) {
+    if (!client.session) return
+
+    const playerId = client.session.player.id
+
+    // Get this player's friends list
+    const friends = await getFriendsList(playerId)
+    if (friends.length === 0) return
+
+    // Find which friends are online and notify them
+    for (const [, otherClient] of this.clients) {
+      if (!otherClient.session) continue
+
+      // Check if this online user is a friend
+      const isFriend = friends.some(
+        f => f.friend_player_id === otherClient.session!.player.id ||
+             f.player_id === otherClient.session!.player.id
+      )
+
+      if (isFriend) {
+        this.send(otherClient, 'friend_zone_update', {
+          player_id: playerId,
+          zone_id: zone.id,
+          zone_name: zone.name
+        })
+      }
+    }
   }
 
   private async handleSwapParty(client: Client, payload: { box_pokemon_id: string; party_slot: number }) {
