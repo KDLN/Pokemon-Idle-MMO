@@ -12,6 +12,7 @@ interface FriendsListProps {
 
 export function FriendsList({ friends }: FriendsListProps) {
   const connectedZones = useGameStore((state) => state.connectedZones)
+  const currentZone = useGameStore((state) => state.currentZone)
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null)
 
   // Memoize sorted friends to avoid recalculating on every render
@@ -20,14 +21,20 @@ export function FriendsList({ friends }: FriendsListProps) {
     [friends]
   )
 
-  // Check if we can travel to friend's zone
-  const canTravelTo = (friend: Friend) => {
-    if (!friend.zone_id || !isFriendOnline(friend)) return false
-    return connectedZones.some((zone) => zone.id === friend.zone_id)
+  // Check if we can travel to friend's zone and get reason if not
+  const getTravelStatus = (friend: Friend): { canTravel: boolean; reason?: string } => {
+    if (!isFriendOnline(friend)) return { canTravel: false }
+    if (!friend.zone_id) return { canTravel: false, reason: 'Zone unknown' }
+    if (friend.zone_id === currentZone?.id) return { canTravel: false, reason: 'Same zone' }
+    if (!connectedZones.some((zone) => zone.id === friend.zone_id)) {
+      return { canTravel: false, reason: 'Zone not connected' }
+    }
+    return { canTravel: true }
   }
 
   const handleTravelToFriend = (friend: Friend) => {
-    if (friend.zone_id && canTravelTo(friend)) {
+    const { canTravel } = getTravelStatus(friend)
+    if (friend.zone_id && canTravel) {
       gameSocket.moveToZone(friend.zone_id)
     }
   }
@@ -53,7 +60,7 @@ export function FriendsList({ friends }: FriendsListProps) {
     <div className="divide-y divide-[#2a2a4a]">
       {sortedFriends.map((friend) => {
         const online = isFriendOnline(friend)
-        const canTravel = canTravelTo(friend)
+        const { canTravel, reason: travelReason } = getTravelStatus(friend)
         const isConfirming = confirmRemove === friend.friend_id
 
         return (
@@ -109,11 +116,17 @@ export function FriendsList({ friends }: FriendsListProps) {
               {/* Actions */}
               <div className="flex items-center gap-1">
                 {/* Travel to friend button (Issue #14) */}
-                {canTravel && (
+                {online && friend.zone_name && (
                   <button
                     onClick={() => handleTravelToFriend(friend)}
-                    className="p-1.5 text-[#4ade80] hover:bg-[#2a2a4a] rounded transition-colors"
-                    title={`Travel to ${friend.zone_name}`}
+                    disabled={!canTravel}
+                    className={`p-1.5 rounded transition-colors ${
+                      canTravel
+                        ? 'text-[#4ade80] hover:bg-[#2a2a4a]'
+                        : 'text-[#606080] cursor-not-allowed opacity-50'
+                    }`}
+                    title={canTravel ? `Travel to ${friend.zone_name}` : travelReason}
+                    aria-label={canTravel ? `Travel to ${friend.zone_name}` : `Cannot travel: ${travelReason}`}
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -127,12 +140,14 @@ export function FriendsList({ friends }: FriendsListProps) {
                     <button
                       onClick={() => handleRemoveFriend(friend.friend_id)}
                       className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                      aria-label={`Confirm remove ${friend.friend_username}`}
                     >
                       Remove
                     </button>
                     <button
                       onClick={() => setConfirmRemove(null)}
                       className="px-2 py-1 text-xs bg-[#2a2a4a] text-[#606080] rounded hover:text-white transition-colors"
+                      aria-label="Cancel remove friend"
                     >
                       Cancel
                     </button>
@@ -142,6 +157,7 @@ export function FriendsList({ friends }: FriendsListProps) {
                     onClick={() => setConfirmRemove(friend.friend_id)}
                     className="p-1.5 text-[#606080] hover:text-red-400 hover:bg-[#2a2a4a] rounded transition-colors"
                     title="Remove friend"
+                    aria-label={`Remove ${friend.friend_username} from friends`}
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />

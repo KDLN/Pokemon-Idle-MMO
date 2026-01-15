@@ -30,7 +30,8 @@ class GameSocket {
   private reconnectDelay = 1000
   private token: string | null = null
   private handlers: Map<string, MessageHandler> = new Map()
-  private friendRequestCallback: FriendRequestCallback | null = null
+  // Map-based tracking for friend request callbacks to prevent race conditions
+  private pendingFriendRequests: Map<string, FriendRequestCallback> = new Map()
 
   constructor() {
     // Set up default handlers
@@ -209,12 +210,16 @@ class GameSocket {
   }
 
   // Send a friend request by username with optional callback
+  // Uses Map-based tracking keyed by lowercase username to prevent race conditions
   sendFriendRequest(username: string, callback?: FriendRequestCallback): boolean {
     if (!this.isConnected()) {
       callback?.({ success: false, error: 'Not connected to server' })
       return false
     }
-    this.friendRequestCallback = callback || null
+    const normalizedUsername = username.toLowerCase()
+    if (callback) {
+      this.pendingFriendRequests.set(normalizedUsername, callback)
+    }
     this.send('send_friend_request', { username })
     return true
   }
@@ -325,12 +330,16 @@ class GameSocket {
   }
 
   private handleError = (payload: unknown) => {
-    const { message } = payload as { message: string }
+    const { message, context } = payload as { message: string; context?: { username?: string } }
     console.error('Server error:', message)
-    // If there's a pending friend request callback, call it with the error
-    if (this.friendRequestCallback) {
-      this.friendRequestCallback({ success: false, error: message })
-      this.friendRequestCallback = null
+    // If error has username context, find and invoke the corresponding callback
+    if (context?.username) {
+      const normalizedUsername = context.username.toLowerCase()
+      const callback = this.pendingFriendRequests.get(normalizedUsername)
+      if (callback) {
+        callback({ success: false, error: message })
+        this.pendingFriendRequests.delete(normalizedUsername)
+      }
     }
   }
 
@@ -490,10 +499,12 @@ class GameSocket {
   }
 
   private handleFriendRequestSent = (payload: unknown) => {
-    const { success, username } = payload as { success: boolean; username: string }
-    if (this.friendRequestCallback) {
-      this.friendRequestCallback({ success, username })
-      this.friendRequestCallback = null
+    const { success, username, error } = payload as { success: boolean; username: string; error?: string }
+    const normalizedUsername = username.toLowerCase()
+    const callback = this.pendingFriendRequests.get(normalizedUsername)
+    if (callback) {
+      callback({ success, username, error })
+      this.pendingFriendRequests.delete(normalizedUsername)
     }
     if (success) {
       // Refresh friends data to get the new outgoing request

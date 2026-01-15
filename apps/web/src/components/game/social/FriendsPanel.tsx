@@ -42,12 +42,13 @@ export function FriendsPanel({ isCollapsed = false, onToggle }: FriendsPanelProp
         onClick={onToggle}
         className="fixed bottom-20 right-4 w-12 h-12 rounded-full bg-[#5B6EEA] text-white shadow-lg flex items-center justify-center hover:bg-[#7B8EFA] transition-colors z-50"
         title="Open Friends"
+        aria-label={`Open Friends panel. ${onlineFriendsCount} online, ${totalRequests} pending requests`}
       >
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
         </svg>
         {(onlineFriendsCount > 0 || totalRequests > 0) && (
-          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 text-xs font-bold bg-green-500 rounded-full flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 text-xs font-bold bg-green-500 rounded-full flex items-center justify-center" aria-hidden="true">
             {totalRequests > 0 ? totalRequests : onlineFriendsCount}
           </span>
         )}
@@ -73,8 +74,10 @@ export function FriendsPanel({ isCollapsed = false, onToggle }: FriendsPanelProp
             onClick={() => setShowAddFriend(!showAddFriend)}
             className="p-1.5 text-[#606080] hover:text-[#5B6EEA] transition-colors rounded hover:bg-[#2a2a4a]"
             title="Add Friend"
+            aria-label={showAddFriend ? 'Close add friend form' : 'Add a new friend'}
+            aria-expanded={showAddFriend}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
           </button>
@@ -83,8 +86,9 @@ export function FriendsPanel({ isCollapsed = false, onToggle }: FriendsPanelProp
               onClick={onToggle}
               className="p-1.5 text-[#606080] hover:text-white transition-colors rounded hover:bg-[#2a2a4a]"
               title="Minimize"
+              aria-label="Minimize friends panel"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>

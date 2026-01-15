@@ -70,8 +70,9 @@ export function FriendRequests({ incoming, outgoing }: FriendRequestsProps) {
                     onClick={() => handleAccept(request.friend_id)}
                     className="p-1.5 text-[#4ade80] hover:bg-[#2a2a4a] rounded transition-colors"
                     title="Accept"
+                    aria-label={`Accept friend request from ${request.from_username}`}
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </button>
@@ -79,8 +80,9 @@ export function FriendRequests({ incoming, outgoing }: FriendRequestsProps) {
                     onClick={() => handleDecline(request.friend_id)}
                     className="p-1.5 text-red-400 hover:bg-[#2a2a4a] rounded transition-colors"
                     title="Decline"
+                    aria-label={`Decline friend request from ${request.from_username}`}
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -125,6 +127,7 @@ export function FriendRequests({ incoming, outgoing }: FriendRequestsProps) {
                   onClick={() => handleCancel(request.friend_id)}
                   className="px-2 py-1 text-xs text-[#606080] hover:text-red-400 hover:bg-[#2a2a4a] rounded transition-colors"
                   title="Cancel request"
+                  aria-label={`Cancel friend request to ${request.to_username}`}
                 >
                   Cancel
                 </button>

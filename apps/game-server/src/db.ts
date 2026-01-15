@@ -1006,12 +1006,30 @@ export async function getOutgoingFriendRequests(playerId: string): Promise<Frien
 }
 
 // Helper to extract player data from Supabase join result (includes zone info for Issue #14)
-function extractPlayerFromJoin(player: unknown): { username?: string; last_online?: string; current_zone_id?: number } | null {
+// Type for joined player data including zone
+interface JoinedPlayerData {
+  username?: string
+  last_online?: string
+  current_zone_id?: number
+  zone?: { name?: string } | { name?: string }[]
+}
+
+function extractPlayerFromJoin(player: unknown): JoinedPlayerData | null {
   if (!player) return null
   if (Array.isArray(player)) {
-    return player[0] as { username?: string; last_online?: string; current_zone_id?: number } || null
+    return (player[0] as JoinedPlayerData) || null
   }
-  return player as { username?: string; last_online?: string; current_zone_id?: number }
+  return player as JoinedPlayerData
+}
+
+// Extract zone name from joined data (handles both object and array forms)
+function extractZoneName(playerData: JoinedPlayerData | null): string | undefined {
+  if (!playerData?.zone) return undefined
+  const zone = playerData.zone
+  if (Array.isArray(zone)) {
+    return zone[0]?.name
+  }
+  return zone.name
 }
 
 // Get accepted friends list - uses JOIN for single query optimization
@@ -1056,9 +1074,6 @@ export async function getFriendsList(playerId: string): Promise<Friend[]> {
 
   return allFriends.map(row => {
     const friendData = extractPlayerFromJoin(row.friend)
-    // Extract zone name from nested join
-    const zoneData = (row.friend as { zone?: { name?: string } | { name?: string }[] })?.zone
-    const zoneName = Array.isArray(zoneData) ? zoneData[0]?.name : zoneData?.name
 
     return {
       friend_id: row.friend_id,
@@ -1069,7 +1084,7 @@ export async function getFriendsList(playerId: string): Promise<Friend[]> {
       friend_username: friendData?.username,
       friend_last_online: friendData?.last_online,
       zone_id: friendData?.current_zone_id,
-      zone_name: zoneName
+      zone_name: extractZoneName(friendData)
     }
   })
 }
