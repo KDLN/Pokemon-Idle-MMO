@@ -1070,6 +1070,9 @@ export async function getFriendsList(playerId: string): Promise<Friend[]> {
   if (err1) console.error('Failed to get friends list (sent):', err1)
   if (err2) console.error('Failed to get friends list (received):', err2)
 
+  // Debug: Log the raw results to help diagnose asymmetric friend issues
+  console.log(`getFriendsList(${playerId}): sentByMe=${sentByMe?.length || 0}, sentToMe=${sentToMe?.length || 0}`)
+
   const allFriends = [...(sentByMe || []), ...(sentToMe || [])]
 
   return allFriends.map(row => {
