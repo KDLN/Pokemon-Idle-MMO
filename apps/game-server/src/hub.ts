@@ -34,7 +34,15 @@ import {
   recordGymVictory,
   addBadgeToPlayer,
   getRecentChatMessages,
-  saveChatMessage
+  saveChatMessage,
+  getPlayerByUsername,
+  sendFriendRequest,
+  acceptFriendRequest,
+  declineFriendRequest,
+  getIncomingFriendRequests,
+  getOutgoingFriendRequests,
+  getFriendsList,
+  removeFriend
 } from './db.js'
 import { processTick, simulateGymBattle } from './game.js'
 
@@ -221,6 +229,21 @@ export class GameHub {
           break
         case 'heal_at_pokecenter':
           this.handleHealAtPokeCenter(client)
+          break
+        case 'send_friend_request':
+          this.handleSendFriendRequest(client, msg.payload as { username: string })
+          break
+        case 'accept_friend_request':
+          this.handleAcceptFriendRequest(client, msg.payload as { friend_id: string })
+          break
+        case 'decline_friend_request':
+          this.handleDeclineFriendRequest(client, msg.payload as { friend_id: string })
+          break
+        case 'remove_friend':
+          this.handleRemoveFriend(client, msg.payload as { friend_id: string })
+          break
+        case 'get_friends':
+          this.handleGetFriends(client)
           break
         default:
           console.log('Unknown message type:', msg.type)
@@ -715,5 +738,184 @@ export class GameHub {
 
   private sendError(client: Client, message: string) {
     this.send(client, 'error', { message })
+  }
+
+  // ============================================
+  // FRIEND HANDLERS
+  // ============================================
+
+  private async handleSendFriendRequest(client: Client, payload: { username: string }) {
+    if (!client.session) return
+
+    const { username } = payload
+    const trimmedUsername = username?.trim() || ''
+
+    // Validate username format (must match schema constraints)
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 20) {
+      this.sendError(client, 'Username must be 3-20 characters')
+      return
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) {
+      this.sendError(client, 'Invalid username format')
+      return
+    }
+
+    // Can't friend yourself
+    if (trimmedUsername.toLowerCase() === client.session.player.username.toLowerCase()) {
+      this.sendError(client, 'Cannot send friend request to yourself')
+      return
+    }
+
+    // Find the target player
+    const targetPlayer = await getPlayerByUsername(trimmedUsername)
+    if (!targetPlayer) {
+      this.sendError(client, 'Player not found')
+      return
+    }
+
+    // Send the friend request
+    const result = await sendFriendRequest(client.session.player.id, targetPlayer.id)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to send request')
+      return
+    }
+
+    // Notify the sender
+    this.send(client, 'friend_request_sent', {
+      success: true,
+      username: targetPlayer.username
+    })
+
+    // Notify the recipient if they're online
+    for (const [, otherClient] of this.clients) {
+      if (otherClient.session?.player.id === targetPlayer.id) {
+        this.send(otherClient, 'friend_request_received', {
+          friend_id: result.friend_id,
+          from_player_id: client.session.player.id,
+          from_username: client.session.player.username,
+          created_at: new Date().toISOString()
+        })
+        break
+      }
+    }
+  }
+
+  private async handleAcceptFriendRequest(client: Client, payload: { friend_id: string }) {
+    if (!client.session) return
+
+    const friend_id = payload?.friend_id
+    if (!friend_id || typeof friend_id !== 'string') {
+      this.sendError(client, 'Friend request ID is required')
+      return
+    }
+
+    const result = await acceptFriendRequest(client.session.player.id, friend_id)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to accept request')
+      return
+    }
+
+    // Get updated friends list to send back
+    const [friends, incoming, outgoing] = await Promise.all([
+      getFriendsList(client.session.player.id),
+      getIncomingFriendRequests(client.session.player.id),
+      getOutgoingFriendRequests(client.session.player.id)
+    ])
+
+    this.send(client, 'friends_update', { friends, incoming, outgoing })
+
+    // Notify the original sender if online
+    const newFriend = friends.find(f => f.friend_id === friend_id)
+    if (newFriend) {
+      const senderId = newFriend.player_id === client.session.player.id
+        ? newFriend.friend_player_id
+        : newFriend.player_id
+
+      for (const [, otherClient] of this.clients) {
+        if (otherClient.session?.player.id === senderId) {
+          const [theirFriends, theirIncoming, theirOutgoing] = await Promise.all([
+            getFriendsList(senderId),
+            getIncomingFriendRequests(senderId),
+            getOutgoingFriendRequests(senderId)
+          ])
+          this.send(otherClient, 'friends_update', {
+            friends: theirFriends,
+            incoming: theirIncoming,
+            outgoing: theirOutgoing
+          })
+          break
+        }
+      }
+    }
+  }
+
+  private async handleDeclineFriendRequest(client: Client, payload: { friend_id: string }) {
+    if (!client.session) return
+
+    const friend_id = payload?.friend_id
+    if (!friend_id || typeof friend_id !== 'string') {
+      this.sendError(client, 'Friend request ID is required')
+      return
+    }
+
+    const result = await declineFriendRequest(client.session.player.id, friend_id)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to decline request')
+      return
+    }
+
+    // Get updated lists
+    const [incoming, outgoing] = await Promise.all([
+      getIncomingFriendRequests(client.session.player.id),
+      getOutgoingFriendRequests(client.session.player.id)
+    ])
+
+    this.send(client, 'friends_update', {
+      friends: await getFriendsList(client.session.player.id),
+      incoming,
+      outgoing
+    })
+  }
+
+  private async handleRemoveFriend(client: Client, payload: { friend_id: string }) {
+    if (!client.session) return
+
+    const friend_id = payload?.friend_id
+    if (!friend_id || typeof friend_id !== 'string') {
+      this.sendError(client, 'Friend ID is required')
+      return
+    }
+
+    const result = await removeFriend(client.session.player.id, friend_id)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to remove friend')
+      return
+    }
+
+    // Get updated friends list
+    const friends = await getFriendsList(client.session.player.id)
+
+    this.send(client, 'friends_update', {
+      friends,
+      incoming: await getIncomingFriendRequests(client.session.player.id),
+      outgoing: await getOutgoingFriendRequests(client.session.player.id)
+    })
+  }
+
+  private async handleGetFriends(client: Client) {
+    if (!client.session) return
+
+    const [friends, incoming, outgoing] = await Promise.all([
+      getFriendsList(client.session.player.id),
+      getIncomingFriendRequests(client.session.player.id),
+      getOutgoingFriendRequests(client.session.player.id)
+    ])
+
+    this.send(client, 'friends_data', { friends, incoming, outgoing })
   }
 }
