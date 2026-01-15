@@ -1418,3 +1418,116 @@ export async function declineTradeRequest(
 ): Promise<{ success: boolean; error?: string }> {
   return updateTradeStatus(tradeId, playerId, 'declined')
 }
+
+// Complete a trade - transfers Pokemon ownership atomically
+// This calls the database function that handles the actual transfer
+export async function completeTrade(
+  tradeId: string
+): Promise<{ success: boolean; error?: string; transferred_count?: number }> {
+  const { data, error } = await supabase
+    .rpc('complete_trade', { p_trade_id: tradeId })
+
+  if (error) {
+    console.error('Failed to complete trade:', error)
+    return { success: false, error: 'Failed to complete trade' }
+  }
+
+  // The function returns a JSON object
+  const result = data as { success: boolean; error?: string; transferred_count?: number }
+  return result
+}
+
+// Add a Pokemon offer to a trade
+export async function addTradeOffer(
+  tradeId: string,
+  pokemonId: string,
+  playerId: string
+): Promise<{ success: boolean; error?: string }> {
+  // Verify the Pokemon belongs to the player
+  const { data: pokemon, error: pokemonError } = await supabase
+    .from('pokemon')
+    .select('id, owner_id')
+    .eq('id', pokemonId)
+    .eq('owner_id', playerId)
+    .single()
+
+  if (pokemonError || !pokemon) {
+    return { success: false, error: 'Pokemon not found or not owned by you' }
+  }
+
+  // Add the offer
+  const { error } = await supabase
+    .from('trade_offers')
+    .insert({
+      trade_id: tradeId,
+      pokemon_id: pokemonId,
+      offered_by: playerId
+    })
+
+  if (error) {
+    console.error('Failed to add trade offer:', error)
+    if (error.code === '23505') {
+      return { success: false, error: 'Pokemon already offered in this trade' }
+    }
+    return { success: false, error: 'Failed to add offer' }
+  }
+
+  return { success: true }
+}
+
+// Remove a Pokemon offer from a trade
+export async function removeTradeOffer(
+  tradeId: string,
+  pokemonId: string,
+  playerId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase
+    .from('trade_offers')
+    .delete()
+    .eq('trade_id', tradeId)
+    .eq('pokemon_id', pokemonId)
+    .eq('offered_by', playerId)
+    .select()
+
+  if (error) {
+    console.error('Failed to remove trade offer:', error)
+    return { success: false, error: 'Failed to remove offer' }
+  }
+
+  if (!data || data.length === 0) {
+    return { success: false, error: 'Offer not found' }
+  }
+
+  return { success: true }
+}
+
+// Get all offers for a trade
+export async function getTradeOffers(
+  tradeId: string
+): Promise<TradeOffer[]> {
+  const { data, error } = await supabase
+    .from('trade_offers')
+    .select(`
+      offer_id,
+      trade_id,
+      pokemon_id,
+      offered_by,
+      created_at,
+      pokemon:pokemon(id, species_id, nickname, level, is_shiny, species:pokemon_species(name))
+    `)
+    .eq('trade_id', tradeId)
+
+  if (error) {
+    console.error('Failed to get trade offers:', error)
+    return []
+  }
+
+  return (data || []).map(row => ({
+    offer_id: row.offer_id,
+    trade_id: row.trade_id,
+    pokemon_id: row.pokemon_id,
+    offered_by: row.offered_by,
+    created_at: row.created_at,
+    pokemon: row.pokemon as unknown as TradeOffer['pokemon']
+  }))
+}

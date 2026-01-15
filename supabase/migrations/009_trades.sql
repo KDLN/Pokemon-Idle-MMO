@@ -103,10 +103,15 @@ CREATE POLICY "Players can view offers on own trades"
   );
 
 -- Players can add offers to trades they're part of (only their own Pokemon)
+-- SECURITY: Validates both that the player owns the Pokemon AND is part of the trade
 CREATE POLICY "Players can add offers to own trades"
   ON trade_offers FOR INSERT
   WITH CHECK (
+    -- Player must be the one offering
     offered_by IN (SELECT id FROM players WHERE user_id = auth.uid())
+    -- Pokemon must belong to the player offering it
+    AND pokemon_id IN (SELECT id FROM pokemon WHERE owner_id = offered_by)
+    -- Trade must be pending and player must be part of it
     AND trade_id IN (
       SELECT trade_id FROM trades
       WHERE (sender_id IN (SELECT id FROM players WHERE user_id = auth.uid())
@@ -142,3 +147,78 @@ CREATE TRIGGER trades_updated_at
   BEFORE UPDATE ON trades
   FOR EACH ROW
   EXECUTE FUNCTION update_trade_timestamp();
+
+-- ============================================
+-- TRADE COMPLETION FUNCTION
+-- ============================================
+
+-- Atomically completes a trade by transferring Pokemon ownership
+-- This runs as SECURITY DEFINER to bypass RLS during the transfer
+CREATE OR REPLACE FUNCTION complete_trade(p_trade_id UUID)
+RETURNS JSON AS $$
+DECLARE
+  v_trade RECORD;
+  v_sender_offers UUID[];
+  v_receiver_offers UUID[];
+  v_transferred_count INT := 0;
+BEGIN
+  -- Lock the trade row for update
+  SELECT * INTO v_trade
+  FROM trades
+  WHERE trade_id = p_trade_id
+  FOR UPDATE;
+
+  -- Verify trade exists and is accepted (ready to complete)
+  IF v_trade IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'Trade not found');
+  END IF;
+
+  IF v_trade.status != 'accepted' THEN
+    RETURN json_build_object('success', false, 'error', 'Trade must be accepted before completing');
+  END IF;
+
+  -- Get all Pokemon offered by sender
+  SELECT array_agg(pokemon_id) INTO v_sender_offers
+  FROM trade_offers
+  WHERE trade_id = p_trade_id AND offered_by = v_trade.sender_id;
+
+  -- Get all Pokemon offered by receiver
+  SELECT array_agg(pokemon_id) INTO v_receiver_offers
+  FROM trade_offers
+  WHERE trade_id = p_trade_id AND offered_by = v_trade.receiver_id;
+
+  -- Transfer sender's Pokemon to receiver
+  IF v_sender_offers IS NOT NULL AND array_length(v_sender_offers, 1) > 0 THEN
+    UPDATE pokemon
+    SET owner_id = v_trade.receiver_id,
+        party_slot = NULL  -- Remove from party when traded
+    WHERE id = ANY(v_sender_offers)
+      AND owner_id = v_trade.sender_id;  -- Double-check ownership
+
+    GET DIAGNOSTICS v_transferred_count = ROW_COUNT;
+  END IF;
+
+  -- Transfer receiver's Pokemon to sender
+  IF v_receiver_offers IS NOT NULL AND array_length(v_receiver_offers, 1) > 0 THEN
+    UPDATE pokemon
+    SET owner_id = v_trade.sender_id,
+        party_slot = NULL  -- Remove from party when traded
+    WHERE id = ANY(v_receiver_offers)
+      AND owner_id = v_trade.receiver_id;  -- Double-check ownership
+
+    GET DIAGNOSTICS v_transferred_count = v_transferred_count + ROW_COUNT;
+  END IF;
+
+  -- Mark trade as completed
+  UPDATE trades
+  SET status = 'completed'
+  WHERE trade_id = p_trade_id;
+
+  RETURN json_build_object(
+    'success', true,
+    'transferred_count', v_transferred_count,
+    'sender_received', coalesce(array_length(v_receiver_offers, 1), 0),
+    'receiver_received', coalesce(array_length(v_sender_offers, 1), 0)
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
