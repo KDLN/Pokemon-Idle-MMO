@@ -312,33 +312,39 @@ export class GameHub {
 
     // Clean up trade ready states for any active trades this player was in
     // Use Promise.all to ensure all notifications complete before removing client
+    // Inner try-catch ensures one failure doesn't stop other cleanups
     if (client.session) {
       const playerId = client.session.player.id
       try {
         const activeTradeIds = await getActiveTradeIds(playerId)
         await Promise.all(activeTradeIds.map(async (tradeId) => {
-          // Get trade details to find the partner
-          const trade = await this.getTradeById(tradeId)
-          if (trade) {
-            // Clean up ready state
-            this.tradeReadyStates.delete(tradeId)
+          try {
+            // Get trade details to find the partner
+            const trade = await this.getTradeById(tradeId)
+            if (trade) {
+              // Clean up ready state
+              this.tradeReadyStates.delete(tradeId)
 
-            // Notify the other player that their trade partner disconnected
-            const otherPlayerId = trade.sender_id === playerId ? trade.receiver_id : trade.sender_id
-            const otherClient = this.getClientByPlayerId(otherPlayerId)
-            if (otherClient) {
-              this.send(otherClient, 'trade_partner_disconnected', {
-                trade_id: tradeId,
-                message: 'Your trade partner disconnected'
-              })
+              // Notify the other player that their trade partner disconnected
+              const otherPlayerId = trade.sender_id === playerId ? trade.receiver_id : trade.sender_id
+              const otherClient = this.getClientByPlayerId(otherPlayerId)
+              if (otherClient) {
+                this.send(otherClient, 'trade_partner_disconnected', {
+                  trade_id: tradeId,
+                  message: 'Your trade partner disconnected'
+                })
+              }
             }
+          } catch (err) {
+            console.error(`Failed to clean up trade ${tradeId} on disconnect:`, err)
           }
         }))
       } catch (err) {
-        console.error('Failed to clean up trades on disconnect:', err)
+        console.error('Failed to get active trades on disconnect:', err)
       }
     }
 
+    // Always remove client from map, even if cleanup failed
     this.clients.delete(client.ws)
   }
 
@@ -1640,15 +1646,15 @@ export class GameHub {
 
     // If both players are ready, auto-complete the trade
     if (readyState.sender_ready && readyState.receiver_ready) {
-      // CRITICAL: Delete ready state FIRST to prevent race condition
+      // CRITICAL: Save and delete ready state FIRST to prevent race condition
       // where both players click ready simultaneously and both trigger completion
+      const savedReadyState = { ...readyState }
       this.tradeReadyStates.delete(tradeId)
 
       // Complete the trade
       const result = await completeTrade(tradeId)
 
       if (result.success) {
-
         // Notify both players of completion
         this.send(client, 'trade_completed', {
           trade_id: tradeId,
@@ -1677,7 +1683,12 @@ export class GameHub {
           this.send(otherClient, 'trades_update', { incoming: otherIncoming, outgoing: otherOutgoing })
         }
       } else {
-        // Trade failed - notify both players with error and reset ready state in UI
+        // Trade failed - restore ready state so players can retry without toggling again
+        savedReadyState.sender_ready = false
+        savedReadyState.receiver_ready = false
+        this.tradeReadyStates.set(tradeId, savedReadyState)
+
+        // Notify both players with error and reset ready state in UI
         this.sendError(client, result.error || 'Failed to complete trade')
 
         // Notify both players to reset their ready states
@@ -1700,11 +1711,15 @@ export class GameHub {
   }
 
   // Helper to reset ready states when trade offers change
+  // Creates the state if it doesn't exist to ensure notifications have consistent data
   private resetTradeReadyState(tradeId: string) {
-    const readyState = this.tradeReadyStates.get(tradeId)
+    let readyState = this.tradeReadyStates.get(tradeId)
     if (readyState) {
       readyState.sender_ready = false
       readyState.receiver_ready = false
+    } else {
+      // Create fresh state to ensure subsequent operations have correct data
+      this.tradeReadyStates.set(tradeId, { sender_ready: false, receiver_ready: false })
     }
   }
 }
