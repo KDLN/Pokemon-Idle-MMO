@@ -1483,8 +1483,9 @@ export async function addTradeOffer(
     return { success: false, error: 'Trade not found' } // Generic message to avoid info leak
   }
 
-  if (trade.status !== 'pending') {
-    return { success: false, error: 'Trade is no longer pending' }
+  // Allow adding offers to both pending and accepted trades
+  if (trade.status !== 'pending' && trade.status !== 'accepted') {
+    return { success: false, error: 'Trade is no longer active' }
   }
 
   // Now verify the Pokemon belongs to the player

@@ -180,7 +180,6 @@ export function TradeModal({ isOpen, onClose }: TradeModalProps) {
   const activeTrade = useGameStore((state) => state.activeTrade)
   const party = useGameStore((state) => state.party)
   const box = useGameStore((state) => state.box)
-  const player = useGameStore((state) => state.player)
 
   // Animation handling
   useEffect(() => {

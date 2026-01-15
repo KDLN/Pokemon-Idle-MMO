@@ -311,11 +311,12 @@ export class GameHub {
     console.log(`Client disconnected: ${client.userId}`)
 
     // Clean up trade ready states for any active trades this player was in
+    // Use Promise.all to ensure all notifications complete before removing client
     if (client.session) {
       const playerId = client.session.player.id
       try {
         const activeTradeIds = await getActiveTradeIds(playerId)
-        for (const tradeId of activeTradeIds) {
+        await Promise.all(activeTradeIds.map(async (tradeId) => {
           // Get trade details to find the partner
           const trade = await this.getTradeById(tradeId)
           if (trade) {
@@ -332,7 +333,7 @@ export class GameHub {
               })
             }
           }
-        }
+        }))
       } catch (err) {
         console.error('Failed to clean up trades on disconnect:', err)
       }
