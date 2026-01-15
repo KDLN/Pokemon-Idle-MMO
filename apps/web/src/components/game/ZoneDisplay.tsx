@@ -27,6 +27,16 @@ const ZONE_DATA: Record<string, { description: string; icon: string; features: s
     icon: '🌲',
     features: ['Tall Grass', 'Wild Pokemon', 'Bug Catchers'],
   },
+  'Viridian Forest': {
+    description: 'A deep forest teeming with Bug-type Pokemon. Pikachu are rarely spotted here.',
+    icon: '🌳',
+    features: ['Dense Trees', 'Bug Pokemon', 'Rare Pikachu'],
+  },
+  'Route 2 North': {
+    description: 'The northern stretch of Route 2, leading toward Pewter City.',
+    icon: '🛤️',
+    features: ['Tall Grass', 'Wild Pokemon', 'Path to Pewter'],
+  },
 }
 
 export function ZoneDisplay() {

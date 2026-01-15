@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 
 interface BackgroundLayerProps {
-  zoneType: 'route' | 'town'
+  zoneType: 'route' | 'town' | 'forest'
   zoneName?: string
   isAnimated?: boolean
 }
@@ -161,9 +161,129 @@ function Tree() {
   )
 }
 
+// Tall forest tree
+function ForestTree({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+  const sizes = {
+    sm: { canopy: 'w-10 h-10', trunk: 'w-2 h-8 top-8' },
+    md: { canopy: 'w-14 h-14', trunk: 'w-3 h-12 top-11' },
+    lg: { canopy: 'w-18 h-18', trunk: 'w-4 h-16 top-14' },
+  }
+  const s = sizes[size]
+
+  return (
+    <div className="relative">
+      {/* Tree canopy - layered for depth */}
+      <div className={`${s.canopy} bg-green-800 rounded-full`} />
+      <div className={`absolute top-1 left-1 ${s.canopy} bg-green-700 rounded-full scale-90`} />
+      <div className={`absolute top-2 left-2 ${s.canopy} bg-green-600 rounded-full scale-75`} />
+      {/* Trunk */}
+      <div className={`absolute ${s.trunk} left-1/2 -translate-x-1/2 bg-amber-900 rounded-b`} />
+    </div>
+  )
+}
+
+// Forest background with dense trees and darker atmosphere
+function ForestBackground({ zoneName, isAnimated }: { zoneName?: string; isAnimated: boolean }) {
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {/* Dark forest sky - barely visible through canopy */}
+      <div className="absolute inset-0 bg-gradient-to-b from-green-950 via-green-900 to-green-950" />
+
+      {/* Fog/mist effect */}
+      <div className="absolute inset-0 bg-gradient-to-t from-green-900/50 via-transparent to-green-950/30" />
+
+      {/* Ground - mossy forest floor */}
+      <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-gradient-to-t from-amber-950 via-green-950 to-green-900" />
+
+      {/* Dirt path through forest */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-1/3 bg-gradient-to-t from-amber-900/70 to-transparent" />
+
+      {/* Background trees (distant, darker) */}
+      <div className="absolute bottom-1/4 left-0 right-0 flex justify-around items-end opacity-60">
+        {[...Array(8)].map((_, i) => (
+          <div key={`bg-tree-${i}`} className="relative" style={{ transform: `translateY(${Math.random() * 20}px)` }}>
+            <div className="w-8 h-20 bg-green-950 rounded-t-full" />
+          </div>
+        ))}
+      </div>
+
+      {/* Midground trees */}
+      <div className="absolute bottom-1/4 left-0 right-0 flex justify-around items-end px-4">
+        <ForestTree size="lg" />
+        <ForestTree size="md" />
+        <ForestTree size="lg" />
+        <ForestTree size="md" />
+        <ForestTree size="lg" />
+      </div>
+
+      {/* Foreground trees on edges */}
+      <div className="absolute bottom-1/4 left-0">
+        <div className="w-16 h-32 bg-green-950 rounded-tr-full" />
+      </div>
+      <div className="absolute bottom-1/4 right-0">
+        <div className="w-16 h-32 bg-green-950 rounded-tl-full" />
+      </div>
+
+      {/* Mushrooms on forest floor */}
+      {[...Array(5)].map((_, i) => (
+        <div
+          key={`mushroom-${i}`}
+          className="absolute bottom-4"
+          style={{ left: `${15 + i * 18}%` }}
+        >
+          <div className="w-3 h-2 bg-red-600 rounded-t-full" />
+          <div className="w-1.5 h-2 bg-amber-100 mx-auto" />
+        </div>
+      ))}
+
+      {/* Fireflies / light particles */}
+      {isAnimated && [...Array(12)].map((_, i) => (
+        <div
+          key={`firefly-${i}`}
+          className="absolute w-1.5 h-1.5 bg-yellow-300 rounded-full animate-pulse"
+          style={{
+            left: `${10 + Math.random() * 80}%`,
+            top: `${20 + Math.random() * 50}%`,
+            animationDelay: `${Math.random() * 3}s`,
+            animationDuration: `${2 + Math.random() * 2}s`,
+            opacity: 0.6 + Math.random() * 0.4,
+          }}
+        />
+      ))}
+
+      {/* Light rays breaking through canopy */}
+      <div className="absolute inset-0 overflow-hidden opacity-20">
+        <div
+          className="absolute w-8 h-full bg-gradient-to-b from-yellow-200/40 to-transparent rotate-12"
+          style={{ left: '20%', top: '-10%' }}
+        />
+        <div
+          className="absolute w-6 h-full bg-gradient-to-b from-yellow-200/30 to-transparent -rotate-6"
+          style={{ left: '60%', top: '-10%' }}
+        />
+        <div
+          className="absolute w-4 h-full bg-gradient-to-b from-yellow-200/20 to-transparent rotate-3"
+          style={{ left: '80%', top: '-10%' }}
+        />
+      </div>
+
+      {/* Zone name */}
+      {zoneName && (
+        <div className="absolute top-4 left-4 bg-green-950/80 px-3 py-1 rounded-full text-sm font-medium text-green-200 shadow border border-green-800">
+          {zoneName}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function BackgroundLayer({ zoneType, zoneName, isAnimated = true }: BackgroundLayerProps) {
   if (zoneType === 'town') {
     return <TownBackground zoneName={zoneName} />
+  }
+
+  if (zoneType === 'forest') {
+    return <ForestBackground zoneName={zoneName} isAnimated={isAnimated} />
   }
 
   return <RouteBackground isAnimated={isAnimated} />

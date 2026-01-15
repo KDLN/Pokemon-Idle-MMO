@@ -24,9 +24,16 @@ export function WorldView({ className = '' }: WorldViewProps) {
   const [gameTime, setGameTime] = useState('')
   const [trainerPosition, setTrainerPosition] = useState(50) // Position percentage
 
-  // Derived state
-  const zoneType = currentZone?.zone_type === 'town' ? 'town' : 'route'
-  const isRoute = zoneType === 'route'
+  // Derived state - determine visual zone type
+  const getVisualZoneType = (): 'town' | 'route' | 'forest' => {
+    if (!currentZone) return 'route'
+    if (currentZone.zone_type === 'town') return 'town'
+    // Special visual for forest zones
+    if (currentZone.name.toLowerCase().includes('forest')) return 'forest'
+    return 'route'
+  }
+  const zoneType = getVisualZoneType()
+  const isRoute = zoneType === 'route' || zoneType === 'forest'
   const isWalking = isConnected && isRoute
 
   // Get lead Pokemon
