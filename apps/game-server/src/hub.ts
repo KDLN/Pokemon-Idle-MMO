@@ -1269,6 +1269,12 @@ export class GameHub {
       return
     }
 
+    // Clean up ready state to prevent memory leak
+    this.tradeReadyStates.delete(tradeId)
+
+    // Notify both players that trade was cancelled (so modal closes)
+    this.send(client, 'trade_cancelled', { trade_id: tradeId })
+
     // Get updated trade lists for the receiver (current client)
     const [incoming, outgoing] = await Promise.all([
       getIncomingTradeRequests(client.session.player.id),
@@ -1280,6 +1286,9 @@ export class GameHub {
     // Notify only the sender (not all clients)
     const senderClient = this.getClientByPlayerId(trade.sender_id)
     if (senderClient?.session) {
+      // Send trade_cancelled to close modal if open
+      this.send(senderClient, 'trade_cancelled', { trade_id: tradeId })
+
       const [senderIncoming, senderOutgoing] = await Promise.all([
         getIncomingTradeRequests(trade.sender_id),
         getOutgoingTradeRequests(trade.sender_id)
@@ -1320,6 +1329,12 @@ export class GameHub {
       return
     }
 
+    // Clean up ready state to prevent memory leak
+    this.tradeReadyStates.delete(tradeId)
+
+    // Notify both players that trade was cancelled (so modal closes)
+    this.send(client, 'trade_cancelled', { trade_id: tradeId })
+
     // Get updated trade lists for the sender (current client)
     const [incoming, outgoing] = await Promise.all([
       getIncomingTradeRequests(client.session.player.id),
@@ -1331,6 +1346,9 @@ export class GameHub {
     // Notify only the receiver (not all clients)
     const receiverClient = this.getClientByPlayerId(trade.receiver_id)
     if (receiverClient?.session) {
+      // Send trade_cancelled to close modal if open
+      this.send(receiverClient, 'trade_cancelled', { trade_id: tradeId })
+
       const [receiverIncoming, receiverOutgoing] = await Promise.all([
         getIncomingTradeRequests(trade.receiver_id),
         getOutgoingTradeRequests(trade.receiver_id)
@@ -1621,12 +1639,14 @@ export class GameHub {
 
     // If both players are ready, auto-complete the trade
     if (readyState.sender_ready && readyState.receiver_ready) {
+      // CRITICAL: Delete ready state FIRST to prevent race condition
+      // where both players click ready simultaneously and both trigger completion
+      this.tradeReadyStates.delete(tradeId)
+
       // Complete the trade
       const result = await completeTrade(tradeId)
 
       if (result.success) {
-        // Clean up ready state
-        this.tradeReadyStates.delete(tradeId)
 
         // Notify both players of completion
         this.send(client, 'trade_completed', {
@@ -1656,10 +1676,24 @@ export class GameHub {
           this.send(otherClient, 'trades_update', { incoming: otherIncoming, outgoing: otherOutgoing })
         }
       } else {
-        // Reset ready states on failure
-        readyState.sender_ready = false
-        readyState.receiver_ready = false
+        // Trade failed - notify both players with error and reset ready state in UI
         this.sendError(client, result.error || 'Failed to complete trade')
+
+        // Notify both players to reset their ready states
+        this.send(client, 'trade_ready_update', {
+          trade_id: tradeId,
+          my_ready: false,
+          their_ready: false
+        })
+
+        if (otherClient?.session) {
+          this.send(otherClient, 'trade_ready_update', {
+            trade_id: tradeId,
+            my_ready: false,
+            their_ready: false
+          })
+          this.sendError(otherClient, result.error || 'Failed to complete trade')
+        }
       }
     }
   }

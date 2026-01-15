@@ -692,13 +692,9 @@ class GameSocket {
   private handleTradePartnerDisconnected = (payload: unknown) => {
     const { trade_id, message } = payload as { trade_id: string; message: string }
     const store = useGameStore.getState()
-    // Update the active trade to show warning
+    // Set warning without affecting offers (preserves both my_offers and their_offers)
     if (store.activeTrade?.trade_id === trade_id) {
-      store.updateTradeOffers(
-        trade_id,
-        store.activeTrade.their_offers,
-        message || 'Your trade partner disconnected'
-      )
+      store.setTradeWarning(trade_id, message || 'Your trade partner disconnected')
     }
     console.log('Trade partner disconnected:', message)
   }

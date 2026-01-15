@@ -170,6 +170,7 @@ interface GameStore {
   setActiveTrade: (trade: ActiveTradeSession | null) => void
   setTradeModalOpen: (open: boolean) => void
   updateTradeOffers: (tradeId: string, offers: TradeOffer[], warning?: string) => void
+  setTradeWarning: (tradeId: string, warning: string) => void
   setTradeReady: (myReady: boolean, theirReady: boolean) => void
 
   // Reset store
@@ -488,6 +489,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
           // Reset ready states when offers change
           my_ready: false,
           their_ready: false,
+        },
+      }
+    }),
+
+  setTradeWarning: (tradeId, warning) =>
+    set((state) => {
+      if (!state.activeTrade || state.activeTrade.trade_id !== tradeId) return state
+
+      return {
+        activeTrade: {
+          ...state.activeTrade,
+          warning,
         },
       }
     }),
