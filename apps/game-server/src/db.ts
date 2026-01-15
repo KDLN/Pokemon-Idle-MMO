@@ -824,6 +824,9 @@ export async function sendFriendRequest(
     }
     if (record.status === 'pending') {
       // If the other player sent us a request, auto-accept it
+      // Note: In rare cases of simultaneous requests, this creates a race condition.
+      // The unique_friend_pair constraint prevents duplicate records, so the worst case
+      // is that one request fails with "already sent" error - the user can retry.
       if (record.player_id === friendPlayerId) {
         const { error } = await supabase
           .from('friends')

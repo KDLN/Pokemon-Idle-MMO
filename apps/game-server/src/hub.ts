@@ -748,19 +748,27 @@ export class GameHub {
     if (!client.session) return
 
     const { username } = payload
-    if (!username || username.trim().length === 0) {
-      this.sendError(client, 'Username is required')
+    const trimmedUsername = username?.trim() || ''
+
+    // Validate username format (must match schema constraints)
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 20) {
+      this.sendError(client, 'Username must be 3-20 characters')
+      return
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) {
+      this.sendError(client, 'Invalid username format')
       return
     }
 
     // Can't friend yourself
-    if (username.toLowerCase() === client.session.player.username.toLowerCase()) {
+    if (trimmedUsername.toLowerCase() === client.session.player.username.toLowerCase()) {
       this.sendError(client, 'Cannot send friend request to yourself')
       return
     }
 
     // Find the target player
-    const targetPlayer = await getPlayerByUsername(username.trim())
+    const targetPlayer = await getPlayerByUsername(trimmedUsername)
     if (!targetPlayer) {
       this.sendError(client, 'Player not found')
       return
