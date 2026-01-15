@@ -235,17 +235,15 @@ function ForestBackground({ zoneName, isAnimated }: { zoneName?: string; isAnima
         </div>
       ))}
 
-      {/* Fireflies / light particles - fixed positions for stability */}
+      {/* Fireflies - drift and fade with varied animations */}
       {isAnimated && (
         <>
-          <div className="absolute w-1.5 h-1.5 bg-yellow-300/70 rounded-full animate-firefly" style={{ left: '15%', top: '25%' }} />
-          <div className="absolute w-1 h-1 bg-yellow-200/60 rounded-full animate-firefly" style={{ left: '25%', top: '40%', animationDelay: '1s' }} />
-          <div className="absolute w-1.5 h-1.5 bg-yellow-300/70 rounded-full animate-firefly" style={{ left: '40%', top: '30%', animationDelay: '2s' }} />
-          <div className="absolute w-1 h-1 bg-yellow-200/60 rounded-full animate-firefly" style={{ left: '55%', top: '45%', animationDelay: '0.5s' }} />
-          <div className="absolute w-1.5 h-1.5 bg-yellow-300/70 rounded-full animate-firefly" style={{ left: '70%', top: '35%', animationDelay: '1.5s' }} />
-          <div className="absolute w-1 h-1 bg-yellow-200/60 rounded-full animate-firefly" style={{ left: '80%', top: '50%', animationDelay: '2.5s' }} />
-          <div className="absolute w-1 h-1 bg-yellow-300/50 rounded-full animate-firefly" style={{ left: '30%', top: '55%', animationDelay: '3s' }} />
-          <div className="absolute w-1 h-1 bg-yellow-200/50 rounded-full animate-firefly" style={{ left: '60%', top: '60%', animationDelay: '1.8s' }} />
+          <div className="absolute w-1.5 h-1.5 bg-yellow-300/80 rounded-full animate-firefly-1" style={{ left: '15%', top: '25%' }} />
+          <div className="absolute w-1 h-1 bg-yellow-200/70 rounded-full animate-firefly-2" style={{ left: '25%', top: '40%', animationDelay: '2s' }} />
+          <div className="absolute w-1.5 h-1.5 bg-yellow-300/80 rounded-full animate-firefly-3" style={{ left: '45%', top: '30%', animationDelay: '1s' }} />
+          <div className="absolute w-1 h-1 bg-yellow-200/70 rounded-full animate-firefly-1" style={{ left: '55%', top: '50%', animationDelay: '3.5s' }} />
+          <div className="absolute w-1.5 h-1.5 bg-yellow-300/80 rounded-full animate-firefly-2" style={{ left: '70%', top: '35%', animationDelay: '0.5s' }} />
+          <div className="absolute w-1 h-1 bg-yellow-200/70 rounded-full animate-firefly-3" style={{ left: '80%', top: '55%', animationDelay: '4s' }} />
         </>
       )}
 

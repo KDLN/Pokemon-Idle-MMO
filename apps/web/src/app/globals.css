@@ -581,15 +581,41 @@ a:focus-visible {
   animation: twinkle 2s ease-in-out infinite;
 }
 
-/* Firefly (gentle glow for forest) */
-@keyframes firefly {
-  0%, 100% { opacity: 0; }
-  20%, 80% { opacity: 1; }
-  50% { opacity: 0.7; }
+/* Firefly (gentle glow + drift for forest) */
+@keyframes firefly-1 {
+  0% { opacity: 0; transform: translate(0, 0); }
+  20% { opacity: 0.8; }
+  50% { opacity: 0.6; transform: translate(10px, -8px); }
+  80% { opacity: 0.8; }
+  100% { opacity: 0; transform: translate(15px, -15px); }
 }
 
-.animate-firefly {
-  animation: firefly 4s ease-in-out infinite;
+@keyframes firefly-2 {
+  0% { opacity: 0; transform: translate(0, 0); }
+  20% { opacity: 0.7; }
+  50% { opacity: 0.5; transform: translate(-8px, -12px); }
+  80% { opacity: 0.7; }
+  100% { opacity: 0; transform: translate(-12px, -20px); }
+}
+
+@keyframes firefly-3 {
+  0% { opacity: 0; transform: translate(0, 0); }
+  20% { opacity: 0.9; }
+  50% { opacity: 0.6; transform: translate(12px, 5px); }
+  80% { opacity: 0.8; }
+  100% { opacity: 0; transform: translate(18px, -10px); }
+}
+
+.animate-firefly-1 {
+  animation: firefly-1 6s ease-in-out infinite;
+}
+
+.animate-firefly-2 {
+  animation: firefly-2 7s ease-in-out infinite;
+}
+
+.animate-firefly-3 {
+  animation: firefly-3 5s ease-in-out infinite;
 }
 
 /* Ticker scroll (for world events) */
