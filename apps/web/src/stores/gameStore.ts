@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { Player, Pokemon, Zone, EncounterEvent, LevelUpEvent, ShopItem } from '@/types/game'
 import type { ChatMessageData, ChatChannel } from '@/types/chat'
 import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
+import type { IncomingTradeRequest, OutgoingTradeRequest, ActiveTradeSession, TradeOffer } from '@/types/trade'
 import type { LogEntry } from '@/components/game/interactions/WorldLog'
 import type { WorldEvent } from '@/components/game/social/WorldEventsTicker'
 import type { GymLeader } from '@/components/game/GymBattlePanel'
@@ -158,6 +159,19 @@ interface GameStore {
   nearbyPlayers: { id: string; username: string }[]
   setNearbyPlayers: (players: { id: string; username: string }[]) => void
 
+  // Trade state
+  incomingTradeRequests: IncomingTradeRequest[]
+  outgoingTradeRequests: OutgoingTradeRequest[]
+  activeTrade: ActiveTradeSession | null
+  isTradeModalOpen: boolean
+  setIncomingTradeRequests: (requests: IncomingTradeRequest[]) => void
+  setOutgoingTradeRequests: (requests: OutgoingTradeRequest[]) => void
+  setAllTradesData: (data: { incoming: IncomingTradeRequest[]; outgoing: OutgoingTradeRequest[] }) => void
+  setActiveTrade: (trade: ActiveTradeSession | null) => void
+  setTradeModalOpen: (open: boolean) => void
+  updateTradeOffers: (tradeId: string, offers: TradeOffer[], warning?: string) => void
+  setTradeReady: (myReady: boolean, theirReady: boolean) => void
+
   // Reset store
   reset: () => void
 }
@@ -226,6 +240,11 @@ const initialState = {
   outgoingFriendRequests: [] as OutgoingFriendRequest[],
   // Nearby players state
   nearbyPlayers: [] as { id: string; username: string }[],
+  // Trade state
+  incomingTradeRequests: [] as IncomingTradeRequest[],
+  outgoingTradeRequests: [] as OutgoingTradeRequest[],
+  activeTrade: null as ActiveTradeSession | null,
+  isTradeModalOpen: false,
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -437,6 +456,53 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   // Nearby players methods
   setNearbyPlayers: (players) => set({ nearbyPlayers: players }),
+
+  // Trade methods
+  setIncomingTradeRequests: (requests) => set({ incomingTradeRequests: requests }),
+
+  setOutgoingTradeRequests: (requests) => set({ outgoingTradeRequests: requests }),
+
+  setAllTradesData: (data) => set({
+    incomingTradeRequests: data.incoming,
+    outgoingTradeRequests: data.outgoing,
+  }),
+
+  setActiveTrade: (trade) => set({ activeTrade: trade }),
+
+  setTradeModalOpen: (open) => set({ isTradeModalOpen: open }),
+
+  updateTradeOffers: (tradeId, offers, warning) =>
+    set((state) => {
+      if (!state.activeTrade || state.activeTrade.trade_id !== tradeId) return state
+
+      const playerId = state.player?.id
+      const myOffers = offers.filter((o) => o.offered_by === playerId)
+      const theirOffers = offers.filter((o) => o.offered_by !== playerId)
+
+      return {
+        activeTrade: {
+          ...state.activeTrade,
+          my_offers: myOffers,
+          their_offers: theirOffers,
+          warning,
+          // Reset ready states when offers change
+          my_ready: false,
+          their_ready: false,
+        },
+      }
+    }),
+
+  setTradeReady: (myReady, theirReady) =>
+    set((state) => {
+      if (!state.activeTrade) return state
+      return {
+        activeTrade: {
+          ...state.activeTrade,
+          my_ready: myReady,
+          their_ready: theirReady,
+        },
+      }
+    }),
 
   reset: () => set(initialState),
 }))

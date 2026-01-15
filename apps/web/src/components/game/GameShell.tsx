@@ -13,6 +13,7 @@ import { WorldView } from './world'
 import { WorldEventsTicker } from './social/WorldEventsTicker'
 import { ChatSidebar } from './social/ChatSidebar'
 import { FriendsPanel } from './social/FriendsPanel'
+import { TradesPanel } from './social/TradesPanel'
 import { TownMenu } from './interactions/TownMenu'
 import { WorldLog, createLogEntry } from './interactions/WorldLog'
 import { ShopPanel } from './ShopPanel'
@@ -31,9 +32,10 @@ export function GameShell({ accessToken }: GameShellProps) {
   const worldEvents = useGameStore((state) => state.worldEvents)
   const addLogEntry = useGameStore((state) => state.addLogEntry)
 
-  // Start with chat and friends collapsed on mobile
+  // Start with chat, friends, and trades collapsed on mobile
   const [isChatCollapsed, setIsChatCollapsed] = useState(true)
   const [isFriendsCollapsed, setIsFriendsCollapsed] = useState(true)
+  const [isTradesCollapsed, setIsTradesCollapsed] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
 
   // Check if mobile on mount and resize
@@ -150,6 +152,12 @@ export function GameShell({ accessToken }: GameShellProps) {
       <FriendsPanel
         isCollapsed={isFriendsCollapsed}
         onToggle={() => setIsFriendsCollapsed(!isFriendsCollapsed)}
+      />
+
+      {/* Trades Panel - floating */}
+      <TradesPanel
+        isCollapsed={isTradesCollapsed}
+        onToggle={() => setIsTradesCollapsed(!isTradesCollapsed)}
       />
 
       {/* Mobile Chat Toggle Button */}

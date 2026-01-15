@@ -294,5 +294,14 @@ export interface TradeRequest {
   trade_id: string
   from_player_id: string
   from_username: string
+  status: TradeStatus
+  created_at: string
+}
+
+export interface OutgoingTradeRequest {
+  trade_id: string
+  to_player_id: string
+  to_username: string
+  status: TradeStatus
   created_at: string
 }

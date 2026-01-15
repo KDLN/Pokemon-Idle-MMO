@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus } from './types.js'
+import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest } from './types.js'
 
 let supabase: SupabaseClient
 
@@ -1277,18 +1277,19 @@ export async function getTrade(
   }
 }
 
-// Get incoming trade requests for a player
+// Get incoming trade requests for a player (includes pending and accepted)
 export async function getIncomingTradeRequests(playerId: string): Promise<TradeRequest[]> {
   const { data, error } = await supabase
     .from('trades')
     .select(`
       trade_id,
       sender_id,
+      status,
       created_at,
       sender:players!trades_sender_id_fkey(username)
     `)
     .eq('receiver_id', playerId)
-    .eq('status', 'pending')
+    .in('status', ['pending', 'accepted'])
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -1302,22 +1303,24 @@ export async function getIncomingTradeRequests(playerId: string): Promise<TradeR
     trade_id: row.trade_id,
     from_player_id: row.sender_id,
     from_username: extractUsernameFromJoin(row.sender),
+    status: row.status as TradeStatus,
     created_at: row.created_at
   }))
 }
 
-// Get outgoing trade requests for a player
-export async function getOutgoingTradeRequests(playerId: string): Promise<TradeRequest[]> {
+// Get outgoing trade requests for a player (includes pending and accepted)
+export async function getOutgoingTradeRequests(playerId: string): Promise<OutgoingTradeRequest[]> {
   const { data, error } = await supabase
     .from('trades')
     .select(`
       trade_id,
       receiver_id,
+      status,
       created_at,
       receiver:players!trades_receiver_id_fkey(username)
     `)
     .eq('sender_id', playerId)
-    .eq('status', 'pending')
+    .in('status', ['pending', 'accepted'])
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -1329,10 +1332,27 @@ export async function getOutgoingTradeRequests(playerId: string): Promise<TradeR
 
   return data.map(row => ({
     trade_id: row.trade_id,
-    from_player_id: row.receiver_id,
-    from_username: extractUsernameFromJoin(row.receiver),
+    to_player_id: row.receiver_id,
+    to_username: extractUsernameFromJoin(row.receiver),
+    status: row.status as TradeStatus,
     created_at: row.created_at
   }))
+}
+
+// Get all active trade IDs for a player (for cleanup on disconnect)
+export async function getActiveTradeIds(playerId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('trades')
+    .select('trade_id')
+    .or(`sender_id.eq.${playerId},receiver_id.eq.${playerId}`)
+    .in('status', ['pending', 'accepted'])
+
+  if (error) {
+    console.error('Failed to get active trade IDs:', error)
+    return []
+  }
+
+  return data?.map(row => row.trade_id) || []
 }
 
 // Update trade status
