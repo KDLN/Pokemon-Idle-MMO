@@ -1072,6 +1072,12 @@ export async function getFriendsList(playerId: string): Promise<Friend[]> {
 
   // Debug: Log the raw results to help diagnose asymmetric friend issues
   console.log(`getFriendsList(${playerId}): sentByMe=${sentByMe?.length || 0}, sentToMe=${sentToMe?.length || 0}`)
+  if (sentByMe && sentByMe.length > 0) {
+    console.log(`  sentByMe[0]:`, JSON.stringify(sentByMe[0], null, 2))
+  }
+  if (sentToMe && sentToMe.length > 0) {
+    console.log(`  sentToMe[0]:`, JSON.stringify(sentToMe[0], null, 2))
+  }
 
   const allFriends = [...(sentByMe || []), ...(sentToMe || [])]
 
