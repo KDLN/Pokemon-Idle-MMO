@@ -79,6 +79,8 @@ class GameSocket {
     this.ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data) as { type: string; payload: unknown }
+        // Debug: Log all incoming messages
+        console.log('[WS] Received:', msg.type, msg.payload)
         const handler = this.handlers.get(msg.type)
         if (handler) {
           handler(msg.payload)
