@@ -42,7 +42,8 @@ import {
   getIncomingFriendRequests,
   getOutgoingFriendRequests,
   getFriendsList,
-  removeFriend
+  removeFriend,
+  getPlayersInZone
 } from './db.js'
 import { processTick, simulateGymBattle } from './game.js'
 
@@ -245,6 +246,9 @@ export class GameHub {
         case 'get_friends':
           this.handleGetFriends(client)
           break
+        case 'get_nearby_players':
+          this.handleGetNearbyPlayers(client)
+          break
         default:
           console.log('Unknown message type:', msg.type)
       }
@@ -339,13 +343,35 @@ export class GameHub {
 
     const newConnectedZones = await getConnectedZones(payload.zone_id)
 
+    // Get nearby players in the new zone
+    const nearbyPlayers = await getPlayersInZone(newZone.id, client.session.player.id)
+
     this.send(client, 'zone_update', {
       zone: newZone,
       connected_zones: newConnectedZones
     })
 
+    // Send nearby players for the new zone
+    this.send(client, 'nearby_players', { players: nearbyPlayers })
+
     // Notify online friends about zone change (Issue #14)
     this.notifyFriendsOfZoneChange(client, newZone)
+
+    // Notify other players in both old and new zones about the change
+    this.broadcastNearbyPlayersUpdate(oldZoneId, newZone.id)
+  }
+
+  // Broadcast updated nearby players to everyone in affected zones
+  private async broadcastNearbyPlayersUpdate(oldZoneId: number, newZoneId: number) {
+    for (const [, otherClient] of this.clients) {
+      if (!otherClient.session) continue
+
+      const theirZoneId = otherClient.session.currentZone.id
+      if (theirZoneId === oldZoneId || theirZoneId === newZoneId) {
+        const nearbyPlayers = await getPlayersInZone(theirZoneId, otherClient.session.player.id)
+        this.send(otherClient, 'nearby_players', { players: nearbyPlayers })
+      }
+    }
   }
 
   // Notify online friends when a player changes zones (Issue #14)
@@ -950,5 +976,20 @@ export class GameHub {
     ])
 
     this.send(client, 'friends_data', { friends, incoming, outgoing })
+  }
+
+  // ============================================
+  // NEARBY PLAYERS HANDLER
+  // ============================================
+
+  private async handleGetNearbyPlayers(client: Client) {
+    if (!client.session) return
+
+    const zoneId = client.session.currentZone.id
+    const playerId = client.session.player.id
+
+    const nearbyPlayers = await getPlayersInZone(zoneId, playerId)
+
+    this.send(client, 'nearby_players', { players: nearbyPlayers })
   }
 }

@@ -1,76 +1,28 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useEffect } from 'react'
 import { useGameStore } from '@/stores/gameStore'
-
-interface OnlinePlayer {
-  id: string
-  username: string
-  current_zone_id: number
-  last_online: string
-}
+import { gameSocket } from '@/lib/ws/gameSocket'
 
 export function OnlinePresence() {
-  const [playersInZone, setPlayersInZone] = useState<OnlinePlayer[]>([])
   const currentZone = useGameStore((state) => state.currentZone)
-  const player = useGameStore((state) => state.player)
+  const nearbyPlayers = useGameStore((state) => state.nearbyPlayers)
 
   useEffect(() => {
-    if (!currentZone || !player) return
+    if (!currentZone) return
 
-    const supabase = createClient()
-
-    // Initial fetch
-    fetchPlayersInZone()
-
-    // Set up realtime subscription for presence
-    const channel = supabase
-      .channel('online-players')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'players',
-          filter: `current_zone_id=eq.${currentZone.id}`,
-        },
-        () => {
-          fetchPlayersInZone()
-        }
-      )
-      .subscribe()
+    // Request nearby players on mount and when zone changes
+    gameSocket.getNearbyPlayers()
 
     // Poll every 30 seconds as backup
-    const interval = setInterval(fetchPlayersInZone, 30000)
+    const interval = setInterval(() => {
+      gameSocket.getNearbyPlayers()
+    }, 30000)
 
     return () => {
-      supabase.removeChannel(channel)
       clearInterval(interval)
     }
-  }, [currentZone?.id, player?.id])
-
-  async function fetchPlayersInZone() {
-    if (!currentZone || !player) return
-
-    try {
-      const supabase = createClient()
-
-      // Get players in same zone who were online in last 2 minutes
-      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString()
-
-      const { data } = await supabase
-        .from('players')
-        .select('id, username, current_zone_id, last_online')
-        .eq('current_zone_id', currentZone.id)
-        .gte('last_online', twoMinutesAgo)
-        .neq('id', player.id) // Exclude self
-
-      setPlayersInZone(data || [])
-    } catch (err) {
-      console.error('Failed to fetch online players:', err)
-    }
-  }
+  }, [currentZone?.id])
 
   if (!currentZone) return null
 
@@ -87,11 +39,11 @@ export function OnlinePresence() {
         <div className="flex-1" />
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-          <span className="text-xs text-green-400">{playersInZone.length + 1}</span>
+          <span className="text-xs text-green-400">{nearbyPlayers.length + 1}</span>
         </div>
       </div>
 
-      {playersInZone.length === 0 ? (
+      {nearbyPlayers.length === 0 ? (
         <div className="flex items-center gap-3 py-2">
           <div className="w-8 h-8 rounded-full bg-[#1a1a2e] border border-[#2a2a4a] flex items-center justify-center">
             <svg className="w-4 h-4 text-[#3a3a6a]" viewBox="0 0 24 24" fill="currentColor">
@@ -102,7 +54,7 @@ export function OnlinePresence() {
         </div>
       ) : (
         <div className="space-y-2">
-          {playersInZone.slice(0, 5).map((p) => (
+          {nearbyPlayers.slice(0, 5).map((p) => (
             <div
               key={p.id}
               className="flex items-center gap-3 py-1.5 px-2 rounded-lg bg-[#1a1a2e]/50 hover:bg-[#1a1a2e] transition-colors"
@@ -118,9 +70,9 @@ export function OnlinePresence() {
               <div className="ml-auto w-2 h-2 bg-green-400 rounded-full" />
             </div>
           ))}
-          {playersInZone.length > 5 && (
+          {nearbyPlayers.length > 5 && (
             <div className="text-xs text-[#606080] text-center py-1">
-              +{playersInZone.length - 5} more trainers
+              +{nearbyPlayers.length - 5} more trainers
             </div>
           )}
         </div>

@@ -1128,3 +1128,31 @@ export async function removeFriend(
 
   return { success: true }
 }
+
+// Get players in a specific zone who were online recently
+export async function getPlayersInZone(
+  zoneId: number,
+  excludePlayerId?: string,
+  minutesAgo: number = 2
+): Promise<{ id: string; username: string }[]> {
+  const cutoff = new Date(Date.now() - minutesAgo * 60 * 1000).toISOString()
+
+  let query = supabase
+    .from('players')
+    .select('id, username')
+    .eq('current_zone_id', zoneId)
+    .gte('last_online', cutoff)
+
+  if (excludePlayerId) {
+    query = query.neq('id', excludePlayerId)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Failed to get players in zone:', error)
+    return []
+  }
+
+  return data || []
+}

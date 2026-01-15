@@ -54,6 +54,8 @@ class GameSocket {
     this.handlers.set('friend_request_received', this.handleFriendRequestReceived)
     this.handlers.set('friend_request_sent', this.handleFriendRequestSent)
     this.handlers.set('friend_zone_update', this.handleFriendZoneUpdate)
+    // Nearby players handler
+    this.handlers.set('nearby_players', this.handleNearbyPlayers)
   }
 
   connect(token: string) {
@@ -519,6 +521,18 @@ class GameSocket {
       zone_name: string
     }
     useGameStore.getState().updateFriendZone(player_id, zone_id, zone_name)
+  }
+
+  private handleNearbyPlayers = (payload: unknown) => {
+    const { players } = payload as {
+      players: { id: string; username: string }[]
+    }
+    useGameStore.getState().setNearbyPlayers(players)
+  }
+
+  // Request nearby players from server
+  getNearbyPlayers() {
+    this.send('get_nearby_players', {})
   }
 }
 

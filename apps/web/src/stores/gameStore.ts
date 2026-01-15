@@ -154,6 +154,10 @@ interface GameStore {
   setAllFriendsData: (data: { friends: Friend[]; incoming: FriendRequest[]; outgoing: OutgoingFriendRequest[] }) => void
   updateFriendZone: (friendPlayerId: string, zoneId: number, zoneName: string) => void
 
+  // Nearby players state
+  nearbyPlayers: { id: string; username: string }[]
+  setNearbyPlayers: (players: { id: string; username: string }[]) => void
+
   // Reset store
   reset: () => void
 }
@@ -220,6 +224,8 @@ const initialState = {
   friends: [] as Friend[],
   incomingFriendRequests: [] as FriendRequest[],
   outgoingFriendRequests: [] as OutgoingFriendRequest[],
+  // Nearby players state
+  nearbyPlayers: [] as { id: string; username: string }[],
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -428,6 +434,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
         return friend
       }),
     })),
+
+  // Nearby players methods
+  setNearbyPlayers: (players) => set({ nearbyPlayers: players }),
 
   reset: () => set(initialState),
 }))
