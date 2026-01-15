@@ -1439,6 +1439,10 @@ export async function completeTrade(
 
 // Add a Pokemon offer to a trade
 // SECURITY: Verifies trade participation first, then Pokemon ownership
+// NOTE: Party warnings returned from this function are ADVISORY ONLY.
+// The queries to count party Pokemon are not transactional, so the warning
+// may be inaccurate if concurrent modifications occur. The real validation
+// happens in complete_trade() with proper row locking.
 export async function addTradeOffer(
   tradeId: string,
   pokemonId: string,

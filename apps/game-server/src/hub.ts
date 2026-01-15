@@ -1068,7 +1068,10 @@ export class GameHub {
     return null
   }
 
-  // Get trade by ID with player validation
+  // Get trade by ID with optional player validation
+  // NOTE: This is a lightweight version that only fetches sender_id/receiver_id/status.
+  // It's intentionally simpler than db.ts:getTrade() which includes username joins.
+  // This version is optimized for hub operations that just need to identify trade parties.
   // SECURITY: Returns null if player is not part of the trade to prevent info leaks
   private async getTradeById(
     tradeId: string,
