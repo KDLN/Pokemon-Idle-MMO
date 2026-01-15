@@ -581,6 +581,17 @@ a:focus-visible {
   animation: twinkle 2s ease-in-out infinite;
 }
 
+/* Firefly (gentle glow for forest) */
+@keyframes firefly {
+  0%, 100% { opacity: 0; }
+  20%, 80% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-firefly {
+  animation: firefly 4s ease-in-out infinite;
+}
+
 /* Ticker scroll (for world events) */
 @keyframes ticker-scroll {
   0% { transform: translateX(100%); }

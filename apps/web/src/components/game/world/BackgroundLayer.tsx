@@ -42,19 +42,15 @@ function RouteBackground({ isAnimated }: { isAnimated: boolean }) {
         })}
       </div>
 
-      {/* Flowers scattered */}
-      {[...Array(8)].map((_, i) => (
-        <div
-          key={`flower-${i}`}
-          className="absolute text-xs"
-          style={{
-            left: `${15 + Math.random() * 70}%`,
-            top: `${20 + Math.random() * 60}%`,
-          }}
-        >
-          {['🌸', '🌼', '🌺'][i % 3]}
-        </div>
-      ))}
+      {/* Flowers scattered - fixed positions */}
+      <div className="absolute text-xs" style={{ left: '18%', top: '25%' }}>🌸</div>
+      <div className="absolute text-xs" style={{ left: '72%', top: '35%' }}>🌼</div>
+      <div className="absolute text-xs" style={{ left: '35%', top: '55%' }}>🌺</div>
+      <div className="absolute text-xs" style={{ left: '55%', top: '42%' }}>🌸</div>
+      <div className="absolute text-xs" style={{ left: '82%', top: '65%' }}>🌼</div>
+      <div className="absolute text-xs" style={{ left: '25%', top: '70%' }}>🌺</div>
+      <div className="absolute text-xs" style={{ left: '65%', top: '28%' }}>🌸</div>
+      <div className="absolute text-xs" style={{ left: '45%', top: '75%' }}>🌼</div>
     </div>
   )
 }
@@ -198,13 +194,16 @@ function ForestBackground({ zoneName, isAnimated }: { zoneName?: string; isAnima
       {/* Dirt path through forest */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-1/3 bg-gradient-to-t from-amber-900/70 to-transparent" />
 
-      {/* Background trees (distant, darker) */}
+      {/* Background trees (distant, darker) - fixed offsets for stability */}
       <div className="absolute bottom-1/4 left-0 right-0 flex justify-around items-end opacity-60">
-        {[...Array(8)].map((_, i) => (
-          <div key={`bg-tree-${i}`} className="relative" style={{ transform: `translateY(${Math.random() * 20}px)` }}>
-            <div className="w-8 h-20 bg-green-950 rounded-t-full" />
-          </div>
-        ))}
+        <div className="relative" style={{ transform: 'translateY(5px)' }}><div className="w-8 h-20 bg-green-950 rounded-t-full" /></div>
+        <div className="relative" style={{ transform: 'translateY(12px)' }}><div className="w-8 h-20 bg-green-950 rounded-t-full" /></div>
+        <div className="relative" style={{ transform: 'translateY(3px)' }}><div className="w-8 h-20 bg-green-950 rounded-t-full" /></div>
+        <div className="relative" style={{ transform: 'translateY(15px)' }}><div className="w-8 h-20 bg-green-950 rounded-t-full" /></div>
+        <div className="relative" style={{ transform: 'translateY(8px)' }}><div className="w-8 h-20 bg-green-950 rounded-t-full" /></div>
+        <div className="relative" style={{ transform: 'translateY(18px)' }}><div className="w-8 h-20 bg-green-950 rounded-t-full" /></div>
+        <div className="relative" style={{ transform: 'translateY(6px)' }}><div className="w-8 h-20 bg-green-950 rounded-t-full" /></div>
+        <div className="relative" style={{ transform: 'translateY(10px)' }}><div className="w-8 h-20 bg-green-950 rounded-t-full" /></div>
       </div>
 
       {/* Midground trees */}
@@ -236,20 +235,19 @@ function ForestBackground({ zoneName, isAnimated }: { zoneName?: string; isAnima
         </div>
       ))}
 
-      {/* Fireflies / light particles */}
-      {isAnimated && [...Array(12)].map((_, i) => (
-        <div
-          key={`firefly-${i}`}
-          className="absolute w-1.5 h-1.5 bg-yellow-300 rounded-full animate-pulse"
-          style={{
-            left: `${10 + Math.random() * 80}%`,
-            top: `${20 + Math.random() * 50}%`,
-            animationDelay: `${Math.random() * 3}s`,
-            animationDuration: `${2 + Math.random() * 2}s`,
-            opacity: 0.6 + Math.random() * 0.4,
-          }}
-        />
-      ))}
+      {/* Fireflies / light particles - fixed positions for stability */}
+      {isAnimated && (
+        <>
+          <div className="absolute w-1.5 h-1.5 bg-yellow-300/70 rounded-full animate-firefly" style={{ left: '15%', top: '25%' }} />
+          <div className="absolute w-1 h-1 bg-yellow-200/60 rounded-full animate-firefly" style={{ left: '25%', top: '40%', animationDelay: '1s' }} />
+          <div className="absolute w-1.5 h-1.5 bg-yellow-300/70 rounded-full animate-firefly" style={{ left: '40%', top: '30%', animationDelay: '2s' }} />
+          <div className="absolute w-1 h-1 bg-yellow-200/60 rounded-full animate-firefly" style={{ left: '55%', top: '45%', animationDelay: '0.5s' }} />
+          <div className="absolute w-1.5 h-1.5 bg-yellow-300/70 rounded-full animate-firefly" style={{ left: '70%', top: '35%', animationDelay: '1.5s' }} />
+          <div className="absolute w-1 h-1 bg-yellow-200/60 rounded-full animate-firefly" style={{ left: '80%', top: '50%', animationDelay: '2.5s' }} />
+          <div className="absolute w-1 h-1 bg-yellow-300/50 rounded-full animate-firefly" style={{ left: '30%', top: '55%', animationDelay: '3s' }} />
+          <div className="absolute w-1 h-1 bg-yellow-200/50 rounded-full animate-firefly" style={{ left: '60%', top: '60%', animationDelay: '1.8s' }} />
+        </>
+      )}
 
       {/* Light rays breaking through canopy */}
       <div className="absolute inset-0 overflow-hidden opacity-20">
