@@ -116,6 +116,7 @@ export class GameHub {
       await this.loadSession(client)
       await this.sendGameState(client)
       await this.sendChatHistory(client)
+      await this.sendFriendsData(client)
     } catch (err) {
       console.error('Failed to load session:', err)
       ws.close(4003, 'Failed to load session')
@@ -307,6 +308,18 @@ export class GameHub {
     const messages = await getRecentChatMessages(50)
     const ordered = [...messages].reverse()
     this.send(client, 'chat_history', { messages: ordered })
+  }
+
+  private async sendFriendsData(client: Client) {
+    if (!client.session) return
+
+    const [friends, incoming, outgoing] = await Promise.all([
+      getFriendsList(client.session.player.id),
+      getIncomingFriendRequests(client.session.player.id),
+      getOutgoingFriendRequests(client.session.player.id)
+    ])
+
+    this.send(client, 'friends_data', { friends, incoming, outgoing })
   }
 
   private async handleMoveZone(client: Client, payload: { zone_id: number }) {
