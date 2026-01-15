@@ -805,8 +805,8 @@ export class GameHub {
   private async handleAcceptFriendRequest(client: Client, payload: { friend_id: string }) {
     if (!client.session) return
 
-    const { friend_id } = payload
-    if (!friend_id) {
+    const friend_id = payload?.friend_id
+    if (!friend_id || typeof friend_id !== 'string') {
       this.sendError(client, 'Friend request ID is required')
       return
     }
@@ -855,8 +855,8 @@ export class GameHub {
   private async handleDeclineFriendRequest(client: Client, payload: { friend_id: string }) {
     if (!client.session) return
 
-    const { friend_id } = payload
-    if (!friend_id) {
+    const friend_id = payload?.friend_id
+    if (!friend_id || typeof friend_id !== 'string') {
       this.sendError(client, 'Friend request ID is required')
       return
     }
@@ -884,8 +884,8 @@ export class GameHub {
   private async handleRemoveFriend(client: Client, payload: { friend_id: string }) {
     if (!client.session) return
 
-    const { friend_id } = payload
-    if (!friend_id) {
+    const friend_id = payload?.friend_id
+    if (!friend_id || typeof friend_id !== 'string') {
       this.sendError(client, 'Friend ID is required')
       return
     }

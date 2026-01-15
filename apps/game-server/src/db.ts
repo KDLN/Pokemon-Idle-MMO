@@ -880,14 +880,22 @@ export async function acceptFriendRequest(
     return { success: false, error: 'Friend request not found' }
   }
 
-  const { error } = await supabase
+  // Update with all conditions for defense in depth
+  const { data, error } = await supabase
     .from('friends')
     .update({ status: 'accepted' })
     .eq('friend_id', friendId)
+    .eq('friend_player_id', playerId)
+    .eq('status', 'pending')
+    .select()
 
   if (error) {
     console.error('Failed to accept friend request:', error)
     return { success: false, error: 'Failed to accept request' }
+  }
+
+  if (!data || data.length === 0) {
+    return { success: false, error: 'Friend request not found or already processed' }
   }
 
   return { success: true }
