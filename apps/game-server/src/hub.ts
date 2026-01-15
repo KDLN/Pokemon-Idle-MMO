@@ -1333,19 +1333,21 @@ export class GameHub {
       return
     }
 
-    // Send updated offers to both players
+    // Send updated offers to both players (including warning to both)
     const offers = await getTradeOffers(tradeId)
-    this.send(client, 'trade_offers_update', {
+    const updatePayload = {
       trade_id: tradeId,
       offers,
-      warning: result.warning // Pass through party safety warning
-    })
+      warning: result.warning // Pass through party safety warning to both players
+    }
 
-    // Notify the other player
+    this.send(client, 'trade_offers_update', updatePayload)
+
+    // Notify the other player with the same warning so they're aware
     const otherPlayerId = trade.sender_id === client.session.player.id ? trade.receiver_id : trade.sender_id
     const otherClient = this.getClientByPlayerId(otherPlayerId)
     if (otherClient?.session) {
-      this.send(otherClient, 'trade_offers_update', { trade_id: tradeId, offers })
+      this.send(otherClient, 'trade_offers_update', updatePayload)
     }
   }
 

@@ -270,14 +270,24 @@ export interface Trade {
   receiver_username?: string
 }
 
+// Partial Pokemon data for trade offer display (only fields needed for UI)
+export interface TradeOfferPokemon {
+  id: string
+  species_id: number
+  nickname: string | null
+  level: number
+  is_shiny: boolean
+  species?: { name: string }
+}
+
 export interface TradeOffer {
   offer_id: string
   trade_id: string
   pokemon_id: string
   offered_by: string
   created_at: string
-  // Joined data for display
-  pokemon?: Pokemon
+  // Joined data for display (partial Pokemon data sufficient for trade UI)
+  pokemon?: TradeOfferPokemon
 }
 
 export interface TradeRequest {

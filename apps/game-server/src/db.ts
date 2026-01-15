@@ -1438,12 +1438,32 @@ export async function completeTrade(
 }
 
 // Add a Pokemon offer to a trade
+// SECURITY: Verifies trade participation first, then Pokemon ownership
 export async function addTradeOffer(
   tradeId: string,
   pokemonId: string,
   playerId: string
 ): Promise<{ success: boolean; error?: string; warning?: string }> {
-  // Verify the Pokemon belongs to the player
+  // SECURITY: First verify player is part of this trade (before revealing any Pokemon info)
+  const { data: trade, error: tradeError } = await supabase
+    .from('trades')
+    .select('sender_id, receiver_id, status')
+    .eq('trade_id', tradeId)
+    .single()
+
+  if (tradeError || !trade) {
+    return { success: false, error: 'Trade not found' }
+  }
+
+  if (trade.sender_id !== playerId && trade.receiver_id !== playerId) {
+    return { success: false, error: 'Trade not found' } // Generic message to avoid info leak
+  }
+
+  if (trade.status !== 'pending') {
+    return { success: false, error: 'Trade is no longer pending' }
+  }
+
+  // Now verify the Pokemon belongs to the player
   const { data: pokemon, error: pokemonError } = await supabase
     .from('pokemon')
     .select('id, owner_id, party_slot')
@@ -1474,15 +1494,19 @@ export async function addTradeOffer(
 
     const offeredPokemonIds = (existingOffers || []).map(o => o.pokemon_id)
 
-    // Count how many of those are party Pokemon
-    const { count: alreadyOfferedPartyCount } = await supabase
-      .from('pokemon')
-      .select('id', { count: 'exact', head: true })
-      .eq('owner_id', playerId)
-      .not('party_slot', 'is', null)
-      .in('id', offeredPokemonIds.length > 0 ? offeredPokemonIds : ['00000000-0000-0000-0000-000000000000'])
+    // Count how many of those are party Pokemon (only if we have existing offers)
+    let alreadyOfferedPartyCount = 0
+    if (offeredPokemonIds.length > 0) {
+      const { count } = await supabase
+        .from('pokemon')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_id', playerId)
+        .not('party_slot', 'is', null)
+        .in('id', offeredPokemonIds)
+      alreadyOfferedPartyCount = count || 0
+    }
 
-    const totalPartyOffered = (alreadyOfferedPartyCount || 0) + 1 // +1 for the one we're adding now
+    const totalPartyOffered = alreadyOfferedPartyCount + 1 // +1 for the one we're adding now
 
     if (partyCount && totalPartyOffered >= partyCount) {
       warning = 'Warning: This would offer all your party Pokemon. Trade will fail if completed.'
@@ -1558,12 +1582,43 @@ export async function getTradeOffers(
     return []
   }
 
-  return (data || []).map(row => ({
-    offer_id: row.offer_id,
-    trade_id: row.trade_id,
-    pokemon_id: row.pokemon_id,
-    offered_by: row.offered_by,
-    created_at: row.created_at,
-    pokemon: row.pokemon as unknown as TradeOffer['pokemon']
-  }))
+  return (data || []).map(row => {
+    // Supabase returns joined data in various formats depending on relation
+    // Safely extract Pokemon data handling both object and array returns
+    const pokemonRaw = row.pokemon
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pokemonData: any = Array.isArray(pokemonRaw) ? pokemonRaw[0] : pokemonRaw
+
+    if (!pokemonData) {
+      return {
+        offer_id: row.offer_id,
+        trade_id: row.trade_id,
+        pokemon_id: row.pokemon_id,
+        offered_by: row.offered_by,
+        created_at: row.created_at,
+        pokemon: undefined
+      }
+    }
+
+    // Extract species name from nested join (could be array or object)
+    const speciesRaw = pokemonData.species
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const speciesData: any = Array.isArray(speciesRaw) ? speciesRaw[0] : speciesRaw
+
+    return {
+      offer_id: row.offer_id,
+      trade_id: row.trade_id,
+      pokemon_id: row.pokemon_id,
+      offered_by: row.offered_by,
+      created_at: row.created_at,
+      pokemon: {
+        id: pokemonData.id,
+        species_id: pokemonData.species_id,
+        nickname: pokemonData.nickname,
+        level: pokemonData.level,
+        is_shiny: pokemonData.is_shiny,
+        species: speciesData ? { name: speciesData.name } : undefined
+      }
+    }
+  })
 }
