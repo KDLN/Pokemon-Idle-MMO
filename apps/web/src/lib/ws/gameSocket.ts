@@ -481,6 +481,8 @@ class GameSocket {
       incoming: FriendRequest[]
       outgoing: OutgoingFriendRequest[]
     }
+    console.log('[WS] friends_data received:', { friends: friends?.length, incoming: incoming?.length, outgoing: outgoing?.length })
+    console.log('[WS] friends details:', friends)
     useGameStore.getState().setAllFriendsData({ friends, incoming, outgoing })
   }
 
