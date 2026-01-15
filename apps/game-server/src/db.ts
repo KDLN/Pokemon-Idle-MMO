@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus } from './types.js'
+import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus } from './types.js'
 
 let supabase: SupabaseClient
 
@@ -1161,4 +1161,469 @@ export async function getPlayersInZone(
   }
 
   return data || []
+}
+
+// ============================================
+// TRADE QUERIES
+// ============================================
+
+// Check if two players are friends
+export async function arePlayersFriends(
+  playerId: string,
+  otherPlayerId: string
+): Promise<boolean> {
+  const [{ data: sentByMe }, { data: sentByThem }] = await Promise.all([
+    supabase
+      .from('friends')
+      .select('friend_id')
+      .eq('player_id', playerId)
+      .eq('friend_player_id', otherPlayerId)
+      .eq('status', 'accepted'),
+    supabase
+      .from('friends')
+      .select('friend_id')
+      .eq('player_id', otherPlayerId)
+      .eq('friend_player_id', playerId)
+      .eq('status', 'accepted')
+  ])
+
+  return Boolean((sentByMe && sentByMe.length > 0) || (sentByThem && sentByThem.length > 0))
+}
+
+// Create a trade request
+export async function createTradeRequest(
+  senderId: string,
+  receiverId: string
+): Promise<{ success: boolean; error?: string; trade_id?: string }> {
+  // Skip the pre-check for existing trades - rely on the unique index constraint
+  // This avoids SQL injection risk from string interpolation in .or() and eliminates
+  // the race condition between check and insert.
+  // The unique partial index idx_unique_pending_trade will reject duplicates.
+
+  const { data, error } = await supabase
+    .from('trades')
+    .insert({
+      sender_id: senderId,
+      receiver_id: receiverId,
+      status: 'pending'
+    })
+    .select('trade_id')
+    .single()
+
+  if (error) {
+    console.error('Failed to create trade request:', error)
+    // Check for unique constraint violation (duplicate pending trade)
+    if (error.code === '23505') {
+      return { success: false, error: 'Trade already pending with this player' }
+    }
+    return { success: false, error: 'Failed to create trade request' }
+  }
+
+  return { success: true, trade_id: data.trade_id }
+}
+
+// Get a trade by ID with validation that player is part of it
+export async function getTrade(
+  tradeId: string,
+  playerId: string
+): Promise<Trade | null> {
+  // Use two separate queries to avoid string interpolation in .or() clause
+  // This prevents SQL injection vulnerability
+  const [{ data: asSender }, { data: asReceiver }] = await Promise.all([
+    supabase
+      .from('trades')
+      .select(`
+        trade_id,
+        sender_id,
+        receiver_id,
+        status,
+        created_at,
+        updated_at,
+        sender:players!trades_sender_id_fkey(username),
+        receiver:players!trades_receiver_id_fkey(username)
+      `)
+      .eq('trade_id', tradeId)
+      .eq('sender_id', playerId)
+      .maybeSingle(),
+    supabase
+      .from('trades')
+      .select(`
+        trade_id,
+        sender_id,
+        receiver_id,
+        status,
+        created_at,
+        updated_at,
+        sender:players!trades_sender_id_fkey(username),
+        receiver:players!trades_receiver_id_fkey(username)
+      `)
+      .eq('trade_id', tradeId)
+      .eq('receiver_id', playerId)
+      .maybeSingle()
+  ])
+
+  const data = asSender || asReceiver
+  if (!data) return null
+
+  return {
+    trade_id: data.trade_id,
+    sender_id: data.sender_id,
+    receiver_id: data.receiver_id,
+    status: data.status as TradeStatus,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+    sender_username: extractUsernameFromJoin(data.sender),
+    receiver_username: extractUsernameFromJoin(data.receiver)
+  }
+}
+
+// Get incoming trade requests for a player
+export async function getIncomingTradeRequests(playerId: string): Promise<TradeRequest[]> {
+  const { data, error } = await supabase
+    .from('trades')
+    .select(`
+      trade_id,
+      sender_id,
+      created_at,
+      sender:players!trades_sender_id_fkey(username)
+    `)
+    .eq('receiver_id', playerId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Failed to get incoming trade requests:', error)
+    return []
+  }
+
+  if (!data) return []
+
+  return data.map(row => ({
+    trade_id: row.trade_id,
+    from_player_id: row.sender_id,
+    from_username: extractUsernameFromJoin(row.sender),
+    created_at: row.created_at
+  }))
+}
+
+// Get outgoing trade requests for a player
+export async function getOutgoingTradeRequests(playerId: string): Promise<TradeRequest[]> {
+  const { data, error } = await supabase
+    .from('trades')
+    .select(`
+      trade_id,
+      receiver_id,
+      created_at,
+      receiver:players!trades_receiver_id_fkey(username)
+    `)
+    .eq('sender_id', playerId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Failed to get outgoing trade requests:', error)
+    return []
+  }
+
+  if (!data) return []
+
+  return data.map(row => ({
+    trade_id: row.trade_id,
+    from_player_id: row.receiver_id,
+    from_username: extractUsernameFromJoin(row.receiver),
+    created_at: row.created_at
+  }))
+}
+
+// Update trade status
+export async function updateTradeStatus(
+  tradeId: string,
+  playerId: string,
+  newStatus: TradeStatus
+): Promise<{ success: boolean; error?: string }> {
+  // Verify player is part of this trade
+  const { data: trade, error: fetchError } = await supabase
+    .from('trades')
+    .select('trade_id, sender_id, receiver_id, status')
+    .eq('trade_id', tradeId)
+    .single()
+
+  if (fetchError || !trade) {
+    return { success: false, error: 'Trade not found' }
+  }
+
+  // Verify player is part of this trade
+  if (trade.sender_id !== playerId && trade.receiver_id !== playerId) {
+    return { success: false, error: 'Trade not found' }
+  }
+
+  // Verify trade is still pending
+  if (trade.status !== 'pending') {
+    return { success: false, error: 'Trade is no longer pending' }
+  }
+
+  // Validate status transitions:
+  // - Sender can cancel
+  // - Receiver can accept or decline
+  if (newStatus === 'cancelled' && trade.sender_id !== playerId) {
+    return { success: false, error: 'Only sender can cancel trade' }
+  }
+
+  if ((newStatus === 'accepted' || newStatus === 'declined') && trade.receiver_id !== playerId) {
+    return { success: false, error: 'Only receiver can accept or decline trade' }
+  }
+
+  // Update with optimistic lock and verify the update succeeded
+  const { data, error } = await supabase
+    .from('trades')
+    .update({ status: newStatus })
+    .eq('trade_id', tradeId)
+    .eq('status', 'pending') // Optimistic lock - only update if still pending
+    .select()
+
+  if (error) {
+    console.error('Failed to update trade status:', error)
+    return { success: false, error: 'Failed to update trade' }
+  }
+
+  // If no rows were updated, the trade was modified by another operation
+  // (e.g., already cancelled, accepted, or declined)
+  if (!data || data.length === 0) {
+    return { success: false, error: 'Trade was already processed or modified' }
+  }
+
+  return { success: true }
+}
+
+// Cancel a trade request (sender only)
+export async function cancelTradeRequest(
+  tradeId: string,
+  playerId: string
+): Promise<{ success: boolean; error?: string }> {
+  return updateTradeStatus(tradeId, playerId, 'cancelled')
+}
+
+// Accept a trade request (receiver only)
+export async function acceptTradeRequest(
+  tradeId: string,
+  playerId: string
+): Promise<{ success: boolean; error?: string }> {
+  return updateTradeStatus(tradeId, playerId, 'accepted')
+}
+
+// Decline a trade request (receiver only)
+export async function declineTradeRequest(
+  tradeId: string,
+  playerId: string
+): Promise<{ success: boolean; error?: string }> {
+  return updateTradeStatus(tradeId, playerId, 'declined')
+}
+
+// Complete a trade - transfers Pokemon ownership atomically
+// This calls the database function that handles the actual transfer
+export async function completeTrade(
+  tradeId: string
+): Promise<{ success: boolean; error?: string; transferred_count?: number }> {
+  const { data, error } = await supabase
+    .rpc('complete_trade', { p_trade_id: tradeId })
+
+  if (error) {
+    console.error('Failed to complete trade:', error)
+    return { success: false, error: 'Failed to complete trade' }
+  }
+
+  // The function returns a JSON object
+  const result = data as { success: boolean; error?: string; transferred_count?: number }
+  return result
+}
+
+// Add a Pokemon offer to a trade
+// SECURITY: Verifies trade participation first, then Pokemon ownership
+// NOTE: Party warnings returned from this function are ADVISORY ONLY.
+// The queries to count party Pokemon are not transactional, so the warning
+// may be inaccurate if concurrent modifications occur. The real validation
+// happens in complete_trade() with proper row locking.
+export async function addTradeOffer(
+  tradeId: string,
+  pokemonId: string,
+  playerId: string
+): Promise<{ success: boolean; error?: string; warning?: string }> {
+  // SECURITY: First verify player is part of this trade (before revealing any Pokemon info)
+  const { data: trade, error: tradeError } = await supabase
+    .from('trades')
+    .select('sender_id, receiver_id, status')
+    .eq('trade_id', tradeId)
+    .single()
+
+  if (tradeError || !trade) {
+    return { success: false, error: 'Trade not found' }
+  }
+
+  if (trade.sender_id !== playerId && trade.receiver_id !== playerId) {
+    return { success: false, error: 'Trade not found' } // Generic message to avoid info leak
+  }
+
+  if (trade.status !== 'pending') {
+    return { success: false, error: 'Trade is no longer pending' }
+  }
+
+  // Now verify the Pokemon belongs to the player
+  const { data: pokemon, error: pokemonError } = await supabase
+    .from('pokemon')
+    .select('id, owner_id, party_slot')
+    .eq('id', pokemonId)
+    .eq('owner_id', playerId)
+    .single()
+
+  if (pokemonError || !pokemon) {
+    // Generic message to avoid revealing whether Pokemon exists but is owned by someone else
+    return { success: false, error: 'Invalid Pokemon' }
+  }
+
+  // Check if this is a party Pokemon and warn about party safety
+  let warning: string | undefined
+  if (pokemon.party_slot !== null) {
+    // Count how many party Pokemon the player has
+    const { count: partyCount } = await supabase
+      .from('pokemon')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', playerId)
+      .not('party_slot', 'is', null)
+
+    // Count how many party Pokemon are already in this trade
+    const { data: existingOffers } = await supabase
+      .from('trade_offers')
+      .select('pokemon_id')
+      .eq('trade_id', tradeId)
+      .eq('offered_by', playerId)
+
+    const offeredPokemonIds = (existingOffers || []).map(o => o.pokemon_id)
+
+    // Count how many of those are party Pokemon (only if we have existing offers)
+    let alreadyOfferedPartyCount = 0
+    if (offeredPokemonIds.length > 0) {
+      const { count } = await supabase
+        .from('pokemon')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_id', playerId)
+        .not('party_slot', 'is', null)
+        .in('id', offeredPokemonIds)
+      alreadyOfferedPartyCount = count || 0
+    }
+
+    const totalPartyOffered = alreadyOfferedPartyCount + 1 // +1 for the one we're adding now
+
+    if (partyCount && totalPartyOffered >= partyCount) {
+      warning = 'Warning: This would offer all your party Pokemon. Trade will fail if completed.'
+    } else if (partyCount && totalPartyOffered === partyCount - 1) {
+      warning = 'Warning: You would only have 1 party Pokemon left if this trade completes.'
+    }
+  }
+
+  // Add the offer
+  const { error } = await supabase
+    .from('trade_offers')
+    .insert({
+      trade_id: tradeId,
+      pokemon_id: pokemonId,
+      offered_by: playerId
+    })
+
+  if (error) {
+    console.error('Failed to add trade offer:', error)
+    if (error.code === '23505') {
+      return { success: false, error: 'Pokemon already offered in this trade' }
+    }
+    return { success: false, error: 'Failed to add offer' }
+  }
+
+  return { success: true, warning }
+}
+
+// Remove a Pokemon offer from a trade
+export async function removeTradeOffer(
+  tradeId: string,
+  pokemonId: string,
+  playerId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase
+    .from('trade_offers')
+    .delete()
+    .eq('trade_id', tradeId)
+    .eq('pokemon_id', pokemonId)
+    .eq('offered_by', playerId)
+    .select()
+
+  if (error) {
+    console.error('Failed to remove trade offer:', error)
+    return { success: false, error: 'Failed to remove offer' }
+  }
+
+  if (!data || data.length === 0) {
+    return { success: false, error: 'Offer not found' }
+  }
+
+  return { success: true }
+}
+
+// Get all offers for a trade
+export async function getTradeOffers(
+  tradeId: string
+): Promise<TradeOffer[]> {
+  const { data, error } = await supabase
+    .from('trade_offers')
+    .select(`
+      offer_id,
+      trade_id,
+      pokemon_id,
+      offered_by,
+      created_at,
+      pokemon:pokemon(id, species_id, nickname, level, is_shiny, species:pokemon_species(name))
+    `)
+    .eq('trade_id', tradeId)
+
+  if (error) {
+    console.error('Failed to get trade offers:', error)
+    return []
+  }
+
+  return (data || []).map(row => {
+    // Supabase returns joined data in various formats depending on relation
+    // Safely extract Pokemon data handling both object and array returns
+    const pokemonRaw = row.pokemon
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pokemonData: any = Array.isArray(pokemonRaw) ? pokemonRaw[0] : pokemonRaw
+
+    if (!pokemonData) {
+      return {
+        offer_id: row.offer_id,
+        trade_id: row.trade_id,
+        pokemon_id: row.pokemon_id,
+        offered_by: row.offered_by,
+        created_at: row.created_at,
+        pokemon: undefined
+      }
+    }
+
+    // Extract species name from nested join (could be array or object)
+    const speciesRaw = pokemonData.species
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const speciesData: any = Array.isArray(speciesRaw) ? speciesRaw[0] : speciesRaw
+
+    return {
+      offer_id: row.offer_id,
+      trade_id: row.trade_id,
+      pokemon_id: row.pokemon_id,
+      offered_by: row.offered_by,
+      created_at: row.created_at,
+      pokemon: {
+        id: pokemonData.id,
+        species_id: pokemonData.species_id,
+        nickname: pokemonData.nickname,
+        level: pokemonData.level,
+        is_shiny: pokemonData.is_shiny,
+        species: speciesData ? { name: speciesData.name } : undefined
+      }
+    }
+  })
 }

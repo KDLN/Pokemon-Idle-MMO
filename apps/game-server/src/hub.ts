@@ -43,7 +43,18 @@ import {
   getOutgoingFriendRequests,
   getFriendsList,
   removeFriend,
-  getPlayersInZone
+  getPlayersInZone,
+  arePlayersFriends,
+  createTradeRequest,
+  getIncomingTradeRequests,
+  getOutgoingTradeRequests,
+  cancelTradeRequest,
+  acceptTradeRequest as acceptTradeRequestDb,
+  declineTradeRequest as declineTradeRequestDb,
+  completeTrade,
+  addTradeOffer,
+  removeTradeOffer,
+  getTradeOffers
 } from './db.js'
 import { processTick, simulateGymBattle } from './game.js'
 
@@ -249,6 +260,33 @@ export class GameHub {
           break
         case 'get_nearby_players':
           this.handleGetNearbyPlayers(client)
+          break
+        case 'send_trade_request':
+          this.handleSendTradeRequest(client, msg.payload as { player_id: string })
+          break
+        case 'accept_trade_request':
+          this.handleAcceptTradeRequest(client, msg.payload as { trade_id: string })
+          break
+        case 'decline_trade_request':
+          this.handleDeclineTradeRequest(client, msg.payload as { trade_id: string })
+          break
+        case 'cancel_trade_request':
+          this.handleCancelTradeRequest(client, msg.payload as { trade_id: string })
+          break
+        case 'get_trades':
+          this.handleGetTrades(client)
+          break
+        case 'add_trade_offer':
+          this.handleAddTradeOffer(client, msg.payload as { trade_id: string; pokemon_id: string })
+          break
+        case 'remove_trade_offer':
+          this.handleRemoveTradeOffer(client, msg.payload as { trade_id: string; pokemon_id: string })
+          break
+        case 'complete_trade':
+          this.handleCompleteTrade(client, msg.payload as { trade_id: string })
+          break
+        case 'get_trade_offers':
+          this.handleGetTradeOffers(client, msg.payload as { trade_id: string })
           break
         default:
           console.log('Unknown message type:', msg.type)
@@ -992,7 +1030,6 @@ export class GameHub {
     this.send(client, 'friends_data', { friends, incoming, outgoing })
   }
 
-  // ============================================
   // NEARBY PLAYERS HANDLER
   // ============================================
 
@@ -1005,5 +1042,445 @@ export class GameHub {
     const nearbyPlayers = await getPlayersInZone(zoneId, playerId)
 
     this.send(client, 'nearby_players', { players: nearbyPlayers })
+  }
+
+  // ============================================
+  // TRADE HANDLERS
+  // ============================================
+
+  // Check if a player is online
+  private isPlayerOnline(playerId: string): boolean {
+    for (const [, otherClient] of this.clients) {
+      if (otherClient.session?.player.id === playerId) {
+        return true
+      }
+    }
+    return false
+  }
+
+  // Get client by player ID
+  private getClientByPlayerId(playerId: string): Client | null {
+    for (const [, otherClient] of this.clients) {
+      if (otherClient.session?.player.id === playerId) {
+        return otherClient
+      }
+    }
+    return null
+  }
+
+  // Get trade by ID with optional player validation
+  // NOTE: This is a lightweight version that only fetches sender_id/receiver_id/status.
+  // It's intentionally simpler than db.ts:getTrade() which includes username joins.
+  // This version is optimized for hub operations that just need to identify trade parties.
+  // SECURITY: Returns null if player is not part of the trade to prevent info leaks
+  private async getTradeById(
+    tradeId: string,
+    playerId?: string
+  ): Promise<{ trade_id: string; sender_id: string; receiver_id: string; status: string } | null> {
+    const { getSupabase } = await import('./db.js')
+    const supabase = getSupabase()
+    const { data, error } = await supabase
+      .from('trades')
+      .select('trade_id, sender_id, receiver_id, status')
+      .eq('trade_id', tradeId)
+      .single()
+
+    if (error || !data) return null
+
+    // If playerId is provided, validate player is part of the trade
+    if (playerId && data.sender_id !== playerId && data.receiver_id !== playerId) {
+      return null // Return null to prevent info leak about trade existence
+    }
+
+    return data
+  }
+
+  private async handleSendTradeRequest(client: Client, payload: { player_id: string }) {
+    if (!client.session) return
+
+    const { player_id: receiverId } = payload
+    if (!receiverId || typeof receiverId !== 'string') {
+      this.sendError(client, 'Player ID is required')
+      return
+    }
+
+    // Can't trade with yourself
+    if (receiverId === client.session.player.id) {
+      this.sendError(client, 'Cannot trade with yourself')
+      return
+    }
+
+    // Check if they are friends
+    const areFriends = await arePlayersFriends(client.session.player.id, receiverId)
+    if (!areFriends) {
+      this.sendError(client, 'Can only trade with friends')
+      return
+    }
+
+    // Check if the receiver is online
+    if (!this.isPlayerOnline(receiverId)) {
+      this.sendError(client, 'Player is not online')
+      return
+    }
+
+    // Create the trade request
+    const result = await createTradeRequest(client.session.player.id, receiverId)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to send trade request')
+      return
+    }
+
+    // Notify the sender
+    this.send(client, 'trade_request_sent', {
+      success: true,
+      trade_id: result.trade_id
+    })
+
+    // Notify the receiver if online
+    const receiverClient = this.getClientByPlayerId(receiverId)
+    if (receiverClient) {
+      this.send(receiverClient, 'trade_request_received', {
+        trade_id: result.trade_id,
+        from_player_id: client.session.player.id,
+        from_username: client.session.player.username,
+        created_at: new Date().toISOString()
+      })
+    }
+  }
+
+  private async handleAcceptTradeRequest(client: Client, payload: { trade_id: string }) {
+    if (!client.session) return
+
+    const { trade_id: tradeId } = payload
+    if (!tradeId || typeof tradeId !== 'string') {
+      this.sendError(client, 'Trade ID is required')
+      return
+    }
+
+    // Get the trade with player validation
+    const trade = await this.getTradeById(tradeId, client.session.player.id)
+    if (!trade) {
+      this.sendError(client, 'Trade not found')
+      return
+    }
+
+    // Verify this player is the receiver
+    if (trade.receiver_id !== client.session.player.id) {
+      this.sendError(client, 'Only receiver can accept trade')
+      return
+    }
+
+    const result = await acceptTradeRequestDb(tradeId, client.session.player.id)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to accept trade request')
+      return
+    }
+
+    // Get updated trade lists for the receiver (current client)
+    const [incoming, outgoing] = await Promise.all([
+      getIncomingTradeRequests(client.session.player.id),
+      getOutgoingTradeRequests(client.session.player.id)
+    ])
+
+    this.send(client, 'trades_update', { incoming, outgoing })
+
+    // Notify only the sender (not all clients)
+    const senderClient = this.getClientByPlayerId(trade.sender_id)
+    if (senderClient?.session) {
+      const [senderIncoming, senderOutgoing] = await Promise.all([
+        getIncomingTradeRequests(trade.sender_id),
+        getOutgoingTradeRequests(trade.sender_id)
+      ])
+      this.send(senderClient, 'trades_update', {
+        incoming: senderIncoming,
+        outgoing: senderOutgoing
+      })
+    }
+  }
+
+  private async handleDeclineTradeRequest(client: Client, payload: { trade_id: string }) {
+    if (!client.session) return
+
+    const { trade_id: tradeId } = payload
+    if (!tradeId || typeof tradeId !== 'string') {
+      this.sendError(client, 'Trade ID is required')
+      return
+    }
+
+    // Get the trade with player validation
+    const trade = await this.getTradeById(tradeId, client.session.player.id)
+    if (!trade) {
+      this.sendError(client, 'Trade not found')
+      return
+    }
+
+    // Verify this player is the receiver
+    if (trade.receiver_id !== client.session.player.id) {
+      this.sendError(client, 'Only receiver can decline trade')
+      return
+    }
+
+    const result = await declineTradeRequestDb(tradeId, client.session.player.id)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to decline trade request')
+      return
+    }
+
+    // Get updated trade lists for the receiver (current client)
+    const [incoming, outgoing] = await Promise.all([
+      getIncomingTradeRequests(client.session.player.id),
+      getOutgoingTradeRequests(client.session.player.id)
+    ])
+
+    this.send(client, 'trades_update', { incoming, outgoing })
+
+    // Notify only the sender (not all clients)
+    const senderClient = this.getClientByPlayerId(trade.sender_id)
+    if (senderClient?.session) {
+      const [senderIncoming, senderOutgoing] = await Promise.all([
+        getIncomingTradeRequests(trade.sender_id),
+        getOutgoingTradeRequests(trade.sender_id)
+      ])
+      this.send(senderClient, 'trades_update', {
+        incoming: senderIncoming,
+        outgoing: senderOutgoing
+      })
+    }
+  }
+
+  private async handleCancelTradeRequest(client: Client, payload: { trade_id: string }) {
+    if (!client.session) return
+
+    const { trade_id: tradeId } = payload
+    if (!tradeId || typeof tradeId !== 'string') {
+      this.sendError(client, 'Trade ID is required')
+      return
+    }
+
+    // Get the trade with player validation
+    const trade = await this.getTradeById(tradeId, client.session.player.id)
+    if (!trade) {
+      this.sendError(client, 'Trade not found')
+      return
+    }
+
+    // Verify this player is the sender
+    if (trade.sender_id !== client.session.player.id) {
+      this.sendError(client, 'Only sender can cancel trade')
+      return
+    }
+
+    const result = await cancelTradeRequest(tradeId, client.session.player.id)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to cancel trade request')
+      return
+    }
+
+    // Get updated trade lists for the sender (current client)
+    const [incoming, outgoing] = await Promise.all([
+      getIncomingTradeRequests(client.session.player.id),
+      getOutgoingTradeRequests(client.session.player.id)
+    ])
+
+    this.send(client, 'trades_update', { incoming, outgoing })
+
+    // Notify only the receiver (not all clients)
+    const receiverClient = this.getClientByPlayerId(trade.receiver_id)
+    if (receiverClient?.session) {
+      const [receiverIncoming, receiverOutgoing] = await Promise.all([
+        getIncomingTradeRequests(trade.receiver_id),
+        getOutgoingTradeRequests(trade.receiver_id)
+      ])
+      this.send(receiverClient, 'trades_update', {
+        incoming: receiverIncoming,
+        outgoing: receiverOutgoing
+      })
+    }
+  }
+
+  private async handleGetTrades(client: Client) {
+    if (!client.session) return
+
+    const [incoming, outgoing] = await Promise.all([
+      getIncomingTradeRequests(client.session.player.id),
+      getOutgoingTradeRequests(client.session.player.id)
+    ])
+
+    this.send(client, 'trades_data', { incoming, outgoing })
+  }
+
+  private async handleAddTradeOffer(client: Client, payload: { trade_id: string; pokemon_id: string }) {
+    if (!client.session) return
+
+    const { trade_id: tradeId, pokemon_id: pokemonId } = payload
+    if (!tradeId || !pokemonId) {
+      this.sendError(client, 'Trade ID and Pokemon ID are required')
+      return
+    }
+
+    // Get the trade with player validation (validates participation)
+    const trade = await this.getTradeById(tradeId, client.session.player.id)
+    if (!trade) {
+      this.sendError(client, 'Trade not found')
+      return
+    }
+
+    if (trade.status !== 'pending') {
+      this.sendError(client, 'Trade is no longer pending')
+      return
+    }
+
+    const result = await addTradeOffer(tradeId, pokemonId, client.session.player.id)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to add offer')
+      return
+    }
+
+    // Send updated offers to both players (including warning to both)
+    const offers = await getTradeOffers(tradeId)
+    const updatePayload = {
+      trade_id: tradeId,
+      offers,
+      warning: result.warning // Pass through party safety warning to both players
+    }
+
+    this.send(client, 'trade_offers_update', updatePayload)
+
+    // Notify the other player with the same warning so they're aware
+    const otherPlayerId = trade.sender_id === client.session.player.id ? trade.receiver_id : trade.sender_id
+    const otherClient = this.getClientByPlayerId(otherPlayerId)
+    if (otherClient?.session) {
+      this.send(otherClient, 'trade_offers_update', updatePayload)
+    }
+  }
+
+  private async handleRemoveTradeOffer(client: Client, payload: { trade_id: string; pokemon_id: string }) {
+    if (!client.session) return
+
+    const { trade_id: tradeId, pokemon_id: pokemonId } = payload
+    if (!tradeId || !pokemonId) {
+      this.sendError(client, 'Trade ID and Pokemon ID are required')
+      return
+    }
+
+    // Get the trade with player validation (validates participation)
+    const trade = await this.getTradeById(tradeId, client.session.player.id)
+    if (!trade) {
+      this.sendError(client, 'Trade not found')
+      return
+    }
+
+    if (trade.status !== 'pending') {
+      this.sendError(client, 'Trade is no longer pending')
+      return
+    }
+
+    const result = await removeTradeOffer(tradeId, pokemonId, client.session.player.id)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to remove offer')
+      return
+    }
+
+    // Send updated offers to both players
+    const offers = await getTradeOffers(tradeId)
+    this.send(client, 'trade_offers_update', { trade_id: tradeId, offers })
+
+    // Notify the other player
+    const otherPlayerId = trade.sender_id === client.session.player.id ? trade.receiver_id : trade.sender_id
+    const otherClient = this.getClientByPlayerId(otherPlayerId)
+    if (otherClient?.session) {
+      this.send(otherClient, 'trade_offers_update', { trade_id: tradeId, offers })
+    }
+  }
+
+  private async handleCompleteTrade(client: Client, payload: { trade_id: string }) {
+    if (!client.session) return
+
+    const { trade_id: tradeId } = payload
+    if (!tradeId) {
+      this.sendError(client, 'Trade ID is required')
+      return
+    }
+
+    // Get the trade with player validation
+    const trade = await this.getTradeById(tradeId, client.session.player.id)
+    if (!trade) {
+      this.sendError(client, 'Trade not found')
+      return
+    }
+
+    // Only allow the receiver to complete (they accepted, so they trigger completion)
+    if (trade.receiver_id !== client.session.player.id) {
+      this.sendError(client, 'Only the receiver can complete the trade')
+      return
+    }
+
+    if (trade.status !== 'accepted') {
+      this.sendError(client, 'Trade must be accepted before completing')
+      return
+    }
+
+    // Complete the trade (transfers Pokemon)
+    const result = await completeTrade(tradeId)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to complete trade')
+      return
+    }
+
+    // Notify both players of completion
+    this.send(client, 'trade_completed', {
+      trade_id: tradeId,
+      transferred_count: result.transferred_count
+    })
+
+    const senderClient = this.getClientByPlayerId(trade.sender_id)
+    if (senderClient?.session) {
+      this.send(senderClient, 'trade_completed', {
+        trade_id: tradeId,
+        transferred_count: result.transferred_count
+      })
+    }
+
+    // Update trade lists for both players
+    const [receiverIncoming, receiverOutgoing] = await Promise.all([
+      getIncomingTradeRequests(client.session.player.id),
+      getOutgoingTradeRequests(client.session.player.id)
+    ])
+    this.send(client, 'trades_update', { incoming: receiverIncoming, outgoing: receiverOutgoing })
+
+    if (senderClient?.session) {
+      const [senderIncoming, senderOutgoing] = await Promise.all([
+        getIncomingTradeRequests(trade.sender_id),
+        getOutgoingTradeRequests(trade.sender_id)
+      ])
+      this.send(senderClient, 'trades_update', { incoming: senderIncoming, outgoing: senderOutgoing })
+    }
+  }
+
+  private async handleGetTradeOffers(client: Client, payload: { trade_id: string }) {
+    if (!client.session) return
+
+    const { trade_id: tradeId } = payload
+    if (!tradeId) {
+      this.sendError(client, 'Trade ID is required')
+      return
+    }
+
+    // Get the trade with player validation (validates participation)
+    const trade = await this.getTradeById(tradeId, client.session.player.id)
+    if (!trade) {
+      this.sendError(client, 'Trade not found')
+      return
+    }
+
+    const offers = await getTradeOffers(tradeId)
+    this.send(client, 'trade_offers_data', { trade_id: tradeId, offers })
   }
 }
