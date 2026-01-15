@@ -12,6 +12,7 @@ import { LevelUpToast } from './LevelUpToast'
 import { WorldView } from './world'
 import { WorldEventsTicker } from './social/WorldEventsTicker'
 import { ChatSidebar } from './social/ChatSidebar'
+import { FriendsPanel } from './social/FriendsPanel'
 import { TownMenu } from './interactions/TownMenu'
 import { WorldLog, createLogEntry } from './interactions/WorldLog'
 import { ShopPanel } from './ShopPanel'
@@ -30,8 +31,9 @@ export function GameShell({ accessToken }: GameShellProps) {
   const worldEvents = useGameStore((state) => state.worldEvents)
   const addLogEntry = useGameStore((state) => state.addLogEntry)
 
-  // Start with chat collapsed on mobile
+  // Start with chat and friends collapsed on mobile
   const [isChatCollapsed, setIsChatCollapsed] = useState(true)
+  const [isFriendsCollapsed, setIsFriendsCollapsed] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
 
   // Check if mobile on mount and resize
@@ -143,6 +145,12 @@ export function GameShell({ accessToken }: GameShellProps) {
       <ShopPanel />
       <GymBattlePanel />
       <LevelUpToast />
+
+      {/* Friends Panel - floating */}
+      <FriendsPanel
+        isCollapsed={isFriendsCollapsed}
+        onToggle={() => setIsFriendsCollapsed(!isFriendsCollapsed)}
+      />
 
       {/* Mobile Chat Toggle Button */}
       {isMobile && (

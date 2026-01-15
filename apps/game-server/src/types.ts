@@ -243,6 +243,9 @@ export interface Friend {
   // Joined data for display
   friend_username?: string
   friend_last_online?: string
+  // Zone visibility (Issue #14)
+  zone_id?: number
+  zone_name?: string
 }
 
 export interface FriendRequest {

@@ -1005,19 +1005,21 @@ export async function getOutgoingFriendRequests(playerId: string): Promise<Frien
   }))
 }
 
-// Helper to extract player data from Supabase join result
-function extractPlayerFromJoin(player: unknown): { username?: string; last_online?: string } | null {
+// Helper to extract player data from Supabase join result (includes zone info for Issue #14)
+function extractPlayerFromJoin(player: unknown): { username?: string; last_online?: string; current_zone_id?: number } | null {
   if (!player) return null
   if (Array.isArray(player)) {
-    return player[0] as { username?: string; last_online?: string } || null
+    return player[0] as { username?: string; last_online?: string; current_zone_id?: number } || null
   }
-  return player as { username?: string; last_online?: string }
+  return player as { username?: string; last_online?: string; current_zone_id?: number }
 }
 
 // Get accepted friends list - uses JOIN for single query optimization
+// Includes zone info for Issue #14 (friend zone visibility)
 export async function getFriendsList(playerId: string): Promise<Friend[]> {
   // Query friends where player is either the requester or recipient
   // Use two queries to avoid string interpolation in OR clause
+  // Include current_zone_id from players and join zone name
   const [{ data: sentByMe, error: err1 }, { data: sentToMe, error: err2 }] = await Promise.all([
     supabase
       .from('friends')
@@ -1027,7 +1029,7 @@ export async function getFriendsList(playerId: string): Promise<Friend[]> {
         friend_player_id,
         status,
         created_at,
-        friend:players!friends_friend_player_id_fkey(username, last_online)
+        friend:players!friends_friend_player_id_fkey(username, last_online, current_zone_id, zone:zones(name))
       `)
       .eq('status', 'accepted')
       .eq('player_id', playerId)
@@ -1040,7 +1042,7 @@ export async function getFriendsList(playerId: string): Promise<Friend[]> {
         friend_player_id,
         status,
         created_at,
-        friend:players!friends_player_id_fkey(username, last_online)
+        friend:players!friends_player_id_fkey(username, last_online, current_zone_id, zone:zones(name))
       `)
       .eq('status', 'accepted')
       .eq('friend_player_id', playerId)
@@ -1054,6 +1056,10 @@ export async function getFriendsList(playerId: string): Promise<Friend[]> {
 
   return allFriends.map(row => {
     const friendData = extractPlayerFromJoin(row.friend)
+    // Extract zone name from nested join
+    const zoneData = (row.friend as { zone?: { name?: string } | { name?: string }[] })?.zone
+    const zoneName = Array.isArray(zoneData) ? zoneData[0]?.name : zoneData?.name
+
     return {
       friend_id: row.friend_id,
       player_id: row.player_id,
@@ -1061,7 +1067,9 @@ export async function getFriendsList(playerId: string): Promise<Friend[]> {
       status: row.status as FriendStatus,
       created_at: row.created_at,
       friend_username: friendData?.username,
-      friend_last_online: friendData?.last_online
+      friend_last_online: friendData?.last_online,
+      zone_id: friendData?.current_zone_id,
+      zone_name: zoneName
     }
   })
 }
