@@ -194,6 +194,15 @@ BEGIN
   FROM trade_offers
   WHERE trade_id = p_trade_id AND offered_by = v_trade.receiver_id;
 
+  -- VALIDATION: Cannot complete a trade with no Pokemon offered by either party
+  IF (v_sender_offers IS NULL OR array_length(v_sender_offers, 1) IS NULL)
+     AND (v_receiver_offers IS NULL OR array_length(v_receiver_offers, 1) IS NULL) THEN
+    RETURN json_build_object(
+      'success', false,
+      'error', 'Cannot complete trade with no Pokemon offered'
+    );
+  END IF;
+
   -- CRITICAL: Lock all Pokemon involved in the trade to prevent race conditions
   -- This prevents another operation from modifying these Pokemon between our checks and transfers
   SELECT COUNT(*) INTO v_locked_pokemon_count

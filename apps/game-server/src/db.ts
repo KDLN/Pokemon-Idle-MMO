@@ -1472,7 +1472,8 @@ export async function addTradeOffer(
     .single()
 
   if (pokemonError || !pokemon) {
-    return { success: false, error: 'Pokemon not found or not owned by you' }
+    // Generic message to avoid revealing whether Pokemon exists but is owned by someone else
+    return { success: false, error: 'Invalid Pokemon' }
   }
 
   // Check if this is a party Pokemon and warn about party safety

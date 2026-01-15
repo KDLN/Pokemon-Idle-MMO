@@ -1068,8 +1068,12 @@ export class GameHub {
     return null
   }
 
-  // Get trade by ID (for identifying sender/receiver before updates)
-  private async getTradeById(tradeId: string): Promise<{ trade_id: string; sender_id: string; receiver_id: string; status: string } | null> {
+  // Get trade by ID with player validation
+  // SECURITY: Returns null if player is not part of the trade to prevent info leaks
+  private async getTradeById(
+    tradeId: string,
+    playerId?: string
+  ): Promise<{ trade_id: string; sender_id: string; receiver_id: string; status: string } | null> {
     const { getSupabase } = await import('./db.js')
     const supabase = getSupabase()
     const { data, error } = await supabase
@@ -1079,6 +1083,12 @@ export class GameHub {
       .single()
 
     if (error || !data) return null
+
+    // If playerId is provided, validate player is part of the trade
+    if (playerId && data.sender_id !== playerId && data.receiver_id !== playerId) {
+      return null // Return null to prevent info leak about trade existence
+    }
+
     return data
   }
 
@@ -1145,8 +1155,8 @@ export class GameHub {
       return
     }
 
-    // Get the trade first to identify the sender before updating
-    const trade = await this.getTradeById(tradeId)
+    // Get the trade with player validation
+    const trade = await this.getTradeById(tradeId, client.session.player.id)
     if (!trade) {
       this.sendError(client, 'Trade not found')
       return
@@ -1196,8 +1206,8 @@ export class GameHub {
       return
     }
 
-    // Get the trade first to identify the sender before updating
-    const trade = await this.getTradeById(tradeId)
+    // Get the trade with player validation
+    const trade = await this.getTradeById(tradeId, client.session.player.id)
     if (!trade) {
       this.sendError(client, 'Trade not found')
       return
@@ -1247,8 +1257,8 @@ export class GameHub {
       return
     }
 
-    // Get the trade first to identify the receiver before updating
-    const trade = await this.getTradeById(tradeId)
+    // Get the trade with player validation
+    const trade = await this.getTradeById(tradeId, client.session.player.id)
     if (!trade) {
       this.sendError(client, 'Trade not found')
       return
@@ -1309,15 +1319,10 @@ export class GameHub {
       return
     }
 
-    // Verify player is part of this trade
-    const trade = await this.getTradeById(tradeId)
+    // Get the trade with player validation (validates participation)
+    const trade = await this.getTradeById(tradeId, client.session.player.id)
     if (!trade) {
       this.sendError(client, 'Trade not found')
-      return
-    }
-
-    if (trade.sender_id !== client.session.player.id && trade.receiver_id !== client.session.player.id) {
-      this.sendError(client, 'You are not part of this trade')
       return
     }
 
@@ -1360,8 +1365,8 @@ export class GameHub {
       return
     }
 
-    // Verify player is part of this trade
-    const trade = await this.getTradeById(tradeId)
+    // Get the trade with player validation (validates participation)
+    const trade = await this.getTradeById(tradeId, client.session.player.id)
     if (!trade) {
       this.sendError(client, 'Trade not found')
       return
@@ -1400,8 +1405,8 @@ export class GameHub {
       return
     }
 
-    // Get the trade to verify status and participants
-    const trade = await this.getTradeById(tradeId)
+    // Get the trade with player validation
+    const trade = await this.getTradeById(tradeId, client.session.player.id)
     if (!trade) {
       this.sendError(client, 'Trade not found')
       return
@@ -1465,15 +1470,10 @@ export class GameHub {
       return
     }
 
-    // Verify player is part of this trade
-    const trade = await this.getTradeById(tradeId)
+    // Get the trade with player validation (validates participation)
+    const trade = await this.getTradeById(tradeId, client.session.player.id)
     if (!trade) {
       this.sendError(client, 'Trade not found')
-      return
-    }
-
-    if (trade.sender_id !== client.session.player.id && trade.receiver_id !== client.session.player.id) {
-      this.sendError(client, 'You are not part of this trade')
       return
     }
 
