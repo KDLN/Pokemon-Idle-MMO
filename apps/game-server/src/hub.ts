@@ -312,6 +312,7 @@ export class GameHub {
   private async handleMoveZone(client: Client, payload: { zone_id: number }) {
     if (!client.session) return
 
+    const oldZoneId = client.session.zone.id
     const connectedZones = await getConnectedZones(client.session.zone.id)
     const targetZone = connectedZones.find(z => z.id === payload.zone_id)
 
@@ -366,7 +367,7 @@ export class GameHub {
     for (const [, otherClient] of this.clients) {
       if (!otherClient.session) continue
 
-      const theirZoneId = otherClient.session.currentZone.id
+      const theirZoneId = otherClient.session.zone.id
       if (theirZoneId === oldZoneId || theirZoneId === newZoneId) {
         const nearbyPlayers = await getPlayersInZone(theirZoneId, otherClient.session.player.id)
         this.send(otherClient, 'nearby_players', { players: nearbyPlayers })
@@ -985,7 +986,7 @@ export class GameHub {
   private async handleGetNearbyPlayers(client: Client) {
     if (!client.session) return
 
-    const zoneId = client.session.currentZone.id
+    const zoneId = client.session.zone.id
     const playerId = client.session.player.id
 
     const nearbyPlayers = await getPlayersInZone(zoneId, playerId)
