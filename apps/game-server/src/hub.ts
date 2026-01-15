@@ -43,7 +43,14 @@ import {
   getOutgoingFriendRequests,
   getFriendsList,
   removeFriend,
-  getPlayersInZone
+  getPlayersInZone,
+  arePlayersFriends,
+  createTradeRequest,
+  getIncomingTradeRequests,
+  getOutgoingTradeRequests,
+  cancelTradeRequest,
+  acceptTradeRequest as acceptTradeRequestDb,
+  declineTradeRequest as declineTradeRequestDb
 } from './db.js'
 import { processTick, simulateGymBattle } from './game.js'
 
@@ -249,6 +256,21 @@ export class GameHub {
           break
         case 'get_nearby_players':
           this.handleGetNearbyPlayers(client)
+          break
+        case 'send_trade_request':
+          this.handleSendTradeRequest(client, msg.payload as { player_id: string })
+          break
+        case 'accept_trade_request':
+          this.handleAcceptTradeRequest(client, msg.payload as { trade_id: string })
+          break
+        case 'decline_trade_request':
+          this.handleDeclineTradeRequest(client, msg.payload as { trade_id: string })
+          break
+        case 'cancel_trade_request':
+          this.handleCancelTradeRequest(client, msg.payload as { trade_id: string })
+          break
+        case 'get_trades':
+          this.handleGetTrades(client)
           break
         default:
           console.log('Unknown message type:', msg.type)
@@ -992,7 +1014,6 @@ export class GameHub {
     this.send(client, 'friends_data', { friends, incoming, outgoing })
   }
 
-  // ============================================
   // NEARBY PLAYERS HANDLER
   // ============================================
 
@@ -1005,5 +1026,261 @@ export class GameHub {
     const nearbyPlayers = await getPlayersInZone(zoneId, playerId)
 
     this.send(client, 'nearby_players', { players: nearbyPlayers })
+  }
+
+  // ============================================
+  // TRADE HANDLERS
+  // ============================================
+
+  // Check if a player is online
+  private isPlayerOnline(playerId: string): boolean {
+    for (const [, otherClient] of this.clients) {
+      if (otherClient.session?.player.id === playerId) {
+        return true
+      }
+    }
+    return false
+  }
+
+  // Get client by player ID
+  private getClientByPlayerId(playerId: string): Client | null {
+    for (const [, otherClient] of this.clients) {
+      if (otherClient.session?.player.id === playerId) {
+        return otherClient
+      }
+    }
+    return null
+  }
+
+  // Get trade by ID (for identifying sender/receiver before updates)
+  private async getTradeById(tradeId: string): Promise<{ trade_id: string; sender_id: string; receiver_id: string; status: string } | null> {
+    const { getSupabase } = await import('./db.js')
+    const supabase = getSupabase()
+    const { data, error } = await supabase
+      .from('trades')
+      .select('trade_id, sender_id, receiver_id, status')
+      .eq('trade_id', tradeId)
+      .single()
+
+    if (error || !data) return null
+    return data
+  }
+
+  private async handleSendTradeRequest(client: Client, payload: { player_id: string }) {
+    if (!client.session) return
+
+    const { player_id: receiverId } = payload
+    if (!receiverId || typeof receiverId !== 'string') {
+      this.sendError(client, 'Player ID is required')
+      return
+    }
+
+    // Can't trade with yourself
+    if (receiverId === client.session.player.id) {
+      this.sendError(client, 'Cannot trade with yourself')
+      return
+    }
+
+    // Check if they are friends
+    const areFriends = await arePlayersFriends(client.session.player.id, receiverId)
+    if (!areFriends) {
+      this.sendError(client, 'Can only trade with friends')
+      return
+    }
+
+    // Check if the receiver is online
+    if (!this.isPlayerOnline(receiverId)) {
+      this.sendError(client, 'Player is not online')
+      return
+    }
+
+    // Create the trade request
+    const result = await createTradeRequest(client.session.player.id, receiverId)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to send trade request')
+      return
+    }
+
+    // Notify the sender
+    this.send(client, 'trade_request_sent', {
+      success: true,
+      trade_id: result.trade_id
+    })
+
+    // Notify the receiver if online
+    const receiverClient = this.getClientByPlayerId(receiverId)
+    if (receiverClient) {
+      this.send(receiverClient, 'trade_request_received', {
+        trade_id: result.trade_id,
+        from_player_id: client.session.player.id,
+        from_username: client.session.player.username,
+        created_at: new Date().toISOString()
+      })
+    }
+  }
+
+  private async handleAcceptTradeRequest(client: Client, payload: { trade_id: string }) {
+    if (!client.session) return
+
+    const { trade_id: tradeId } = payload
+    if (!tradeId || typeof tradeId !== 'string') {
+      this.sendError(client, 'Trade ID is required')
+      return
+    }
+
+    // Get the trade first to identify the sender before updating
+    const trade = await this.getTradeById(tradeId)
+    if (!trade) {
+      this.sendError(client, 'Trade not found')
+      return
+    }
+
+    // Verify this player is the receiver
+    if (trade.receiver_id !== client.session.player.id) {
+      this.sendError(client, 'Only receiver can accept trade')
+      return
+    }
+
+    const result = await acceptTradeRequestDb(tradeId, client.session.player.id)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to accept trade request')
+      return
+    }
+
+    // Get updated trade lists for the receiver (current client)
+    const [incoming, outgoing] = await Promise.all([
+      getIncomingTradeRequests(client.session.player.id),
+      getOutgoingTradeRequests(client.session.player.id)
+    ])
+
+    this.send(client, 'trades_update', { incoming, outgoing })
+
+    // Notify only the sender (not all clients)
+    const senderClient = this.getClientByPlayerId(trade.sender_id)
+    if (senderClient?.session) {
+      const [senderIncoming, senderOutgoing] = await Promise.all([
+        getIncomingTradeRequests(trade.sender_id),
+        getOutgoingTradeRequests(trade.sender_id)
+      ])
+      this.send(senderClient, 'trades_update', {
+        incoming: senderIncoming,
+        outgoing: senderOutgoing
+      })
+    }
+  }
+
+  private async handleDeclineTradeRequest(client: Client, payload: { trade_id: string }) {
+    if (!client.session) return
+
+    const { trade_id: tradeId } = payload
+    if (!tradeId || typeof tradeId !== 'string') {
+      this.sendError(client, 'Trade ID is required')
+      return
+    }
+
+    // Get the trade first to identify the sender before updating
+    const trade = await this.getTradeById(tradeId)
+    if (!trade) {
+      this.sendError(client, 'Trade not found')
+      return
+    }
+
+    // Verify this player is the receiver
+    if (trade.receiver_id !== client.session.player.id) {
+      this.sendError(client, 'Only receiver can decline trade')
+      return
+    }
+
+    const result = await declineTradeRequestDb(tradeId, client.session.player.id)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to decline trade request')
+      return
+    }
+
+    // Get updated trade lists for the receiver (current client)
+    const [incoming, outgoing] = await Promise.all([
+      getIncomingTradeRequests(client.session.player.id),
+      getOutgoingTradeRequests(client.session.player.id)
+    ])
+
+    this.send(client, 'trades_update', { incoming, outgoing })
+
+    // Notify only the sender (not all clients)
+    const senderClient = this.getClientByPlayerId(trade.sender_id)
+    if (senderClient?.session) {
+      const [senderIncoming, senderOutgoing] = await Promise.all([
+        getIncomingTradeRequests(trade.sender_id),
+        getOutgoingTradeRequests(trade.sender_id)
+      ])
+      this.send(senderClient, 'trades_update', {
+        incoming: senderIncoming,
+        outgoing: senderOutgoing
+      })
+    }
+  }
+
+  private async handleCancelTradeRequest(client: Client, payload: { trade_id: string }) {
+    if (!client.session) return
+
+    const { trade_id: tradeId } = payload
+    if (!tradeId || typeof tradeId !== 'string') {
+      this.sendError(client, 'Trade ID is required')
+      return
+    }
+
+    // Get the trade first to identify the receiver before updating
+    const trade = await this.getTradeById(tradeId)
+    if (!trade) {
+      this.sendError(client, 'Trade not found')
+      return
+    }
+
+    // Verify this player is the sender
+    if (trade.sender_id !== client.session.player.id) {
+      this.sendError(client, 'Only sender can cancel trade')
+      return
+    }
+
+    const result = await cancelTradeRequest(tradeId, client.session.player.id)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to cancel trade request')
+      return
+    }
+
+    // Get updated trade lists for the sender (current client)
+    const [incoming, outgoing] = await Promise.all([
+      getIncomingTradeRequests(client.session.player.id),
+      getOutgoingTradeRequests(client.session.player.id)
+    ])
+
+    this.send(client, 'trades_update', { incoming, outgoing })
+
+    // Notify only the receiver (not all clients)
+    const receiverClient = this.getClientByPlayerId(trade.receiver_id)
+    if (receiverClient?.session) {
+      const [receiverIncoming, receiverOutgoing] = await Promise.all([
+        getIncomingTradeRequests(trade.receiver_id),
+        getOutgoingTradeRequests(trade.receiver_id)
+      ])
+      this.send(receiverClient, 'trades_update', {
+        incoming: receiverIncoming,
+        outgoing: receiverOutgoing
+      })
+    }
+  }
+
+  private async handleGetTrades(client: Client) {
+    if (!client.session) return
+
+    const [incoming, outgoing] = await Promise.all([
+      getIncomingTradeRequests(client.session.player.id),
+      getOutgoingTradeRequests(client.session.player.id)
+    ])
+
+    this.send(client, 'trades_data', { incoming, outgoing })
   }
 }

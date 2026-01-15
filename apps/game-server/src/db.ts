@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus } from './types.js'
+import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus } from './types.js'
 
 let supabase: SupabaseClient
 
@@ -1161,4 +1161,260 @@ export async function getPlayersInZone(
   }
 
   return data || []
+}
+
+// ============================================
+// TRADE QUERIES
+// ============================================
+
+// Check if two players are friends
+export async function arePlayersFriends(
+  playerId: string,
+  otherPlayerId: string
+): Promise<boolean> {
+  const [{ data: sentByMe }, { data: sentByThem }] = await Promise.all([
+    supabase
+      .from('friends')
+      .select('friend_id')
+      .eq('player_id', playerId)
+      .eq('friend_player_id', otherPlayerId)
+      .eq('status', 'accepted'),
+    supabase
+      .from('friends')
+      .select('friend_id')
+      .eq('player_id', otherPlayerId)
+      .eq('friend_player_id', playerId)
+      .eq('status', 'accepted')
+  ])
+
+  return Boolean((sentByMe && sentByMe.length > 0) || (sentByThem && sentByThem.length > 0))
+}
+
+// Create a trade request
+export async function createTradeRequest(
+  senderId: string,
+  receiverId: string
+): Promise<{ success: boolean; error?: string; trade_id?: string }> {
+  // Skip the pre-check for existing trades - rely on the unique index constraint
+  // This avoids SQL injection risk from string interpolation in .or() and eliminates
+  // the race condition between check and insert.
+  // The unique partial index idx_unique_pending_trade will reject duplicates.
+
+  const { data, error } = await supabase
+    .from('trades')
+    .insert({
+      sender_id: senderId,
+      receiver_id: receiverId,
+      status: 'pending'
+    })
+    .select('trade_id')
+    .single()
+
+  if (error) {
+    console.error('Failed to create trade request:', error)
+    // Check for unique constraint violation (duplicate pending trade)
+    if (error.code === '23505') {
+      return { success: false, error: 'Trade already pending with this player' }
+    }
+    return { success: false, error: 'Failed to create trade request' }
+  }
+
+  return { success: true, trade_id: data.trade_id }
+}
+
+// Get a trade by ID with validation that player is part of it
+export async function getTrade(
+  tradeId: string,
+  playerId: string
+): Promise<Trade | null> {
+  // Use two separate queries to avoid string interpolation in .or() clause
+  // This prevents SQL injection vulnerability
+  const [{ data: asSender }, { data: asReceiver }] = await Promise.all([
+    supabase
+      .from('trades')
+      .select(`
+        trade_id,
+        sender_id,
+        receiver_id,
+        status,
+        created_at,
+        updated_at,
+        sender:players!trades_sender_id_fkey(username),
+        receiver:players!trades_receiver_id_fkey(username)
+      `)
+      .eq('trade_id', tradeId)
+      .eq('sender_id', playerId)
+      .maybeSingle(),
+    supabase
+      .from('trades')
+      .select(`
+        trade_id,
+        sender_id,
+        receiver_id,
+        status,
+        created_at,
+        updated_at,
+        sender:players!trades_sender_id_fkey(username),
+        receiver:players!trades_receiver_id_fkey(username)
+      `)
+      .eq('trade_id', tradeId)
+      .eq('receiver_id', playerId)
+      .maybeSingle()
+  ])
+
+  const data = asSender || asReceiver
+  if (!data) return null
+
+  return {
+    trade_id: data.trade_id,
+    sender_id: data.sender_id,
+    receiver_id: data.receiver_id,
+    status: data.status as TradeStatus,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+    sender_username: extractUsernameFromJoin(data.sender),
+    receiver_username: extractUsernameFromJoin(data.receiver)
+  }
+}
+
+// Get incoming trade requests for a player
+export async function getIncomingTradeRequests(playerId: string): Promise<TradeRequest[]> {
+  const { data, error } = await supabase
+    .from('trades')
+    .select(`
+      trade_id,
+      sender_id,
+      created_at,
+      sender:players!trades_sender_id_fkey(username)
+    `)
+    .eq('receiver_id', playerId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Failed to get incoming trade requests:', error)
+    return []
+  }
+
+  if (!data) return []
+
+  return data.map(row => ({
+    trade_id: row.trade_id,
+    from_player_id: row.sender_id,
+    from_username: extractUsernameFromJoin(row.sender),
+    created_at: row.created_at
+  }))
+}
+
+// Get outgoing trade requests for a player
+export async function getOutgoingTradeRequests(playerId: string): Promise<TradeRequest[]> {
+  const { data, error } = await supabase
+    .from('trades')
+    .select(`
+      trade_id,
+      receiver_id,
+      created_at,
+      receiver:players!trades_receiver_id_fkey(username)
+    `)
+    .eq('sender_id', playerId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Failed to get outgoing trade requests:', error)
+    return []
+  }
+
+  if (!data) return []
+
+  return data.map(row => ({
+    trade_id: row.trade_id,
+    from_player_id: row.receiver_id,
+    from_username: extractUsernameFromJoin(row.receiver),
+    created_at: row.created_at
+  }))
+}
+
+// Update trade status
+export async function updateTradeStatus(
+  tradeId: string,
+  playerId: string,
+  newStatus: TradeStatus
+): Promise<{ success: boolean; error?: string }> {
+  // Verify player is part of this trade
+  const { data: trade, error: fetchError } = await supabase
+    .from('trades')
+    .select('trade_id, sender_id, receiver_id, status')
+    .eq('trade_id', tradeId)
+    .single()
+
+  if (fetchError || !trade) {
+    return { success: false, error: 'Trade not found' }
+  }
+
+  // Verify player is part of this trade
+  if (trade.sender_id !== playerId && trade.receiver_id !== playerId) {
+    return { success: false, error: 'Trade not found' }
+  }
+
+  // Verify trade is still pending
+  if (trade.status !== 'pending') {
+    return { success: false, error: 'Trade is no longer pending' }
+  }
+
+  // Validate status transitions:
+  // - Sender can cancel
+  // - Receiver can accept or decline
+  if (newStatus === 'cancelled' && trade.sender_id !== playerId) {
+    return { success: false, error: 'Only sender can cancel trade' }
+  }
+
+  if ((newStatus === 'accepted' || newStatus === 'declined') && trade.receiver_id !== playerId) {
+    return { success: false, error: 'Only receiver can accept or decline trade' }
+  }
+
+  // Update with optimistic lock and verify the update succeeded
+  const { data, error } = await supabase
+    .from('trades')
+    .update({ status: newStatus })
+    .eq('trade_id', tradeId)
+    .eq('status', 'pending') // Optimistic lock - only update if still pending
+    .select()
+
+  if (error) {
+    console.error('Failed to update trade status:', error)
+    return { success: false, error: 'Failed to update trade' }
+  }
+
+  // If no rows were updated, the trade was modified by another operation
+  // (e.g., already cancelled, accepted, or declined)
+  if (!data || data.length === 0) {
+    return { success: false, error: 'Trade was already processed or modified' }
+  }
+
+  return { success: true }
+}
+
+// Cancel a trade request (sender only)
+export async function cancelTradeRequest(
+  tradeId: string,
+  playerId: string
+): Promise<{ success: boolean; error?: string }> {
+  return updateTradeStatus(tradeId, playerId, 'cancelled')
+}
+
+// Accept a trade request (receiver only)
+export async function acceptTradeRequest(
+  tradeId: string,
+  playerId: string
+): Promise<{ success: boolean; error?: string }> {
+  return updateTradeStatus(tradeId, playerId, 'accepted')
+}
+
+// Decline a trade request (receiver only)
+export async function declineTradeRequest(
+  tradeId: string,
+  playerId: string
+): Promise<{ success: boolean; error?: string }> {
+  return updateTradeStatus(tradeId, playerId, 'declined')
 }

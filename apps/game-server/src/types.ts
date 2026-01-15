@@ -254,3 +254,35 @@ export interface FriendRequest {
   from_username: string
   created_at: string
 }
+
+// Trade system types
+export type TradeStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed'
+
+export interface Trade {
+  trade_id: string
+  sender_id: string
+  receiver_id: string
+  status: TradeStatus
+  created_at: string
+  updated_at: string
+  // Joined data for display
+  sender_username?: string
+  receiver_username?: string
+}
+
+export interface TradeOffer {
+  offer_id: string
+  trade_id: string
+  pokemon_id: string
+  offered_by: string
+  created_at: string
+  // Joined data for display
+  pokemon?: Pokemon
+}
+
+export interface TradeRequest {
+  trade_id: string
+  from_player_id: string
+  from_username: string
+  created_at: string
+}
