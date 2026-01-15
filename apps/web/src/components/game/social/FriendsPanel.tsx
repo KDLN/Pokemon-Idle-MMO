@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
+import { countOnlineFriends } from '@/lib/utils/friendUtils'
 import { FriendsList } from './FriendsList'
 import { FriendRequests } from './FriendRequests'
 import { AddFriend } from './AddFriend'
@@ -30,12 +31,8 @@ export function FriendsPanel({ isCollapsed = false, onToggle }: FriendsPanelProp
     }
   }, [isConnected])
 
-  const onlineFriends = friends.filter((f) => {
-    if (!f.friend_last_online) return false
-    const lastOnline = new Date(f.friend_last_online)
-    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000)
-    return lastOnline > twoMinutesAgo
-  })
+  // Use memoized count of online friends
+  const onlineFriendsCount = useMemo(() => countOnlineFriends(friends), [friends])
 
   const totalRequests = incomingRequests.length + outgoingRequests.length
 
@@ -49,9 +46,9 @@ export function FriendsPanel({ isCollapsed = false, onToggle }: FriendsPanelProp
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
         </svg>
-        {(onlineFriends.length > 0 || totalRequests > 0) && (
+        {(onlineFriendsCount > 0 || totalRequests > 0) && (
           <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 text-xs font-bold bg-green-500 rounded-full flex items-center justify-center">
-            {totalRequests > 0 ? totalRequests : onlineFriends.length}
+            {totalRequests > 0 ? totalRequests : onlineFriendsCount}
           </span>
         )}
       </button>
@@ -68,7 +65,7 @@ export function FriendsPanel({ isCollapsed = false, onToggle }: FriendsPanelProp
           </svg>
           <h3 className="text-white font-semibold text-sm">Friends</h3>
           <span className="text-xs text-[#4ade80]">
-            {onlineFriends.length} online
+            {onlineFriendsCount} online
           </span>
         </div>
         <div className="flex items-center gap-1">

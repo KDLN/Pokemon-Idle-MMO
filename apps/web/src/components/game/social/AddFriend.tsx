@@ -2,6 +2,12 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { gameSocket } from '@/lib/ws/gameSocket'
+import { useGameStore } from '@/stores/gameStore'
+
+// Constants
+const AUTO_CLOSE_DELAY_MS = 1500
+const USERNAME_MIN_LENGTH = 3
+const USERNAME_MAX_LENGTH = 20
 
 interface AddFriendProps {
   onClose: () => void
@@ -13,6 +19,7 @@ export function AddFriend({ onClose }: AddFriendProps) {
   const [success, setSuccess] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const isConnected = useGameStore((state) => state.isConnected)
 
   // Focus input on mount
   useEffect(() => {
@@ -27,13 +34,13 @@ export function AddFriend({ onClose }: AddFriendProps) {
     const trimmed = username.trim()
 
     // Client-side validation
-    if (trimmed.length < 3) {
-      setError('Username must be at least 3 characters')
+    if (trimmed.length < USERNAME_MIN_LENGTH) {
+      setError(`Username must be at least ${USERNAME_MIN_LENGTH} characters`)
       return
     }
 
-    if (trimmed.length > 20) {
-      setError('Username must be at most 20 characters')
+    if (trimmed.length > USERNAME_MAX_LENGTH) {
+      setError(`Username must be at most ${USERNAME_MAX_LENGTH} characters`)
       return
     }
 
@@ -42,17 +49,27 @@ export function AddFriend({ onClose }: AddFriendProps) {
       return
     }
 
-    setIsSubmitting(true)
-    gameSocket.sendFriendRequest(trimmed)
+    // Check connection before attempting
+    if (!isConnected) {
+      setError('Not connected to server')
+      return
+    }
 
-    // Optimistically show success (will be confirmed by server)
-    setTimeout(() => {
-      setSuccess(`Friend request sent to ${trimmed}!`)
-      setUsername('')
+    setIsSubmitting(true)
+
+    // Use callback to handle server response properly (fixes race condition)
+    gameSocket.sendFriendRequest(trimmed, (result) => {
       setIsSubmitting(false)
-      // Auto-close after success
-      setTimeout(onClose, 1500)
-    }, 300)
+
+      if (result.success) {
+        setSuccess(`Friend request sent to ${result.username || trimmed}!`)
+        setUsername('')
+        // Auto-close after success
+        setTimeout(onClose, AUTO_CLOSE_DELAY_MS)
+      } else {
+        setError(result.error || 'Failed to send friend request')
+      }
+    })
   }
 
   return (

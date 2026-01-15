@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
+import { isFriendOnline, sortFriendsByOnlineStatus } from '@/lib/utils/friendUtils'
 import type { Friend } from '@/types/friends'
 
 interface FriendsListProps {
@@ -10,30 +11,18 @@ interface FriendsListProps {
 }
 
 export function FriendsList({ friends }: FriendsListProps) {
-  const player = useGameStore((state) => state.player)
   const connectedZones = useGameStore((state) => state.connectedZones)
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null)
 
-  // Helper to determine if friend is online (last_online within 2 minutes)
-  const isOnline = (friend: Friend) => {
-    if (!friend.friend_last_online) return false
-    const lastOnline = new Date(friend.friend_last_online)
-    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000)
-    return lastOnline > twoMinutesAgo
-  }
-
-  // Sort friends: online first, then alphabetically
-  const sortedFriends = [...friends].sort((a, b) => {
-    const aOnline = isOnline(a)
-    const bOnline = isOnline(b)
-    if (aOnline && !bOnline) return -1
-    if (!aOnline && bOnline) return 1
-    return (a.friend_username || '').localeCompare(b.friend_username || '')
-  })
+  // Memoize sorted friends to avoid recalculating on every render
+  const sortedFriends = useMemo(
+    () => sortFriendsByOnlineStatus(friends),
+    [friends]
+  )
 
   // Check if we can travel to friend's zone
   const canTravelTo = (friend: Friend) => {
-    if (!friend.zone_id || !isOnline(friend)) return false
+    if (!friend.zone_id || !isFriendOnline(friend)) return false
     return connectedZones.some((zone) => zone.id === friend.zone_id)
   }
 
@@ -63,7 +52,7 @@ export function FriendsList({ friends }: FriendsListProps) {
   return (
     <div className="divide-y divide-[#2a2a4a]">
       {sortedFriends.map((friend) => {
-        const online = isOnline(friend)
+        const online = isFriendOnline(friend)
         const canTravel = canTravelTo(friend)
         const isConfirming = confirmRemove === friend.friend_id
 

@@ -17,6 +17,12 @@ type ChatPayload = {
 
 const CHAT_CHANNELS: ChatChannel[] = ['global', 'trade', 'guild', 'system']
 
+// Constants - exported for use in other components
+export const ONLINE_THRESHOLD_MS = 2 * 60 * 1000 // 2 minutes
+
+// Friend request callback type
+type FriendRequestCallback = (result: { success: boolean; error?: string; username?: string }) => void
+
 class GameSocket {
   private ws: WebSocket | null = null
   private reconnectAttempts = 0
@@ -24,6 +30,7 @@ class GameSocket {
   private reconnectDelay = 1000
   private token: string | null = null
   private handlers: Map<string, MessageHandler> = new Map()
+  private friendRequestCallback: FriendRequestCallback | null = null
 
   constructor() {
     // Set up default handlers
@@ -122,13 +129,19 @@ class GameSocket {
     }, delay)
   }
 
+  // Check if WebSocket is connected
+  isConnected(): boolean {
+    return this.ws?.readyState === WebSocket.OPEN
+  }
+
   send(type: string, payload: unknown = {}) {
-    if (this.ws?.readyState !== WebSocket.OPEN) {
+    if (!this.isConnected()) {
       console.error('WebSocket not connected')
-      return
+      return false
     }
 
-    this.ws.send(JSON.stringify({ type, payload }))
+    this.ws!.send(JSON.stringify({ type, payload }))
+    return true
   }
 
   // Move to a different zone
@@ -195,9 +208,15 @@ class GameSocket {
     this.send('get_friends')
   }
 
-  // Send a friend request by username
-  sendFriendRequest(username: string) {
+  // Send a friend request by username with optional callback
+  sendFriendRequest(username: string, callback?: FriendRequestCallback): boolean {
+    if (!this.isConnected()) {
+      callback?.({ success: false, error: 'Not connected to server' })
+      return false
+    }
+    this.friendRequestCallback = callback || null
     this.send('send_friend_request', { username })
+    return true
   }
 
   // Accept a pending friend request
@@ -308,7 +327,11 @@ class GameSocket {
   private handleError = (payload: unknown) => {
     const { message } = payload as { message: string }
     console.error('Server error:', message)
-    // Could show toast notification here
+    // If there's a pending friend request callback, call it with the error
+    if (this.friendRequestCallback) {
+      this.friendRequestCallback({ success: false, error: message })
+      this.friendRequestCallback = null
+    }
   }
 
   private handleShopData = (payload: unknown) => {
@@ -468,8 +491,11 @@ class GameSocket {
 
   private handleFriendRequestSent = (payload: unknown) => {
     const { success, username } = payload as { success: boolean; username: string }
+    if (this.friendRequestCallback) {
+      this.friendRequestCallback({ success, username })
+      this.friendRequestCallback = null
+    }
     if (success) {
-      console.log(`Friend request sent to ${username}`)
       // Refresh friends data to get the new outgoing request
       this.getFriends()
     }
