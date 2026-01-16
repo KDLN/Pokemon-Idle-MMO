@@ -159,7 +159,9 @@ export function TradeHistory({ filterUsername = '', onFilterChange }: TradeHisto
     gameSocket.getTradeHistory(50, localFilter || undefined)
   }
 
-  if (tradeHistory.length === 0 && !isLoading) {
+  // Show simple empty state only when there's no filter and no history
+  // (user has never made any trades)
+  if (tradeHistory.length === 0 && !isLoading && !localFilter) {
     return (
       <div className="text-center py-8">
         <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-[#1a1a2e] border border-dashed border-[#2a2a4a] flex items-center justify-center">
@@ -177,7 +179,7 @@ export function TradeHistory({ filterUsername = '', onFilterChange }: TradeHisto
 
   return (
     <div className="space-y-3">
-      {/* Filter input */}
+      {/* Filter input - always visible when we have history or an active filter */}
       <form onSubmit={handleFilterSubmit} className="relative">
         <input
           type="text"
@@ -218,8 +220,26 @@ export function TradeHistory({ filterUsername = '', onFilterChange }: TradeHisto
         </div>
       )}
 
+      {/* Empty state when filter yields no results */}
+      {!isLoading && tradeHistory.length === 0 && localFilter && (
+        <div className="text-center py-6">
+          <p className="text-[#606080] text-sm">No trades found for "{localFilter}"</p>
+          <button
+            type="button"
+            onClick={() => {
+              setLocalFilter('')
+              onFilterChange?.('')
+              gameSocket.getTradeHistory(50)
+            }}
+            className="mt-2 text-xs text-[#5B6EEA] hover:text-[#7B8EFA] transition-colors"
+          >
+            Clear filter
+          </button>
+        </div>
+      )}
+
       {/* Trade history list */}
-      {!isLoading && (
+      {!isLoading && tradeHistory.length > 0 && (
         <div className="space-y-2">
           {tradeHistory.map((entry) => (
             <TradeHistoryCard key={entry.id} entry={entry} />
