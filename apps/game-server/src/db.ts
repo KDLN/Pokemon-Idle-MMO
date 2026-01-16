@@ -1730,6 +1730,7 @@ export async function getMuseumMembership(playerId: string): Promise<boolean> {
 }
 
 // Purchase museum membership (one-time 50 currency fee)
+// Uses optimistic locking to prevent race conditions - only updates if not already a member
 export async function purchaseMuseumMembership(
   playerId: string,
   currentMoney: number
@@ -1743,17 +1744,26 @@ export async function purchaseMuseumMembership(
   const newMoney = currentMoney - MEMBERSHIP_COST
 
   // Update player: deduct money and grant membership
-  const { error } = await supabase
+  // Guard with museum_member = false to prevent race condition where two concurrent
+  // requests both see "not a member" and both deduct currency
+  const { data, error } = await supabase
     .from('players')
     .update({
       pokedollars: newMoney,
       museum_member: true
     })
     .eq('id', playerId)
+    .eq('museum_member', false) // Optimistic lock - only update if not already a member
+    .select()
 
   if (error) {
     console.error('Failed to purchase museum membership:', error)
     return { success: false, newMoney: currentMoney, error: 'Failed to purchase membership' }
+  }
+
+  // If no rows were updated, player is already a member (race condition prevented)
+  if (!data || data.length === 0) {
+    return { success: false, newMoney: currentMoney, error: 'Already a member' }
   }
 
   return { success: true, newMoney }
