@@ -910,15 +910,21 @@ export class GameHub {
   private async sendGameState(client: Client) {
     if (!client.session) return
 
-    const [connectedZones, box, inventory] = await Promise.all([
+    // Always fetch fresh party and box data from database
+    // This ensures we get updated data after trades, swaps, etc.
+    const [party, connectedZones, box, inventory] = await Promise.all([
+      getPlayerParty(client.session.player.id),
       getConnectedZones(client.session.zone.id),
       getPlayerBox(client.session.player.id),
       getPlayerInventory(client.session.player.id)
     ])
 
+    // Update session with fresh party data
+    client.session.party = party
+
     this.send(client, 'game_state', {
       player: client.session.player,
-      party: client.session.party,
+      party,
       zone: client.session.zone,
       connected_zones: connectedZones,
       pokeballs: client.session.pokeballs,
@@ -1608,6 +1614,13 @@ export class GameHub {
         getOutgoingTradeRequests(trade.sender_id)
       ])
       this.send(senderClient, 'trades_update', { incoming: senderIncoming, outgoing: senderOutgoing })
+    }
+
+    // Send fresh game state to both players with updated Pokemon ownership
+    // This ensures the UI updates immediately without requiring a page refresh
+    await this.sendGameState(client)
+    if (senderClient?.session) {
+      await this.sendGameState(senderClient)
     }
   }
 
