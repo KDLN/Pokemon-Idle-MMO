@@ -143,6 +143,10 @@ export class GameHub {
       await this.sendGameState(client)
       await this.sendChatHistory(client)
       await this.sendFriendsData(client)
+      // Notify other players in the zone that this player joined
+      if (client.session) {
+        this.broadcastNearbyPlayersToZone(client.session.zone.id)
+      }
     } catch (err) {
       console.error('Failed to load session:', err)
       ws.close(4003, 'Failed to load session')
@@ -354,6 +358,9 @@ export class GameHub {
       }
     }
 
+    // Store zone ID before cleanup for broadcasting
+    const zoneId = client.session?.zone.id
+
     // Remove from reverse index before removing from clients map
     if (client.session) {
       this.clientsByPlayerId.delete(client.session.player.id)
@@ -361,6 +368,11 @@ export class GameHub {
 
     // Always remove client from map, even if cleanup failed
     this.clients.delete(client.ws)
+
+    // Notify remaining players in the zone that this player left
+    if (zoneId) {
+      this.broadcastNearbyPlayersToZone(zoneId)
+    }
   }
 
   private isValidChatChannel(channel: unknown): channel is ChatChannel {
@@ -483,6 +495,18 @@ export class GameHub {
       const theirZoneId = otherClient.session.zone.id
       if (theirZoneId === oldZoneId || theirZoneId === newZoneId) {
         const nearbyPlayers = await getPlayersInZone(theirZoneId, otherClient.session.player.id)
+        this.send(otherClient, 'nearby_players', { players: nearbyPlayers })
+      }
+    }
+  }
+
+  // Broadcast updated nearby players to everyone in a single zone
+  private async broadcastNearbyPlayersToZone(zoneId: number) {
+    for (const [, otherClient] of this.clients) {
+      if (!otherClient.session) continue
+
+      if (otherClient.session.zone.id === zoneId) {
+        const nearbyPlayers = await getPlayersInZone(zoneId, otherClient.session.player.id)
         this.send(otherClient, 'nearby_players', { players: nearbyPlayers })
       }
     }

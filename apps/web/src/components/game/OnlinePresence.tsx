@@ -48,7 +48,7 @@ function PlayerActionMenu({
   return (
     <div
       ref={menuRef}
-      className="absolute right-0 top-full mt-1 z-50 bg-[#1a1a2e] border border-[#2a2a4a] rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150"
+      className="absolute left-0 top-full mt-1 z-[9999] bg-[#1a1a2e] border border-[#2a2a4a] rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 min-w-[180px]"
     >
       <div className="px-3 py-2 border-b border-[#2a2a4a]">
         <span className="text-sm font-medium text-white">{player.username}</span>
@@ -102,7 +102,7 @@ export function OnlinePresence() {
   if (!currentZone) return null
 
   return (
-    <div className="bg-[#0f0f1a]/60 rounded-xl border border-[#2a2a4a] p-4">
+    <div className="bg-[#0f0f1a]/60 rounded-xl border border-[#2a2a4a] p-4 overflow-visible">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <div className="flex items-center gap-2">
@@ -128,7 +128,7 @@ export function OnlinePresence() {
           <div className="text-sm text-[#606080]">No other trainers here</div>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 overflow-visible">
           {nearbyPlayers.slice(0, 5).map((p) => (
             <div
               key={p.id}
