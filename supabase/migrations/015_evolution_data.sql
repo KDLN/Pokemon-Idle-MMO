@@ -21,6 +21,30 @@ WHERE evolves_from_species_id IS NOT NULL;
 COMMENT ON COLUMN pokemon_species.evolution_method IS
 'Evolution trigger: level, item, trade, friendship, etc. MVP uses level only.';
 
+-- Add constraint for valid evolution methods
+ALTER TABLE pokemon_species
+DROP CONSTRAINT IF EXISTS chk_evolution_method;
+
+ALTER TABLE pokemon_species
+ADD CONSTRAINT chk_evolution_method
+CHECK (evolution_method IS NULL OR evolution_method IN ('level', 'item', 'trade', 'friendship', 'location', 'other'));
+
+-- Add constraint for positive evolution levels
+ALTER TABLE pokemon_species
+DROP CONSTRAINT IF EXISTS chk_evolution_level_positive;
+
+ALTER TABLE pokemon_species
+ADD CONSTRAINT chk_evolution_level_positive
+CHECK (evolution_level IS NULL OR evolution_level > 0);
+
+-- Add constraint ensuring level-based evolutions have a level set
+ALTER TABLE pokemon_species
+DROP CONSTRAINT IF EXISTS chk_level_evolution_has_level;
+
+ALTER TABLE pokemon_species
+ADD CONSTRAINT chk_level_evolution_has_level
+CHECK (evolution_method != 'level' OR evolution_level IS NOT NULL);
+
 -- ============================================
 -- ALL GEN 1 POKEMON (1-151)
 -- Format: id, name, type1, type2, hp, atk, def, spa, spd, spe, catch_rate, xp_yield, evolves_from, evo_level, evo_method

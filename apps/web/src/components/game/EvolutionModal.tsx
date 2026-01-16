@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import { getPokemonSpriteUrl } from '@/types/game'
@@ -15,11 +15,22 @@ type EvolutionPhase =
 
 export function EvolutionModal() {
   const activeEvolution = useGameStore((state) => state.activeEvolution)
+  const setActiveEvolution = useGameStore((state) => state.setActiveEvolution)
   const removeEvolution = useGameStore((state) => state.removeEvolution)
   const processNextEvolution = useGameStore((state) => state.processNextEvolution)
 
   const [phase, setPhase] = useState<EvolutionPhase>('intro')
   const [canCancel, setCanCancel] = useState(true)
+
+  // Memoize sparkle positions to avoid layout thrashing on re-renders
+  const sparklePositions = useMemo(() =>
+    [...Array(20)].map((_, i) => ({
+      left: `${15 + Math.random() * 70}%`,
+      top: `${15 + Math.random() * 70}%`,
+      animationDelay: `${i * 0.15}s`,
+      animationDuration: `${1 + Math.random() * 0.5}s`
+    })), [activeEvolution?.pokemon_id] // Regenerate when new evolution starts
+  )
 
   // Reset phase when new evolution starts
   useEffect(() => {
@@ -59,12 +70,13 @@ export function EvolutionModal() {
 
   const handleCancel = useCallback(() => {
     if (!activeEvolution || !canCancel) return
-    // Send cancel to server
+    // Send cancel to server - server will acknowledge with evolution_cancelled
+    // which triggers removeEvolution and processNextEvolution in the handler
     gameSocket.cancelEvolution(activeEvolution.pokemon_id)
-    // Immediately remove from local state
-    removeEvolution(activeEvolution.pokemon_id)
-    processNextEvolution()
-  }, [activeEvolution, canCancel, removeEvolution, processNextEvolution])
+    // Clear active evolution immediately for responsive UI, but don't process next
+    // (server acknowledgement handler will process the queue to avoid double-advance)
+    setActiveEvolution(null)
+  }, [activeEvolution, canCancel, setActiveEvolution])
 
   const handleContinue = useCallback(() => {
     if (!activeEvolution) return
@@ -105,16 +117,11 @@ export function EvolutionModal() {
             {/* Sparkle effects during glowing and transforming phases */}
             {(phase === 'glowing' || phase === 'transforming') && (
               <div className="absolute inset-0 pointer-events-none">
-                {[...Array(20)].map((_, i) => (
+                {sparklePositions.map((pos, i) => (
                   <div
                     key={i}
                     className="absolute w-1.5 h-1.5 bg-white rounded-full animate-sparkle"
-                    style={{
-                      left: `${15 + Math.random() * 70}%`,
-                      top: `${15 + Math.random() * 70}%`,
-                      animationDelay: `${i * 0.15}s`,
-                      animationDuration: `${1 + Math.random() * 0.5}s`
-                    }}
+                    style={pos}
                   />
                 ))}
               </div>

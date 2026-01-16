@@ -674,10 +674,15 @@ export function checkEvolutions(
   suppressedEvolutions: Set<string> // Pokemon IDs where evolution was cancelled
 ): PendingEvolution[] {
   const pendingEvolutions: PendingEvolution[] = []
+  const processedPokemon = new Set<string>() // Track Pokemon already queued for evolution
 
   for (const levelUp of levelUps) {
     const pokemon = party.find(p => p?.id === levelUp.pokemon_id)
     if (!pokemon) continue
+
+    // Skip if we already queued an evolution for this Pokemon in this tick
+    // (handles multi-level-up in single tick, e.g. 15→18)
+    if (processedPokemon.has(pokemon.id)) continue
 
     // Skip if player previously cancelled this Pokemon's evolution (this session)
     if (suppressedEvolutions.has(pokemon.id)) continue
@@ -697,6 +702,9 @@ export function checkEvolutions(
       evolution_species_name: evolutionTarget.name,
       trigger_level: levelUp.new_level
     })
+
+    // Mark this Pokemon as processed to avoid duplicate prompts
+    processedPokemon.add(pokemon.id)
   }
 
   return pendingEvolutions
