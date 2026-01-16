@@ -49,6 +49,7 @@ interface PowerUp {
   timeLeft?: string
 }
 
+// Zone coordinates for the CSS-based map display (percentage-based positioning)
 const KANTO_ZONES: Zone[] = [
   { id: '1', name: 'Pallet Town', type: 'town', connections: ['2'], mapX: 18, mapY: 85 },
   { id: '2', name: 'Route 1', type: 'route', connections: ['1', '3'], mapX: 18, mapY: 70 },
