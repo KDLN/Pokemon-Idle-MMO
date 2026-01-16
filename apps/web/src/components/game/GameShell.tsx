@@ -19,6 +19,7 @@ import { TradeHistory } from './social/TradeHistory'
 import { TradeModal } from './social/TradeModal'
 import { TownMenu } from './interactions/TownMenu'
 import { WorldLog } from './interactions/WorldLog'
+import { NearbyPlayersSection } from './NearbyPlayersSection'
 import { ShopPanel } from './ShopPanel'
 import { GymBattlePanel } from './GymBattlePanel'
 import { MuseumPanel } from './interactions/MuseumPanel'
@@ -176,6 +177,8 @@ function MapSidebar({ className = '' }: { className?: string }) {
           ))}
         </div>
       </div>
+
+      <NearbyPlayersSection />
 
       <div className="news-section">
         <div className="section-label">News & Events</div>

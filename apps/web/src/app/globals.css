@@ -1768,6 +1768,119 @@ html {
 .travel-btn .zone-icon { font-size: 14px; }
 .travel-btn .zone-name { flex: 1; }
 
+/* ===== NEARBY PLAYERS SECTION ===== */
+.nearby-section {
+  padding: 12px;
+  padding-top: 0;
+  flex-shrink: 0;
+}
+
+.nearby-section .section-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nearby-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--lb-green);
+}
+
+.nearby-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--lb-green);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.nearby-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nearby-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.nearby-empty-icon {
+  font-size: 14px;
+  opacity: 0.5;
+}
+
+.nearby-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  text-align: left;
+}
+
+.nearby-player:hover {
+  background: var(--lb-bg-hover);
+  border-color: var(--lb-accent);
+}
+
+.nearby-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5B6EEA 0%, #3B4CCA 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  flex-shrink: 0;
+}
+
+.nearby-name {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nearby-status {
+  width: 6px;
+  height: 6px;
+  background: var(--lb-green);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.nearby-more {
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 4px;
+}
+
 /* ===== NEWS SECTION ===== */
 .news-section {
   flex: 1;
