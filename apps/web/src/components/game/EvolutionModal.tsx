@@ -16,8 +16,7 @@ type EvolutionPhase =
 export function EvolutionModal() {
   const activeEvolution = useGameStore((state) => state.activeEvolution)
   const setActiveEvolution = useGameStore((state) => state.setActiveEvolution)
-  const removeEvolution = useGameStore((state) => state.removeEvolution)
-  const processNextEvolution = useGameStore((state) => state.processNextEvolution)
+  const completeEvolutionAndAdvance = useGameStore((state) => state.completeEvolutionAndAdvance)
 
   const [phase, setPhase] = useState<EvolutionPhase>('intro')
   const [canCancel, setCanCancel] = useState(true)
@@ -81,9 +80,9 @@ export function EvolutionModal() {
   const handleContinue = useCallback(() => {
     if (!activeEvolution) return
     // Evolution already completed on server, just close modal and process next
-    removeEvolution(activeEvolution.pokemon_id)
-    processNextEvolution()
-  }, [activeEvolution, removeEvolution, processNextEvolution])
+    // Using atomic action to avoid race conditions
+    completeEvolutionAndAdvance(activeEvolution.pokemon_id)
+  }, [activeEvolution, completeEvolutionAndAdvance])
 
   // Keyboard handler for B button to cancel
   useEffect(() => {

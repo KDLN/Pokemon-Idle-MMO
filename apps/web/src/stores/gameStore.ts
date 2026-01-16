@@ -129,6 +129,8 @@ interface GameStore {
   setActiveEvolution: (evolution: PendingEvolution | null) => void
   removeEvolution: (pokemonId: string) => void
   processNextEvolution: () => void
+  // Combined action to remove and advance queue atomically (avoids race conditions)
+  completeEvolutionAndAdvance: (pokemonId: string) => void
 
   // XP gains for animation
   applyXPGains: (xpGained: Record<string, number>) => void
@@ -395,6 +397,26 @@ export const useGameStore = create<GameStore>((set, get) => ({
         return { activeEvolution: next, pendingEvolutions: rest }
       }
       return { activeEvolution: null }
+    }),
+
+  // Combined action to atomically remove evolution and advance queue
+  // This avoids race conditions when calling removeEvolution + processNextEvolution separately
+  completeEvolutionAndAdvance: (pokemonId) =>
+    set((state) => {
+      // Filter out the completed evolution from pending (in case it was re-added)
+      const filteredPending = state.pendingEvolutions.filter((e) => e.pokemon_id !== pokemonId)
+
+      // If this was the active evolution, advance to next
+      if (state.activeEvolution?.pokemon_id === pokemonId) {
+        if (filteredPending.length > 0) {
+          const [next, ...rest] = filteredPending
+          return { activeEvolution: next, pendingEvolutions: rest }
+        }
+        return { activeEvolution: null, pendingEvolutions: [] }
+      }
+
+      // If it wasn't active, just update the pending list
+      return { pendingEvolutions: filteredPending }
     }),
 
   applyXPGains: (xpGained) => {

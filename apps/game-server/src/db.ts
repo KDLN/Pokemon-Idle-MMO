@@ -288,7 +288,7 @@ export async function evolvePokemon(
     stat_speed: number
   }
 ): Promise<boolean> {
-  const { error, count } = await supabase
+  const { data, error } = await supabase
     .from('pokemon')
     .update({
       species_id: newSpeciesId,
@@ -302,6 +302,7 @@ export async function evolvePokemon(
     })
     .eq('id', pokemonId)
     .eq('owner_id', ownerId) // Verify ownership for security
+    .select('id') // Return updated row to verify update succeeded
 
   if (error) {
     console.error('Failed to evolve Pokemon:', error)
@@ -309,7 +310,7 @@ export async function evolvePokemon(
   }
 
   // Check that we actually updated a row (ownership check passed)
-  if (count === 0) {
+  if (!data || data.length === 0) {
     console.error('Pokemon not found or ownership check failed')
     return false
   }

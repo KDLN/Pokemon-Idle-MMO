@@ -820,9 +820,9 @@ class GameSocket {
       stat_speed: event.new_stats.speed,
     })
 
-    // Remove from pending evolutions and process next
-    store.removeEvolution(event.pokemon_id)
-    store.processNextEvolution()
+    // Atomically remove from pending evolutions and advance queue
+    // Using combined action to avoid race conditions
+    store.completeEvolutionAndAdvance(event.pokemon_id)
 
     // Add to world log
     store.addLogEntry({
@@ -836,8 +836,8 @@ class GameSocket {
   private handleEvolutionCancelled = (payload: unknown) => {
     const { pokemon_id } = payload as { pokemon_id: string }
     const store = useGameStore.getState()
-    store.removeEvolution(pokemon_id)
-    store.processNextEvolution()
+    // Atomically remove and advance queue
+    store.completeEvolutionAndAdvance(pokemon_id)
   }
 
   private handleEvolutionError = (payload: unknown) => {
