@@ -274,8 +274,10 @@ export async function updatePokemonStats(pokemon: Pokemon): Promise<void> {
 }
 
 // Update Pokemon's species after evolution (also updates stats)
+// Includes ownership check for security - only the owner can evolve their Pokemon
 export async function evolvePokemon(
   pokemonId: string,
+  ownerId: string,
   newSpeciesId: number,
   newStats: {
     max_hp: number
@@ -286,7 +288,7 @@ export async function evolvePokemon(
     stat_speed: number
   }
 ): Promise<boolean> {
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from('pokemon')
     .update({
       species_id: newSpeciesId,
@@ -299,9 +301,16 @@ export async function evolvePokemon(
       stat_speed: newStats.stat_speed
     })
     .eq('id', pokemonId)
+    .eq('owner_id', ownerId) // Verify ownership for security
 
   if (error) {
     console.error('Failed to evolve Pokemon:', error)
+    return false
+  }
+
+  // Check that we actually updated a row (ownership check passed)
+  if (count === 0) {
+    console.error('Pokemon not found or ownership check failed')
     return false
   }
 

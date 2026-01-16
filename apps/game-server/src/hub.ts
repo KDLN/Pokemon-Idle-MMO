@@ -1977,7 +1977,8 @@ export class GameHub {
     const evolutionEvent = executeEvolution(pokemon, targetSpecies)
 
     // Save evolution to database BEFORE confirming to client
-    const saved = await evolvePokemon(pokemon_id, targetSpecies.id, {
+    // Include player ID for ownership verification (security)
+    const saved = await evolvePokemon(pokemon_id, client.session.player.id, targetSpecies.id, {
       max_hp: pokemon.max_hp,
       stat_attack: pokemon.stat_attack,
       stat_defense: pokemon.stat_defense,
