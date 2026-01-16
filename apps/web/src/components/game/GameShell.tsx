@@ -18,6 +18,7 @@ import { TownMenu } from './interactions/TownMenu'
 import { WorldLog, createLogEntry } from './interactions/WorldLog'
 import { ShopPanel } from './ShopPanel'
 import { GymBattlePanel } from './GymBattlePanel'
+import { MuseumPanel } from './interactions/MuseumPanel'
 
 interface GameShellProps {
   accessToken: string
@@ -146,6 +147,7 @@ export function GameShell({ accessToken }: GameShellProps) {
       <BoxPanel />
       <ShopPanel />
       <GymBattlePanel />
+      <MuseumPanel />
       <LevelUpToast />
 
       {/* Friends Panel - floating */}

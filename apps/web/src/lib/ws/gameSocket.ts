@@ -69,6 +69,11 @@ class GameSocket {
     this.handlers.set('trade_partner_disconnected', this.handleTradePartnerDisconnected)
     this.handlers.set('trade_history', this.handleTradeHistory)
     this.handlers.set('trade_history_error', this.handleTradeHistoryError)
+    // Museum handlers
+    this.handlers.set('museum_data', this.handleMuseumData)
+    this.handlers.set('museum_membership_purchased', this.handleMuseumMembershipPurchased)
+    this.handlers.set('museum_error', this.handleMuseumError)
+    this.handlers.set('museum_membership_error', this.handleMuseumMembershipError)
   }
 
   connect(token: string) {
@@ -717,6 +722,59 @@ class GameSocket {
     console.error('Trade history error:', error)
     // Stop loading state on error
     useGameStore.getState().setTradeHistoryLoading(false)
+  }
+
+  // ============================================
+  // MUSEUM METHODS
+  // ============================================
+
+  // Request museum data (checks membership and returns exhibits or purchase prompt)
+  getMuseum() {
+    this.send('get_museum')
+  }
+
+  // Purchase museum membership (one-time 50 currency fee)
+  buyMuseumMembership() {
+    this.send('buy_museum_membership')
+  }
+
+  // ============================================
+  // MUSEUM HANDLERS
+  // ============================================
+
+  private handleMuseumData = (payload: unknown) => {
+    const data = payload as {
+      has_membership: boolean
+      cost?: number
+      player_money?: number
+      exhibits?: Array<{ id: string; name: string; description: string; icon: string }>
+    }
+    useGameStore.getState().openMuseum(data)
+  }
+
+  private handleMuseumMembershipPurchased = (payload: unknown) => {
+    const { success, new_money, exhibits } = payload as {
+      success: boolean
+      new_money: number
+      exhibits: Array<{ id: string; name: string; description: string; icon: string }>
+    }
+    if (success) {
+      const store = useGameStore.getState()
+      store.setPokedollars(new_money)
+      store.openMuseum({ has_membership: true, exhibits })
+    }
+  }
+
+  private handleMuseumError = (payload: unknown) => {
+    const { error } = payload as { error: string }
+    console.error('Museum error:', error)
+    useGameStore.getState().closeMuseum()
+  }
+
+  private handleMuseumMembershipError = (payload: unknown) => {
+    const { error } = payload as { error: string }
+    console.error('Museum membership error:', error)
+    useGameStore.getState().setMuseumError(error)
   }
 }
 

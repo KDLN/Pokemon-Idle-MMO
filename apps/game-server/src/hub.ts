@@ -56,7 +56,9 @@ import {
   removeTradeOffer,
   getTradeOffers,
   getActiveTradeIds,
-  getTradeHistory
+  getTradeHistory,
+  getMuseumMembership,
+  purchaseMuseumMembership
 } from './db.js'
 import { processTick, simulateGymBattle } from './game.js'
 
@@ -313,6 +315,12 @@ export class GameHub {
           break
         case 'get_trade_history':
           this.handleGetTradeHistory(client, msg.payload as { limit?: number; partner_username?: string })
+          break
+        case 'get_museum':
+          this.handleGetMuseum(client)
+          break
+        case 'buy_museum_membership':
+          this.handleBuyMuseumMembership(client)
           break
         default:
           console.log('Unknown message type:', msg.type)
@@ -1808,6 +1816,93 @@ export class GameHub {
     } catch (err) {
       console.error('Failed to get trade history:', err)
       this.send(client, 'trade_history_error', { error: 'Failed to load trade history' })
+    }
+  }
+
+  // ============================================
+  // MUSEUM HANDLERS
+  // ============================================
+
+  // Museum exhibit data (static content)
+  private readonly MUSEUM_EXHIBITS = [
+    {
+      id: 'dome_fossil',
+      name: 'Dome Fossil',
+      description: 'An ancient Pokemon fossil. The Pokemon seems to have been a shellfish-like creature.',
+      icon: '🪨'
+    },
+    {
+      id: 'helix_fossil',
+      name: 'Helix Fossil',
+      description: 'An ancient Pokemon fossil. The spiral shape is characteristic of shellfish.',
+      icon: '🐚'
+    },
+    {
+      id: 'old_amber',
+      name: 'Old Amber',
+      description: 'A piece of amber containing what appears to be ancient Pokemon DNA. Scientists are working to extract it...',
+      icon: '🟠'
+    },
+    {
+      id: 'moon_stone',
+      name: 'Moon Stone Display',
+      description: 'A peculiar stone that fell from space. It is said to hold the power to evolve certain Pokemon.',
+      icon: '🌙'
+    }
+  ]
+
+  private async handleGetMuseum(client: Client) {
+    if (!client.session) return
+
+    try {
+      const playerId = client.session.player.id
+      const hasMembership = await getMuseumMembership(playerId)
+
+      if (hasMembership) {
+        // Member: show exhibits
+        this.send(client, 'museum_data', {
+          has_membership: true,
+          exhibits: this.MUSEUM_EXHIBITS
+        })
+      } else {
+        // Non-member: show purchase prompt
+        this.send(client, 'museum_data', {
+          has_membership: false,
+          cost: 50,
+          player_money: client.session.player.pokedollars
+        })
+      }
+    } catch (err) {
+      console.error('Failed to get museum data:', err)
+      this.send(client, 'museum_error', { error: 'Failed to load museum' })
+    }
+  }
+
+  private async handleBuyMuseumMembership(client: Client) {
+    if (!client.session) return
+
+    try {
+      const playerId = client.session.player.id
+      const currentMoney = client.session.player.pokedollars
+
+      const result = await purchaseMuseumMembership(playerId, currentMoney)
+
+      if (result.success) {
+        // Update session state
+        client.session.player.pokedollars = result.newMoney
+
+        // Send success with exhibits
+        this.send(client, 'museum_membership_purchased', {
+          success: true,
+          new_money: result.newMoney,
+          exhibits: this.MUSEUM_EXHIBITS
+        })
+      } else {
+        this.send(client, 'museum_membership_error', { error: result.error || 'Failed to purchase membership' })
+      }
+    } catch (err) {
+      console.error('Failed to buy museum membership:', err)
+      this.send(client, 'museum_membership_error', { error: 'Failed to purchase membership' })
     }
   }
 }
