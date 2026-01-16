@@ -1646,9 +1646,8 @@ export class GameHub {
 
     // If both players are ready, auto-complete the trade
     if (readyState.sender_ready && readyState.receiver_ready) {
-      // CRITICAL: Save and delete ready state FIRST to prevent race condition
+      // CRITICAL: Delete ready state FIRST to prevent race condition
       // where both players click ready simultaneously and both trigger completion
-      const savedReadyState = { ...readyState }
       this.tradeReadyStates.delete(tradeId)
 
       // Complete the trade
@@ -1683,15 +1682,11 @@ export class GameHub {
           this.send(otherClient, 'trades_update', { incoming: otherIncoming, outgoing: otherOutgoing })
         }
       } else {
-        // Trade failed - restore ready state so players can retry without toggling again
-        savedReadyState.sender_ready = false
-        savedReadyState.receiver_ready = false
-        this.tradeReadyStates.set(tradeId, savedReadyState)
-
-        // Notify both players with error and reset ready state in UI
+        // Trade failed - notify both players, they need to re-ready to retry
+        // (we don't restore ready state because players should consciously confirm after failure)
         this.sendError(client, result.error || 'Failed to complete trade')
 
-        // Notify both players to reset their ready states
+        // Notify both players to reset their ready states in UI
         this.send(client, 'trade_ready_update', {
           trade_id: tradeId,
           my_ready: false,
@@ -1711,15 +1706,15 @@ export class GameHub {
   }
 
   // Helper to reset ready states when trade offers change
-  // Creates the state if it doesn't exist to ensure notifications have consistent data
+  // Only resets if state exists - don't create entries for non-existent/cancelled trades
+  // to prevent memory growth from stale trade IDs
   private resetTradeReadyState(tradeId: string) {
-    let readyState = this.tradeReadyStates.get(tradeId)
+    const readyState = this.tradeReadyStates.get(tradeId)
     if (readyState) {
       readyState.sender_ready = false
       readyState.receiver_ready = false
-    } else {
-      // Create fresh state to ensure subsequent operations have correct data
-      this.tradeReadyStates.set(tradeId, { sender_ready: false, receiver_ready: false })
     }
+    // Don't create if doesn't exist - this prevents memory leak from
+    // offers being modified on cancelled/completed trades
   }
 }
