@@ -774,7 +774,7 @@ class GameSocket {
   private handleMuseumMembershipError = (payload: unknown) => {
     const { error } = payload as { error: string }
     console.error('Museum membership error:', error)
-    // Keep museum open but show error (could add error state to store if needed)
+    useGameStore.getState().setMuseumError(error)
   }
 }
 

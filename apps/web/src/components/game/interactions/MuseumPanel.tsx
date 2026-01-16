@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
 
@@ -11,6 +11,13 @@ export function MuseumPanel() {
 
   const [purchasing, setPurchasing] = useState(false)
 
+  // Reset purchasing state when error occurs or membership is purchased
+  useEffect(() => {
+    if (museum.error || museum.hasMembership) {
+      setPurchasing(false)
+    }
+  }, [museum.error, museum.hasMembership])
+
   if (!museum.isOpen) return null
 
   const handleBuyMembership = () => {
@@ -18,11 +25,6 @@ export function MuseumPanel() {
 
     setPurchasing(true)
     gameSocket.buyMuseumMembership()
-
-    // Reset purchasing state after a short delay
-    setTimeout(() => {
-      setPurchasing(false)
-    }, 1000)
   }
 
   const canAfford = pokedollars >= (museum.cost || 50)
@@ -79,6 +81,12 @@ export function MuseumPanel() {
                   </span>
                 </div>
               </div>
+
+              {museum.error && (
+                <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/50">
+                  <p className="text-red-400 text-sm">{museum.error}</p>
+                </div>
+              )}
 
               <button
                 onClick={handleBuyMembership}

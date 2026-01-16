@@ -27,6 +27,7 @@ interface MuseumState {
   cost?: number
   playerMoney?: number
   exhibits?: MuseumExhibit[]
+  error?: string
 }
 
 // Season progress interface
@@ -198,6 +199,7 @@ interface GameStore {
   museum: MuseumState
   openMuseum: (data: { has_membership: boolean; cost?: number; player_money?: number; exhibits?: MuseumExhibit[] }) => void
   closeMuseum: () => void
+  setMuseumError: (error: string) => void
 
   // Reset store
   reset: () => void
@@ -569,6 +571,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   closeMuseum: () => set({
     museum: initialMuseumState,
   }),
+
+  setMuseumError: (error) => set((state) => ({
+    museum: {
+      ...state.museum,
+      error,
+    },
+  })),
 
   reset: () => set(initialState),
 }))
