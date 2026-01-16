@@ -2148,78 +2148,79 @@ html {
 }
 
 /* ===== COMPONENT OVERRIDES ===== */
+/* Using .game-layout parent for specificity instead of !important where possible */
 
 /* WorldView - remove extra border/rounding */
-.game-world > div {
-  border-radius: 8px !important;
+.game-layout .game-world > div {
+  border-radius: 8px;
 }
 
 /* TownMenu - compact it */
-.game-world .poke-card,
-.game-world [class*="town-menu"],
-.game-world [class*="TownMenu"] {
-  margin-top: 8px !important;
-  padding: 8px !important;
-  border-radius: 8px !important;
+.game-layout .game-world .poke-card,
+.game-layout .game-world [class*="town-menu"],
+.game-layout .game-world [class*="TownMenu"] {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 8px;
 }
 
 /* Chat component overrides */
-.social-content > div {
+.game-layout .social-content > div {
   height: 100%;
 }
 
-.social-content [class*="chat"],
-.social-content [class*="Chat"] {
-  border: none !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+.game-layout .social-content [class*="chat"],
+.game-layout .social-content [class*="Chat"] {
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 
 /* Remove extra borders on nested cards */
-.party-content [class*="card"],
-.party-content [class*="Card"] {
-  border-radius: 6px !important;
-  margin-bottom: 6px !important;
+.game-layout .party-content [class*="card"],
+.game-layout .party-content [class*="Card"] {
+  border-radius: 6px;
+  margin-bottom: 6px;
 }
 
 /* Party panel - remove its own padding */
-.party-content > div {
-  padding: 0 !important;
+.game-layout .party-content > div {
+  padding: 0;
 }
 
 /* Party grid - 2 columns with tight gap */
-.party-content [class*="grid"] {
-  grid-template-columns: repeat(2, 1fr) !important;
-  gap: 6px !important;
+.game-layout .party-content [class*="grid"] {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
 }
 
 /* Pokemon cards - increase internal padding for badges */
-.party-content .group.relative.rounded-xl > .relative {
-  padding: 8px !important;
+.game-layout .party-content .group.relative.rounded-xl > .relative {
+  padding: 8px;
 }
 
 /* Type badges - smaller size */
-.party-content [class*="TypeBadge"],
-.party-content [class*="Badge"],
-.party-content .flex.gap-1 > span[class*="rounded"],
-.party-content .flex.gap-1 > span[class*="px-"] {
-  font-size: 7px !important;
-  padding: 2px 4px !important;
-  line-height: 1 !important;
+.game-layout .party-content [class*="TypeBadge"],
+.game-layout .party-content [class*="Badge"],
+.game-layout .party-content .flex.gap-1 > span[class*="rounded"],
+.game-layout .party-content .flex.gap-1 > span[class*="px-"] {
+  font-size: 7px;
+  padding: 2px 4px;
+  line-height: 1;
 }
 
 /* Pokemon names - prevent truncation */
-.party-content .font-semibold.truncate {
-  font-size: 11px !important;
-  overflow: visible !important;
-  white-space: normal !important;
-  text-overflow: unset !important;
+.game-layout .party-content .font-semibold.truncate {
+  font-size: 11px;
+  overflow: visible;
+  white-space: normal;
+  text-overflow: unset;
 }
 
 /* Activity log override */
-.activity-log > div {
-  padding: 0 !important;
-  background: transparent !important;
+.game-layout .activity-log > div {
+  padding: 0;
+  background: transparent;
 }
 
 /* ===== LAYOUT-B SCROLLBAR (narrower) ===== */

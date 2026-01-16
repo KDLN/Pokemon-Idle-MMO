@@ -53,19 +53,25 @@ const KANTO_ZONES: Zone[] = [
   { id: '12', name: 'Pokemon League', type: 'town', connections: ['5'], mapX: 8, mapY: 40 },
 ]
 
-// Placeholder news/events data
+// TODO: Replace with real data from backend when news/events system is implemented
+// These are static placeholders to demonstrate the UI layout
 const NEWS_ITEMS = [
-  { id: 1, type: 'event' as const, title: 'Double XP Weekend', desc: 'Earn 2x XP until Sunday!', time: '2d left' },
-  { id: 2, type: 'news' as const, title: 'New Pokemon Added', desc: 'Viridian Forest now has new encounters', time: '1d ago' },
-  { id: 3, type: 'update' as const, title: 'v1.2 Released', desc: 'Bug fixes and improvements', time: '3d ago' },
+  { id: 1, type: 'event' as const, title: 'Coming Soon', desc: 'News and events will appear here', time: '' },
 ]
 
-// Placeholder buffs data
-const AVAILABLE_BUFFS = [
-  { id: 'xp_boost', name: 'XP Boost', icon: '⭐', desc: '+50% XP for 1 hour', duration: '1h', cost: 100, active: false },
-  { id: 'catch_boost', name: 'Lucky Charm', icon: '🍀', desc: '+10% catch rate', duration: '30m', cost: 50, active: true, timeLeft: '12:34' },
-  { id: 'shiny_boost', name: 'Shiny Aura', icon: '✨', desc: '2x shiny chance', duration: '1h', cost: 200, active: false },
-  { id: 'gold_boost', name: 'Gold Rush', icon: '💰', desc: '+25% gold drops', duration: '30m', cost: 75, active: false },
+// TODO: Replace with real buff/power-up system when implemented
+// These are static placeholders to demonstrate the UI layout
+const AVAILABLE_BUFFS: Array<{
+  id: string
+  name: string
+  icon: string
+  desc: string
+  duration: string
+  cost: number
+  active: boolean
+  timeLeft?: string
+}> = [
+  { id: 'placeholder', name: 'Power-Ups', icon: '⚡', desc: 'Coming soon...', duration: '', cost: 0, active: false },
 ]
 
 // ===== MAP SIDEBAR COMPONENT =====
@@ -119,6 +125,8 @@ function MapSidebar({ className = '' }: { className?: string }) {
               }}
               disabled={!isConnected && !isCurrent}
               title={zone.name}
+              aria-label={`${zone.name}${isCurrent ? ' (current location)' : isConnected ? ' - click to travel' : ''}`}
+              aria-current={isCurrent ? 'location' : undefined}
             />
           )
         })}
@@ -181,32 +189,34 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
   const outgoingFriendRequests = useGameStore((state) => state.outgoingFriendRequests)
   const incomingTradeRequests = useGameStore((state) => state.incomingTradeRequests)
   const outgoingTradeRequests = useGameStore((state) => state.outgoingTradeRequests)
-  const isConnected = useGameStore((state) => state.isConnected)
 
   const onlineCount = useMemo(() => countOnlineFriends(friends), [friends])
   const friendRequestCount = incomingFriendRequests.length + outgoingFriendRequests.length
   const tradeRequestCount = incomingTradeRequests.length + outgoingTradeRequests.length
 
-  // Fetch friends data when connected
-  useEffect(() => {
-    if (isConnected) {
-      gameSocket.getFriends()
-      gameSocket.getTrades()
-    }
-  }, [isConnected])
+  // Note: Friends/trades data fetching is handled at GameShell level
+  // so badge counts are accurate on all mobile tabs immediately after connect
 
   return (
     <div className="social-sidebar">
-      <div className="social-tabs">
+      <div className="social-tabs" role="tablist" aria-label="Social sections">
         <button
+          id="social-tab-chat"
           className={`stab ${tab === 'chat' ? 'active' : ''}`}
           onClick={() => setTab('chat')}
+          role="tab"
+          aria-selected={tab === 'chat'}
+          aria-controls="social-panel-chat"
         >
           💬 Chat
         </button>
         <button
+          id="social-tab-friends"
           className={`stab ${tab === 'friends' ? 'active' : ''}`}
           onClick={() => setTab('friends')}
+          role="tab"
+          aria-selected={tab === 'friends'}
+          aria-controls="social-panel-friends"
         >
           👥 <span className="friend-count">{onlineCount}</span>
           {friendRequestCount > 0 && (
@@ -214,8 +224,12 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
           )}
         </button>
         <button
+          id="social-tab-trades"
           className={`stab ${tab === 'trades' ? 'active' : ''}`}
           onClick={() => setTab('trades')}
+          role="tab"
+          aria-selected={tab === 'trades'}
+          aria-controls="social-panel-trades"
         >
           🔄 Trades
           {tradeRequestCount > 0 && (
@@ -226,11 +240,13 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
 
       <div className="social-content">
         {tab === 'chat' && (
-          <ChatSidebar isCollapsed={false} onToggle={() => {}} />
+          <div id="social-panel-chat" role="tabpanel" aria-labelledby="social-tab-chat">
+            <ChatSidebar isCollapsed={false} onToggle={() => {}} />
+          </div>
         )}
 
         {tab === 'friends' && (
-          <div className="friends-area">
+          <div id="social-panel-friends" role="tabpanel" aria-labelledby="social-tab-friends" className="friends-area">
             <div className="friends-toolbar">
               <span className="online-label">{onlineCount} online</span>
               <button
@@ -255,7 +271,7 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
         )}
 
         {tab === 'trades' && (
-          <div className="trades-area">
+          <div id="social-panel-trades" role="tabpanel" aria-labelledby="social-tab-trades" className="trades-area">
             <div className="trades-toolbar">
               <div className="trades-sub-tabs">
                 <button
@@ -419,6 +435,8 @@ export function GameShell({ accessToken }: GameShellProps) {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
+  const isConnected = useGameStore((state) => state.isConnected)
+
   useEffect(() => {
     // Connect to game server
     gameSocket.connect(accessToken)
@@ -429,6 +447,15 @@ export function GameShell({ accessToken }: GameShellProps) {
       reset()
     }
   }, [accessToken, reset])
+
+  // Fetch social data when connected - runs at GameShell level so mobile users
+  // see correct badge counts immediately on all tabs, not just when Social tab mounts
+  useEffect(() => {
+    if (isConnected) {
+      gameSocket.getFriends()
+      gameSocket.getTrades()
+    }
+  }, [isConnected])
 
   // Trade modal handlers
   const handleOpenTrade = (trade: ActiveTradeSession) => {
