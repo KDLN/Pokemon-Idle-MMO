@@ -81,6 +81,8 @@ interface TradeReadyState {
 export class GameHub {
   private wss: WebSocketServer
   private clients: Map<WebSocket, Client> = new Map()
+  // Reverse index for O(1) player ID lookups (maintained in connect/disconnect)
+  private clientsByPlayerId: Map<string, Client> = new Map()
   private speciesMap: Map<number, PokemonSpecies> = new Map()
   private tickInterval: NodeJS.Timeout | null = null
   private tradeReadyStates: Map<string, TradeReadyState> = new Map()
@@ -133,6 +135,10 @@ export class GameHub {
     // Load session
     try {
       await this.loadSession(client)
+      // Add to reverse index for O(1) player lookups
+      if (client.session) {
+        this.clientsByPlayerId.set(client.session.player.id, client)
+      }
       await this.sendGameState(client)
       await this.sendChatHistory(client)
       await this.sendFriendsData(client)
@@ -342,6 +348,11 @@ export class GameHub {
       } catch (err) {
         console.error('Failed to get active trades on disconnect:', err)
       }
+    }
+
+    // Remove from reverse index before removing from clients map
+    if (client.session) {
+      this.clientsByPlayerId.delete(client.session.player.id)
     }
 
     // Always remove client from map, even if cleanup failed
@@ -1105,14 +1116,9 @@ export class GameHub {
     return false
   }
 
-  // Get client by player ID
+  // Get client by player ID - O(1) lookup using reverse index
   private getClientByPlayerId(playerId: string): Client | null {
-    for (const [, otherClient] of this.clients) {
-      if (otherClient.session?.player.id === playerId) {
-        return otherClient
-      }
-    }
-    return null
+    return this.clientsByPlayerId.get(playerId) || null
   }
 
   // Get trade by ID with optional player validation
