@@ -38,6 +38,17 @@ interface Zone {
   mapY: number
 }
 
+interface PowerUp {
+  id: string
+  name: string
+  icon: string
+  desc: string
+  duration: string
+  cost: number
+  active: boolean
+  timeLeft?: string
+}
+
 const KANTO_ZONES: Zone[] = [
   { id: '1', name: 'Pallet Town', type: 'town', connections: ['2'], mapX: 18, mapY: 85 },
   { id: '2', name: 'Route 1', type: 'route', connections: ['1', '3'], mapX: 18, mapY: 70 },
@@ -61,16 +72,9 @@ const NEWS_ITEMS = [
 
 // TODO: Replace with real buff/power-up system when implemented
 // These are static placeholders to demonstrate the UI layout
-const AVAILABLE_BUFFS: Array<{
-  id: string
-  name: string
-  icon: string
-  desc: string
-  duration: string
-  cost: number
-  active: boolean
-  timeLeft?: string
-}> = [
+// Note: When implementing dynamic content, ensure all user-generated or backend
+// content is properly escaped (React's default behavior) or sanitized
+const AVAILABLE_BUFFS: PowerUp[] = [
   { id: 'placeholder', name: 'Power-Ups', icon: '⚡', desc: 'Coming soon...', duration: '', cost: 0, active: false },
 ]
 
@@ -86,6 +90,36 @@ function MapSidebar({ className = '' }: { className?: string }) {
 
   const connectedZoneNames = useMemo(() => connectedZones.map(z => z.name), [connectedZones])
 
+  // Memoize zone button props to avoid recalculating on every render
+  const zoneButtonProps = useMemo(() =>
+    KANTO_ZONES.map(zone => ({
+      zone,
+      isCurrent: zone.name === currentMapZone.name,
+      isConnected: connectedZoneNames.includes(zone.name),
+    })),
+    [currentMapZone.name, connectedZoneNames]
+  )
+
+  // Memoize map line data to avoid recalculating connections
+  const mapLines = useMemo(() =>
+    KANTO_ZONES.flatMap(zone =>
+      zone.connections
+        .filter(connId => zone.id < connId) // Only render each line once
+        .map(connId => {
+          const connZone = KANTO_ZONES.find(z => z.id === connId)
+          if (!connZone) return null
+          return {
+            key: `${zone.id}-${connId}`,
+            x1: zone.mapX, y1: zone.mapY,
+            x2: connZone.mapX, y2: connZone.mapY,
+            isActive: zone.name === currentMapZone.name || connZone.name === currentMapZone.name,
+          }
+        })
+        .filter(Boolean)
+    ),
+    [currentMapZone.name]
+  )
+
   return (
     <div className={`map-sidebar ${className}`}>
       <div className="sidebar-header">
@@ -95,41 +129,30 @@ function MapSidebar({ className = '' }: { className?: string }) {
 
       <div className="map-canvas">
         <svg className="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {KANTO_ZONES.map(zone =>
-            zone.connections.map(connId => {
-              const connZone = KANTO_ZONES.find(z => z.id === connId)
-              if (!connZone || zone.id > connId) return null
-              const isActive = zone.name === currentMapZone.name || connZone.name === currentMapZone.name
-              return (
-                <line
-                  key={`${zone.id}-${connId}`}
-                  x1={zone.mapX} y1={zone.mapY}
-                  x2={connZone.mapX} y2={connZone.mapY}
-                  className={isActive ? 'active' : ''}
-                />
-              )
-            })
-          )}
-        </svg>
-        {KANTO_ZONES.map(zone => {
-          const isCurrent = zone.name === currentMapZone.name
-          const isConnected = connectedZoneNames.includes(zone.name)
-          return (
-            <button
-              key={zone.id}
-              className={`map-dot ${zone.type} ${isCurrent ? 'current' : ''} ${isConnected ? 'connected' : ''}`}
-              style={{ left: `${zone.mapX}%`, top: `${zone.mapY}%` }}
-              onClick={() => {
-                const target = connectedZones.find(z => z.name === zone.name)
-                if (target) gameSocket.moveToZone(target.id)
-              }}
-              disabled={!isConnected && !isCurrent}
-              title={zone.name}
-              aria-label={`${zone.name}${isCurrent ? ' (current location)' : isConnected ? ' - click to travel' : ''}`}
-              aria-current={isCurrent ? 'location' : undefined}
+          {mapLines.map(line => line && (
+            <line
+              key={line.key}
+              x1={line.x1} y1={line.y1}
+              x2={line.x2} y2={line.y2}
+              className={line.isActive ? 'active' : ''}
             />
-          )
-        })}
+          ))}
+        </svg>
+        {zoneButtonProps.map(({ zone, isCurrent, isConnected }) => (
+          <button
+            key={zone.id}
+            className={`map-dot ${zone.type} ${isCurrent ? 'current' : ''} ${isConnected ? 'connected' : ''}`}
+            style={{ left: `${zone.mapX}%`, top: `${zone.mapY}%` }}
+            onClick={() => {
+              const target = connectedZones.find(z => z.name === zone.name)
+              if (target) gameSocket.moveToZone(target.id)
+            }}
+            disabled={!isConnected && !isCurrent}
+            title={zone.name}
+            aria-label={`${zone.name}${isCurrent ? ' (current location)' : isConnected ? ' - click to travel' : ''}`}
+            aria-current={isCurrent ? 'location' : undefined}
+          />
+        ))}
       </div>
 
       <div className="current-location">
@@ -197,6 +220,30 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
   // Note: Friends/trades data fetching is handled at GameShell level
   // so badge counts are accurate on all mobile tabs immediately after connect
 
+  // Keyboard navigation for tabs per WAI-ARIA tab pattern
+  const tabs: SocialTab[] = ['chat', 'friends', 'trades']
+  const handleTabKeyDown = (e: React.KeyboardEvent, currentTab: SocialTab) => {
+    const currentIndex = tabs.indexOf(currentTab)
+    let newIndex = currentIndex
+
+    if (e.key === 'ArrowLeft') {
+      newIndex = currentIndex === 0 ? tabs.length - 1 : currentIndex - 1
+    } else if (e.key === 'ArrowRight') {
+      newIndex = currentIndex === tabs.length - 1 ? 0 : currentIndex + 1
+    } else if (e.key === 'Home') {
+      newIndex = 0
+    } else if (e.key === 'End') {
+      newIndex = tabs.length - 1
+    } else {
+      return // Don't prevent default for other keys
+    }
+
+    e.preventDefault()
+    setTab(tabs[newIndex])
+    // Focus the new tab button
+    document.getElementById(`social-tab-${tabs[newIndex]}`)?.focus()
+  }
+
   return (
     <div className="social-sidebar">
       <div className="social-tabs" role="tablist" aria-label="Social sections">
@@ -204,9 +251,11 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
           id="social-tab-chat"
           className={`stab ${tab === 'chat' ? 'active' : ''}`}
           onClick={() => setTab('chat')}
+          onKeyDown={(e) => handleTabKeyDown(e, 'chat')}
           role="tab"
           aria-selected={tab === 'chat'}
           aria-controls="social-panel-chat"
+          tabIndex={tab === 'chat' ? 0 : -1}
         >
           💬 Chat
         </button>
@@ -214,9 +263,11 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
           id="social-tab-friends"
           className={`stab ${tab === 'friends' ? 'active' : ''}`}
           onClick={() => setTab('friends')}
+          onKeyDown={(e) => handleTabKeyDown(e, 'friends')}
           role="tab"
           aria-selected={tab === 'friends'}
           aria-controls="social-panel-friends"
+          tabIndex={tab === 'friends' ? 0 : -1}
         >
           👥 <span className="friend-count">{onlineCount}</span>
           {friendRequestCount > 0 && (
@@ -227,9 +278,11 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
           id="social-tab-trades"
           className={`stab ${tab === 'trades' ? 'active' : ''}`}
           onClick={() => setTab('trades')}
+          onKeyDown={(e) => handleTabKeyDown(e, 'trades')}
           role="tab"
           aria-selected={tab === 'trades'}
           aria-controls="social-panel-trades"
+          tabIndex={tab === 'trades' ? 0 : -1}
         >
           🔄 Trades
           {tradeRequestCount > 0 && (
@@ -471,7 +524,9 @@ export function GameShell({ accessToken }: GameShellProps) {
   const isInTown = currentZone?.zone_type === 'town'
   const hasEncounter = currentEncounter !== null
 
-  // Badge counts for mobile
+  // Badge counts for mobile tab bar
+  // Note: friendBadgeCount only shows incoming (action needed from user)
+  // while SocialSidebar's friendRequestCount includes outgoing (for full visibility)
   const friendBadgeCount = incomingFriendRequests.length
   const tradeBadgeCount = incomingTradeRequests.length + outgoingTradeRequests.length
 
