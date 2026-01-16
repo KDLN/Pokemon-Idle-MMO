@@ -1448,8 +1448,9 @@ export async function completeTrade(
     .rpc('complete_trade', { p_trade_id: tradeId })
 
   if (error) {
-    console.error('Failed to complete trade:', error)
-    return { success: false, error: 'Failed to complete trade' }
+    console.error('Failed to complete trade:', error.message, error.code, error.details, error.hint)
+    // Return the actual Supabase error message for debugging
+    return { success: false, error: error.message || 'Failed to complete trade' }
   }
 
   // The function returns a JSON object
