@@ -1,12 +1,87 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
+
+interface NearbyPlayer {
+  id: string
+  username: string
+}
+
+function PlayerActionMenu({
+  player,
+  onClose,
+  anchorRef
+}: {
+  player: NearbyPlayer
+  onClose: () => void
+  anchorRef: React.RefObject<HTMLDivElement | null>
+}) {
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node) &&
+        anchorRef.current &&
+        !anchorRef.current.contains(e.target as Node)
+      ) {
+        onClose()
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [onClose, anchorRef])
+
+  const handleTrade = () => {
+    gameSocket.sendTradeRequest(player.id)
+    onClose()
+  }
+
+  const handleAddFriend = () => {
+    gameSocket.sendFriendRequest(player.id)
+    onClose()
+  }
+
+  return (
+    <div
+      ref={menuRef}
+      className="absolute right-0 top-full mt-1 z-50 bg-[#1a1a2e] border border-[#2a2a4a] rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150"
+    >
+      <div className="px-3 py-2 border-b border-[#2a2a4a]">
+        <span className="text-sm font-medium text-white">{player.username}</span>
+      </div>
+      <div className="p-1">
+        <button
+          onClick={handleTrade}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-[#252542] rounded transition-colors"
+        >
+          <svg className="w-4 h-4 text-[#5B6EEA]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M7 16V4m0 0L3 8m4-4l4 4m6 4v12m0 0l4-4m-4 4l-4-4" />
+          </svg>
+          Send Trade Request
+        </button>
+        <button
+          onClick={handleAddFriend}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-[#252542] rounded transition-colors"
+        >
+          <svg className="w-4 h-4 text-[#5B6EEA]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+          </svg>
+          Add Friend
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export function OnlinePresence() {
   const currentZone = useGameStore((state) => state.currentZone)
   const nearbyPlayers = useGameStore((state) => state.nearbyPlayers)
+  const [selectedPlayer, setSelectedPlayer] = useState<NearbyPlayer | null>(null)
+  const selectedPlayerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!currentZone) return
@@ -57,7 +132,9 @@ export function OnlinePresence() {
           {nearbyPlayers.slice(0, 5).map((p) => (
             <div
               key={p.id}
-              className="flex items-center gap-3 py-1.5 px-2 rounded-lg bg-[#1a1a2e]/50 hover:bg-[#1a1a2e] transition-colors"
+              ref={selectedPlayer?.id === p.id ? selectedPlayerRef : null}
+              className="relative flex items-center gap-3 py-1.5 px-2 rounded-lg bg-[#1a1a2e]/50 hover:bg-[#1a1a2e] transition-colors cursor-pointer"
+              onClick={() => setSelectedPlayer(selectedPlayer?.id === p.id ? null : p)}
             >
               {/* Avatar */}
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#5B6EEA] to-[#3B4CCA] flex items-center justify-center flex-shrink-0">
@@ -68,6 +145,15 @@ export function OnlinePresence() {
               <span className="text-sm text-white truncate">{p.username}</span>
               {/* Online indicator */}
               <div className="ml-auto w-2 h-2 bg-green-400 rounded-full" />
+
+              {/* Action menu */}
+              {selectedPlayer?.id === p.id && (
+                <PlayerActionMenu
+                  player={p}
+                  onClose={() => setSelectedPlayer(null)}
+                  anchorRef={selectedPlayerRef}
+                />
+              )}
             </div>
           ))}
           {nearbyPlayers.length > 5 && (
