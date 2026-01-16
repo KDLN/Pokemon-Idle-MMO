@@ -622,7 +622,7 @@ export function checkLevelUps(party: (Pokemon | null)[], speciesMap: Map<number,
 
       levelUps.push({
         pokemon_id: p.id,
-        pokemon_name: species?.name || `Pokemon #${p.species_id}`,
+        pokemon_name: p.nickname || species?.name || 'Unknown Pokemon',
         new_level: p.level,
         new_stats: {
           max_hp: p.max_hp,
@@ -713,9 +713,10 @@ export function checkEvolutions(
 // Execute evolution - update Pokemon's species and recalculate stats
 export function executeEvolution(
   pokemon: Pokemon,
-  targetSpecies: PokemonSpecies
+  targetSpecies: PokemonSpecies,
+  originalSpecies: PokemonSpecies
 ): EvolutionEvent {
-  const oldName = pokemon.nickname || `Pokemon #${pokemon.species_id}`
+  const oldName = pokemon.nickname || originalSpecies.name
 
   // Update species
   pokemon.species_id = targetSpecies.id

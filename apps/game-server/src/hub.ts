@@ -1970,11 +1970,15 @@ export class GameHub {
       return
     }
 
-    // Get the original species for potential rollback
+    // Get the original species for potential rollback and name lookup
     const originalSpecies = this.speciesMap.get(pending.current_species_id)
+    if (!originalSpecies) {
+      this.send(client, 'evolution_error', { error: 'Original species data not found' })
+      return
+    }
 
     // Execute the evolution (updates Pokemon in-memory)
-    const evolutionEvent = executeEvolution(pokemon, targetSpecies)
+    const evolutionEvent = executeEvolution(pokemon, targetSpecies, originalSpecies)
 
     // Save evolution to database BEFORE confirming to client
     // Include player ID for ownership verification (security)
@@ -1990,10 +1994,8 @@ export class GameHub {
     if (!saved) {
       console.error('Failed to save evolution to database - rolling back')
       // Rollback in-memory changes
-      if (originalSpecies) {
-        pokemon.species_id = pending.current_species_id
-        recalculateStats(pokemon, originalSpecies)
-      }
+      pokemon.species_id = pending.current_species_id
+      recalculateStats(pokemon, originalSpecies)
       this.send(client, 'evolution_error', { error: 'Failed to save evolution. Please try again.' })
       return
     }
