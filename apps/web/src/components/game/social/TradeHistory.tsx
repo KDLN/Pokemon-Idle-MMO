@@ -142,18 +142,14 @@ interface TradeHistoryProps {
 
 export function TradeHistory({ filterUsername = '', onFilterChange }: TradeHistoryProps) {
   const tradeHistory = useGameStore((state) => state.tradeHistory)
+  const isLoading = useGameStore((state) => state.tradeHistoryLoading)
   const isConnected = useGameStore((state) => state.isConnected)
   const [localFilter, setLocalFilter] = useState(filterUsername)
-  const [isLoading, setIsLoading] = useState(false)
 
   // Fetch trade history on mount and when filter changes
   useEffect(() => {
     if (isConnected) {
-      setIsLoading(true)
       gameSocket.getTradeHistory(50, localFilter || undefined)
-      // Reset loading after a short delay (we don't have a proper callback)
-      const timer = setTimeout(() => setIsLoading(false), 500)
-      return () => clearTimeout(timer)
     }
   }, [isConnected, localFilter])
 

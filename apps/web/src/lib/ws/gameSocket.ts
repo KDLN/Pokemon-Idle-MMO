@@ -68,6 +68,7 @@ class GameSocket {
     this.handlers.set('trade_cancelled', this.handleTradeCancelled)
     this.handlers.set('trade_partner_disconnected', this.handleTradePartnerDisconnected)
     this.handlers.set('trade_history', this.handleTradeHistory)
+    this.handlers.set('trade_history_error', this.handleTradeHistoryError)
   }
 
   connect(token: string) {
@@ -607,6 +608,7 @@ class GameSocket {
 
   // Get trade history
   getTradeHistory(limit?: number, partnerUsername?: string) {
+    useGameStore.getState().setTradeHistoryLoading(true)
     this.send('get_trade_history', { limit, partner_username: partnerUsername })
   }
 
@@ -708,6 +710,13 @@ class GameSocket {
   private handleTradeHistory = (payload: unknown) => {
     const { history } = payload as { history: TradeHistoryEntry[] }
     useGameStore.getState().setTradeHistory(history)
+  }
+
+  private handleTradeHistoryError = (payload: unknown) => {
+    const { error } = payload as { error: string }
+    console.error('Trade history error:', error)
+    // Stop loading state on error
+    useGameStore.getState().setTradeHistoryLoading(false)
   }
 }
 

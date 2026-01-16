@@ -1731,29 +1731,34 @@ export class GameHub {
   private async handleGetTradeHistory(client: Client, payload: { limit?: number; partner_username?: string }) {
     if (!client.session) return
 
-    const { limit = 50, partner_username } = payload || {}
+    try {
+      const { limit = 50, partner_username } = payload || {}
 
-    // Clamp limit to reasonable range
-    const safeLimit = Math.min(Math.max(1, limit || 50), 100)
+      // Clamp limit to reasonable range
+      const safeLimit = Math.min(Math.max(1, limit || 50), 100)
 
-    const history = await getTradeHistory(client.session.player.id, safeLimit, partner_username)
+      const history = await getTradeHistory(client.session.player.id, safeLimit, partner_username)
 
-    // Transform history to be relative to the requesting player
-    // (my_pokemon = what I gave, their_pokemon = what I received)
-    const playerId = client.session.player.id
-    const transformedHistory = history.map(entry => {
-      const isPlayer1 = entry.player1_id === playerId
-      return {
-        id: entry.id,
-        trade_id: entry.trade_id,
-        partner_id: isPlayer1 ? entry.player2_id : entry.player1_id,
-        partner_username: isPlayer1 ? entry.player2_username : entry.player1_username,
-        my_pokemon: isPlayer1 ? entry.player1_pokemon : entry.player2_pokemon,
-        their_pokemon: isPlayer1 ? entry.player2_pokemon : entry.player1_pokemon,
-        completed_at: entry.completed_at
-      }
-    })
+      // Transform history to be relative to the requesting player
+      // (my_pokemon = what I gave, their_pokemon = what I received)
+      const playerId = client.session.player.id
+      const transformedHistory = history.map(entry => {
+        const isPlayer1 = entry.player1_id === playerId
+        return {
+          id: entry.id,
+          trade_id: entry.trade_id,
+          partner_id: isPlayer1 ? entry.player2_id : entry.player1_id,
+          partner_username: isPlayer1 ? entry.player2_username : entry.player1_username,
+          my_pokemon: isPlayer1 ? entry.player1_pokemon : entry.player2_pokemon,
+          their_pokemon: isPlayer1 ? entry.player2_pokemon : entry.player1_pokemon,
+          completed_at: entry.completed_at
+        }
+      })
 
-    this.send(client, 'trade_history', { history: transformedHistory })
+      this.send(client, 'trade_history', { history: transformedHistory })
+    } catch (err) {
+      console.error('Failed to get trade history:', err)
+      this.send(client, 'trade_history_error', { error: 'Failed to load trade history' })
+    }
   }
 }

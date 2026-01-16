@@ -1664,24 +1664,16 @@ export async function getTradeHistory(
   limit: number = 50,
   partnerUsername?: string
 ): Promise<TradeHistoryEntry[]> {
-  let query = supabase
+  // Fetch trades where player is either party
+  // We fetch more than limit when filtering to ensure we get enough results after filtering
+  const fetchLimit = partnerUsername ? limit * 3 : limit
+
+  const { data, error } = await supabase
     .from('trade_history')
     .select('*')
     .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`)
     .order('completed_at', { ascending: false })
-    .limit(limit)
-
-  // Filter by partner username if provided
-  if (partnerUsername) {
-    const trimmed = partnerUsername.trim().toLowerCase()
-    // Player could be in either position, filter by the OTHER player's username
-    query = query.or(
-      `and(player1_id.eq.${playerId},player2_username.ilike.%${trimmed}%),` +
-      `and(player2_id.eq.${playerId},player1_username.ilike.%${trimmed}%)`
-    )
-  }
-
-  const { data, error } = await query
+    .limit(fetchLimit)
 
   if (error) {
     console.error('Failed to get trade history:', error)
@@ -1689,7 +1681,7 @@ export async function getTradeHistory(
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((row: any) => ({
+  let results = (data || []).map((row: any) => ({
     id: row.id,
     trade_id: row.trade_id,
     player1_id: row.player1_id,
@@ -1700,4 +1692,18 @@ export async function getTradeHistory(
     player2_pokemon: row.player2_pokemon as TradeHistoryPokemon[],
     completed_at: row.completed_at
   }))
+
+  // Filter by partner username in application code to prevent SQL injection
+  // The partner is the OTHER player in each trade
+  if (partnerUsername) {
+    const searchTerm = partnerUsername.trim().toLowerCase()
+    results = results.filter(entry => {
+      const isPlayer1 = entry.player1_id === playerId
+      const partnerName = isPlayer1 ? entry.player2_username : entry.player1_username
+      return partnerName.toLowerCase().includes(searchTerm)
+    })
+  }
+
+  // Apply limit after filtering
+  return results.slice(0, limit)
 }

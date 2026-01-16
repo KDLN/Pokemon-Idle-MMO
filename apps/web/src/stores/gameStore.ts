@@ -165,6 +165,7 @@ interface GameStore {
   activeTrade: ActiveTradeSession | null
   isTradeModalOpen: boolean
   tradeHistory: TradeHistoryEntry[]
+  tradeHistoryLoading: boolean
   setIncomingTradeRequests: (requests: IncomingTradeRequest[]) => void
   setOutgoingTradeRequests: (requests: OutgoingTradeRequest[]) => void
   setAllTradesData: (data: { incoming: IncomingTradeRequest[]; outgoing: OutgoingTradeRequest[] }) => void
@@ -174,6 +175,7 @@ interface GameStore {
   setTradeWarning: (tradeId: string, warning: string) => void
   setTradeReady: (myReady: boolean, theirReady: boolean) => void
   setTradeHistory: (history: TradeHistoryEntry[]) => void
+  setTradeHistoryLoading: (loading: boolean) => void
 
   // Reset store
   reset: () => void
@@ -249,6 +251,7 @@ const initialState = {
   activeTrade: null as ActiveTradeSession | null,
   isTradeModalOpen: false,
   tradeHistory: [] as TradeHistoryEntry[],
+  tradeHistoryLoading: false,
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -520,7 +523,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
     }),
 
-  setTradeHistory: (history) => set({ tradeHistory: history }),
+  setTradeHistory: (history) => set({ tradeHistory: history, tradeHistoryLoading: false }),
+  setTradeHistoryLoading: (loading) => set({ tradeHistoryLoading: loading }),
 
   reset: () => set(initialState),
 }))
