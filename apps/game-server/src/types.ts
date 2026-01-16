@@ -305,3 +305,25 @@ export interface OutgoingTradeRequest {
   status: TradeStatus
   created_at: string
 }
+
+// Trade history types
+export interface TradeHistoryPokemon {
+  pokemon_id: string
+  species_id: number
+  species_name: string
+  nickname: string | null
+  level: number
+  is_shiny: boolean
+}
+
+export interface TradeHistoryEntry {
+  id: string
+  trade_id: string
+  player1_id: string | null
+  player1_username: string
+  player2_id: string | null
+  player2_username: string
+  player1_pokemon: TradeHistoryPokemon[]
+  player2_pokemon: TradeHistoryPokemon[]
+  completed_at: string
+}

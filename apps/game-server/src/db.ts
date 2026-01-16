@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest } from './types.js'
+import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon } from './types.js'
 
 let supabase: SupabaseClient
 
@@ -1647,4 +1647,63 @@ export async function getTradeOffers(
       }
     }
   })
+}
+
+// ============================================
+// TRADE HISTORY QUERIES
+// ============================================
+
+/**
+ * Get trade history for a player
+ * @param playerId - The player's ID
+ * @param limit - Max number of records (default 50)
+ * @param partnerUsername - Optional filter by trade partner username
+ */
+export async function getTradeHistory(
+  playerId: string,
+  limit: number = 50,
+  partnerUsername?: string
+): Promise<TradeHistoryEntry[]> {
+  // Fetch trades where player is either party
+  // We fetch more than limit when filtering to ensure we get enough results after filtering
+  const fetchLimit = partnerUsername ? limit * 3 : limit
+
+  const { data, error } = await supabase
+    .from('trade_history')
+    .select('*')
+    .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`)
+    .order('completed_at', { ascending: false })
+    .limit(fetchLimit)
+
+  if (error) {
+    console.error('Failed to get trade history:', error)
+    return []
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let results = (data || []).map((row: any) => ({
+    id: row.id,
+    trade_id: row.trade_id,
+    player1_id: row.player1_id,
+    player1_username: row.player1_username,
+    player2_id: row.player2_id,
+    player2_username: row.player2_username,
+    player1_pokemon: row.player1_pokemon as TradeHistoryPokemon[],
+    player2_pokemon: row.player2_pokemon as TradeHistoryPokemon[],
+    completed_at: row.completed_at
+  }))
+
+  // Filter by partner username in application code to prevent SQL injection
+  // The partner is the OTHER player in each trade
+  if (partnerUsername) {
+    const searchTerm = partnerUsername.trim().toLowerCase()
+    results = results.filter(entry => {
+      const isPlayer1 = entry.player1_id === playerId
+      const partnerName = isPlayer1 ? entry.player2_username : entry.player1_username
+      return partnerName.toLowerCase().includes(searchTerm)
+    })
+  }
+
+  // Apply limit after filtering
+  return results.slice(0, limit)
 }

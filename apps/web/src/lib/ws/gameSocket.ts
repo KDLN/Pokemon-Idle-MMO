@@ -3,7 +3,7 @@ import type { TickResult, GameState, Zone, Pokemon, ShopItem } from '@/types/gam
 import type { GymLeader, GymBattleResult } from '@/components/game/GymBattlePanel'
 import type { ChatMessageData, ChatChannel } from '@/types/chat'
 import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
-import type { IncomingTradeRequest, OutgoingTradeRequest, TradeOffer, TradeStatus } from '@/types/trade'
+import type { IncomingTradeRequest, OutgoingTradeRequest, TradeOffer, TradeStatus, TradeHistoryEntry } from '@/types/trade'
 
 type MessageHandler = (payload: unknown) => void
 
@@ -67,6 +67,8 @@ class GameSocket {
     this.handlers.set('trade_completed', this.handleTradeCompleted)
     this.handlers.set('trade_cancelled', this.handleTradeCancelled)
     this.handlers.set('trade_partner_disconnected', this.handleTradePartnerDisconnected)
+    this.handlers.set('trade_history', this.handleTradeHistory)
+    this.handlers.set('trade_history_error', this.handleTradeHistoryError)
   }
 
   connect(token: string) {
@@ -604,6 +606,12 @@ class GameSocket {
     this.send('complete_trade', { trade_id: tradeId })
   }
 
+  // Get trade history
+  getTradeHistory(limit?: number, partnerUsername?: string) {
+    useGameStore.getState().setTradeHistoryLoading(true)
+    this.send('get_trade_history', { limit, partner_username: partnerUsername })
+  }
+
   // ============================================
   // TRADE HANDLERS
   // ============================================
@@ -697,6 +705,18 @@ class GameSocket {
       store.setTradeWarning(trade_id, message || 'Your trade partner disconnected')
     }
     console.log('Trade partner disconnected:', message)
+  }
+
+  private handleTradeHistory = (payload: unknown) => {
+    const { history } = payload as { history: TradeHistoryEntry[] }
+    useGameStore.getState().setTradeHistory(history)
+  }
+
+  private handleTradeHistoryError = (payload: unknown) => {
+    const { error } = payload as { error: string }
+    console.error('Trade history error:', error)
+    // Stop loading state on error
+    useGameStore.getState().setTradeHistoryLoading(false)
   }
 }
 
