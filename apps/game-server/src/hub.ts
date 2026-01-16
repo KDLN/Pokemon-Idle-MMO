@@ -1885,13 +1885,6 @@ export class GameHub {
       const playerId = client.session.player.id
       const currentMoney = client.session.player.pokedollars
 
-      // Check if already a member
-      const alreadyMember = await getMuseumMembership(playerId)
-      if (alreadyMember) {
-        this.send(client, 'museum_membership_error', { error: 'Already a member' })
-        return
-      }
-
       const result = await purchaseMuseumMembership(playerId, currentMoney)
 
       if (result.success) {
