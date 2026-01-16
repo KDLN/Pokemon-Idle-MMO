@@ -38,12 +38,13 @@ ADD CONSTRAINT chk_evolution_level_positive
 CHECK (evolution_level IS NULL OR evolution_level > 0);
 
 -- Add constraint ensuring level-based evolutions have a level set
+-- Must handle NULL evolution_method (base Pokemon that don't evolve from anything)
 ALTER TABLE pokemon_species
 DROP CONSTRAINT IF EXISTS chk_level_evolution_has_level;
 
 ALTER TABLE pokemon_species
 ADD CONSTRAINT chk_level_evolution_has_level
-CHECK (evolution_method != 'level' OR evolution_level IS NOT NULL);
+CHECK (evolution_method IS NULL OR evolution_method != 'level' OR evolution_level IS NOT NULL);
 
 -- ============================================
 -- ALL GEN 1 POKEMON (1-151)

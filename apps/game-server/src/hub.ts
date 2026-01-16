@@ -61,7 +61,7 @@ import {
   purchaseMuseumMembership,
   evolvePokemon
 } from './db.js'
-import { processTick, simulateGymBattle, checkEvolutions, executeEvolution } from './game.js'
+import { processTick, simulateGymBattle, checkEvolutions, executeEvolution, recalculateStats } from './game.js'
 
 interface Client {
   ws: WebSocket
@@ -1970,16 +1970,13 @@ export class GameHub {
       return
     }
 
+    // Get the original species for potential rollback
+    const originalSpecies = this.speciesMap.get(pending.current_species_id)
+
     // Execute the evolution (updates Pokemon in-memory)
     const evolutionEvent = executeEvolution(pokemon, targetSpecies)
 
-    // Remove from pending evolutions
-    client.session.pendingEvolutions.splice(pendingIndex, 1)
-
-    // Clear suppression since evolution completed
-    client.session.suppressedEvolutions.delete(pokemon_id)
-
-    // Save evolution to database
+    // Save evolution to database BEFORE confirming to client
     const saved = await evolvePokemon(pokemon_id, targetSpecies.id, {
       max_hp: pokemon.max_hp,
       stat_attack: pokemon.stat_attack,
@@ -1990,8 +1987,22 @@ export class GameHub {
     })
 
     if (!saved) {
-      console.error('Failed to save evolution to database')
+      console.error('Failed to save evolution to database - rolling back')
+      // Rollback in-memory changes
+      if (originalSpecies) {
+        pokemon.species_id = pending.current_species_id
+        recalculateStats(pokemon, originalSpecies)
+      }
+      this.send(client, 'evolution_error', { error: 'Failed to save evolution. Please try again.' })
+      return
     }
+
+    // Database save succeeded - now update session state and notify client
+    // Remove from pending evolutions
+    client.session.pendingEvolutions.splice(pendingIndex, 1)
+
+    // Clear suppression since evolution completed
+    client.session.suppressedEvolutions.delete(pokemon_id)
 
     // Send evolution event to client
     this.send(client, 'evolution', evolutionEvent)

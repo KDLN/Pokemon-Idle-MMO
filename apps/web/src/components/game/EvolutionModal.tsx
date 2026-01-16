@@ -104,6 +104,15 @@ export function EvolutionModal() {
   const oldSpecies = getSpeciesData(activeEvolution.current_species_id)
   const newSpecies = getSpeciesData(activeEvolution.evolution_species_id)
 
+  // Safety check for missing species data
+  if (!oldSpecies || !newSpecies) {
+    console.error('Missing species data for evolution:', {
+      current: activeEvolution.current_species_id,
+      target: activeEvolution.evolution_species_id
+    })
+    return null
+  }
+
   return (
     <>
       {/* Backdrop */}
