@@ -3,6 +3,7 @@ import type { TickResult, GameState, Zone, Pokemon, ShopItem } from '@/types/gam
 import type { GymLeader, GymBattleResult } from '@/components/game/GymBattlePanel'
 import type { ChatMessageData, ChatChannel } from '@/types/chat'
 import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
+import type { IncomingTradeRequest, OutgoingTradeRequest, TradeOffer, TradeStatus } from '@/types/trade'
 
 type MessageHandler = (payload: unknown) => void
 
@@ -56,6 +57,16 @@ class GameSocket {
     this.handlers.set('friend_zone_update', this.handleFriendZoneUpdate)
     // Nearby players handler
     this.handlers.set('nearby_players', this.handleNearbyPlayers)
+    // Trade handlers
+    this.handlers.set('trades_data', this.handleTradesData)
+    this.handlers.set('trades_update', this.handleTradesUpdate)
+    this.handlers.set('trade_request_received', this.handleTradeRequestReceived)
+    this.handlers.set('trade_offers_update', this.handleTradeOffersUpdate)
+    this.handlers.set('trade_offers_data', this.handleTradeOffersData)
+    this.handlers.set('trade_ready_update', this.handleTradeReadyUpdate)
+    this.handlers.set('trade_completed', this.handleTradeCompleted)
+    this.handlers.set('trade_cancelled', this.handleTradeCancelled)
+    this.handlers.set('trade_partner_disconnected', this.handleTradePartnerDisconnected)
   }
 
   connect(token: string) {
@@ -537,6 +548,155 @@ class GameSocket {
   // Request nearby players from server
   getNearbyPlayers() {
     this.send('get_nearby_players', {})
+  }
+
+  // ============================================
+  // TRADE METHODS
+  // ============================================
+
+  // Request trade requests data
+  getTrades() {
+    this.send('get_trades', {})
+  }
+
+  // Send a trade request to a player
+  sendTradeRequest(playerId: string) {
+    this.send('send_trade_request', { player_id: playerId })
+  }
+
+  // Accept a trade request
+  acceptTradeRequest(tradeId: string) {
+    this.send('accept_trade_request', { trade_id: tradeId })
+  }
+
+  // Decline a trade request
+  declineTradeRequest(tradeId: string) {
+    this.send('decline_trade_request', { trade_id: tradeId })
+  }
+
+  // Cancel a trade request (sender only)
+  cancelTradeRequest(tradeId: string) {
+    this.send('cancel_trade_request', { trade_id: tradeId })
+  }
+
+  // Add a Pokemon to the trade offer
+  addTradeOffer(tradeId: string, pokemonId: string) {
+    this.send('add_trade_offer', { trade_id: tradeId, pokemon_id: pokemonId })
+  }
+
+  // Remove a Pokemon from the trade offer
+  removeTradeOffer(tradeId: string, pokemonId: string) {
+    this.send('remove_trade_offer', { trade_id: tradeId, pokemon_id: pokemonId })
+  }
+
+  // Get trade offers for a trade
+  getTradeOffers(tradeId: string) {
+    this.send('get_trade_offers', { trade_id: tradeId })
+  }
+
+  // Set ready status for the trade
+  setTradeReady(tradeId: string, ready: boolean) {
+    this.send('set_trade_ready', { trade_id: tradeId, ready })
+  }
+
+  // Complete the trade (receiver only, after both ready)
+  completeTrade(tradeId: string) {
+    this.send('complete_trade', { trade_id: tradeId })
+  }
+
+  // ============================================
+  // TRADE HANDLERS
+  // ============================================
+
+  private handleTradesData = (payload: unknown) => {
+    const { incoming, outgoing } = payload as {
+      incoming: IncomingTradeRequest[]
+      outgoing: OutgoingTradeRequest[]
+    }
+    useGameStore.getState().setAllTradesData({ incoming, outgoing })
+  }
+
+  private handleTradesUpdate = (payload: unknown) => {
+    const { incoming, outgoing } = payload as {
+      incoming: IncomingTradeRequest[]
+      outgoing: OutgoingTradeRequest[]
+    }
+    useGameStore.getState().setAllTradesData({ incoming, outgoing })
+  }
+
+  private handleTradeRequestReceived = (payload: unknown) => {
+    const request = payload as IncomingTradeRequest
+    const store = useGameStore.getState()
+    store.setIncomingTradeRequests([request, ...store.incomingTradeRequests])
+  }
+
+  private handleTradeOffersUpdate = (payload: unknown) => {
+    const { trade_id, offers, warning } = payload as {
+      trade_id: string
+      offers: TradeOffer[]
+      warning?: string
+    }
+    useGameStore.getState().updateTradeOffers(trade_id, offers, warning)
+  }
+
+  private handleTradeOffersData = (payload: unknown) => {
+    const { trade_id, offers } = payload as {
+      trade_id: string
+      offers: TradeOffer[]
+    }
+    useGameStore.getState().updateTradeOffers(trade_id, offers)
+  }
+
+  private handleTradeReadyUpdate = (payload: unknown) => {
+    const { trade_id, my_ready, their_ready } = payload as {
+      trade_id: string
+      my_ready: boolean
+      their_ready: boolean
+    }
+    const store = useGameStore.getState()
+    if (store.activeTrade?.trade_id === trade_id) {
+      store.setTradeReady(my_ready, their_ready)
+    }
+  }
+
+  private handleTradeCompleted = (payload: unknown) => {
+    const { trade_id, transferred_count } = payload as {
+      trade_id: string
+      transferred_count: number
+    }
+    const store = useGameStore.getState()
+    // Close the trade modal and clear active trade
+    if (store.activeTrade?.trade_id === trade_id) {
+      store.setActiveTrade(null)
+      store.setTradeModalOpen(false)
+    }
+    // Refresh trades list
+    this.getTrades()
+    // Request updated game state to get new Pokemon ownership
+    this.getState()
+    console.log(`Trade completed! ${transferred_count} Pokemon transferred.`)
+  }
+
+  private handleTradeCancelled = (payload: unknown) => {
+    const { trade_id } = payload as { trade_id: string }
+    const store = useGameStore.getState()
+    // Close the trade modal if this trade was cancelled
+    if (store.activeTrade?.trade_id === trade_id) {
+      store.setActiveTrade(null)
+      store.setTradeModalOpen(false)
+    }
+    // Refresh trades list
+    this.getTrades()
+  }
+
+  private handleTradePartnerDisconnected = (payload: unknown) => {
+    const { trade_id, message } = payload as { trade_id: string; message: string }
+    const store = useGameStore.getState()
+    // Set warning without affecting offers (preserves both my_offers and their_offers)
+    if (store.activeTrade?.trade_id === trade_id) {
+      store.setTradeWarning(trade_id, message || 'Your trade partner disconnected')
+    }
+    console.log('Trade partner disconnected:', message)
   }
 }
 

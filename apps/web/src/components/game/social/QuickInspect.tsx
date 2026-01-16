@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { getPokemonSpriteUrl } from '@/types/game'
 import type { Pokemon } from '@/types/game'
 import { BadgeCase } from '../header/BadgeCase'
+import { gameSocket } from '@/lib/ws/gameSocket'
 
 export interface PublicPlayerInfo {
   id: string
@@ -163,7 +164,13 @@ export function QuickInspect({ player, isOpen, onClose, position }: QuickInspect
           <button className="flex-1 px-3 py-1.5 text-xs font-medium bg-[#252542] text-white rounded-lg hover:bg-[#3a3a6a] transition-colors">
             Add Friend
           </button>
-          <button className="flex-1 px-3 py-1.5 text-xs font-medium bg-[#3B4CCA] text-white rounded-lg hover:bg-[#5B6EEA] transition-colors">
+          <button
+            onClick={() => {
+              gameSocket.sendTradeRequest(player.id)
+              onClose()
+            }}
+            className="flex-1 px-3 py-1.5 text-xs font-medium bg-[#3B4CCA] text-white rounded-lg hover:bg-[#5B6EEA] transition-colors"
+          >
             Trade
           </button>
         </div>

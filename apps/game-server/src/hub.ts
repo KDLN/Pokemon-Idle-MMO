@@ -54,7 +54,8 @@ import {
   completeTrade,
   addTradeOffer,
   removeTradeOffer,
-  getTradeOffers
+  getTradeOffers,
+  getActiveTradeIds
 } from './db.js'
 import { processTick, simulateGymBattle } from './game.js'
 
@@ -71,11 +72,20 @@ const MAX_CHAT_LENGTH = 280
 const SUPABASE_URL = process.env.SUPABASE_URL || ''
 const JWKS = createRemoteJWKSet(new URL(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`))
 
+// Track ready states for trades (trade_id -> { sender_ready, receiver_ready })
+interface TradeReadyState {
+  sender_ready: boolean
+  receiver_ready: boolean
+}
+
 export class GameHub {
   private wss: WebSocketServer
   private clients: Map<WebSocket, Client> = new Map()
+  // Reverse index for O(1) player ID lookups (maintained in connect/disconnect)
+  private clientsByPlayerId: Map<string, Client> = new Map()
   private speciesMap: Map<number, PokemonSpecies> = new Map()
   private tickInterval: NodeJS.Timeout | null = null
+  private tradeReadyStates: Map<string, TradeReadyState> = new Map()
 
   constructor(port: number) {
     this.wss = new WebSocketServer({ port })
@@ -125,6 +135,10 @@ export class GameHub {
     // Load session
     try {
       await this.loadSession(client)
+      // Add to reverse index for O(1) player lookups
+      if (client.session) {
+        this.clientsByPlayerId.set(client.session.player.id, client)
+      }
       await this.sendGameState(client)
       await this.sendChatHistory(client)
       await this.sendFriendsData(client)
@@ -288,6 +302,9 @@ export class GameHub {
         case 'get_trade_offers':
           this.handleGetTradeOffers(client, msg.payload as { trade_id: string })
           break
+        case 'set_trade_ready':
+          this.handleSetTradeReady(client, msg.payload as { trade_id: string; ready: boolean })
+          break
         default:
           console.log('Unknown message type:', msg.type)
       }
@@ -296,8 +313,49 @@ export class GameHub {
     }
   }
 
-  private handleDisconnect(client: Client) {
+  private async handleDisconnect(client: Client) {
     console.log(`Client disconnected: ${client.userId}`)
+
+    // Clean up trade ready states for any active trades this player was in
+    // Use Promise.all to ensure all notifications complete before removing client
+    // Inner try-catch ensures one failure doesn't stop other cleanups
+    if (client.session) {
+      const playerId = client.session.player.id
+      try {
+        const activeTradeIds = await getActiveTradeIds(playerId)
+        await Promise.all(activeTradeIds.map(async (tradeId) => {
+          try {
+            // Get trade details to find the partner
+            const trade = await this.getTradeById(tradeId)
+            if (trade) {
+              // Clean up ready state
+              this.tradeReadyStates.delete(tradeId)
+
+              // Notify the other player that their trade partner disconnected
+              const otherPlayerId = trade.sender_id === playerId ? trade.receiver_id : trade.sender_id
+              const otherClient = this.getClientByPlayerId(otherPlayerId)
+              if (otherClient) {
+                this.send(otherClient, 'trade_partner_disconnected', {
+                  trade_id: tradeId,
+                  message: 'Your trade partner disconnected'
+                })
+              }
+            }
+          } catch (err) {
+            console.error(`Failed to clean up trade ${tradeId} on disconnect:`, err)
+          }
+        }))
+      } catch (err) {
+        console.error('Failed to get active trades on disconnect:', err)
+      }
+    }
+
+    // Remove from reverse index before removing from clients map
+    if (client.session) {
+      this.clientsByPlayerId.delete(client.session.player.id)
+    }
+
+    // Always remove client from map, even if cleanup failed
     this.clients.delete(client.ws)
   }
 
@@ -1058,14 +1116,9 @@ export class GameHub {
     return false
   }
 
-  // Get client by player ID
+  // Get client by player ID - O(1) lookup using reverse index
   private getClientByPlayerId(playerId: string): Client | null {
-    for (const [, otherClient] of this.clients) {
-      if (otherClient.session?.player.id === playerId) {
-        return otherClient
-      }
-    }
-    return null
+    return this.clientsByPlayerId.get(playerId) || null
   }
 
   // Get trade by ID with optional player validation
@@ -1229,6 +1282,12 @@ export class GameHub {
       return
     }
 
+    // Clean up ready state to prevent memory leak
+    this.tradeReadyStates.delete(tradeId)
+
+    // Notify both players that trade was cancelled (so modal closes)
+    this.send(client, 'trade_cancelled', { trade_id: tradeId })
+
     // Get updated trade lists for the receiver (current client)
     const [incoming, outgoing] = await Promise.all([
       getIncomingTradeRequests(client.session.player.id),
@@ -1240,6 +1299,9 @@ export class GameHub {
     // Notify only the sender (not all clients)
     const senderClient = this.getClientByPlayerId(trade.sender_id)
     if (senderClient?.session) {
+      // Send trade_cancelled to close modal if open
+      this.send(senderClient, 'trade_cancelled', { trade_id: tradeId })
+
       const [senderIncoming, senderOutgoing] = await Promise.all([
         getIncomingTradeRequests(trade.sender_id),
         getOutgoingTradeRequests(trade.sender_id)
@@ -1280,6 +1342,12 @@ export class GameHub {
       return
     }
 
+    // Clean up ready state to prevent memory leak
+    this.tradeReadyStates.delete(tradeId)
+
+    // Notify both players that trade was cancelled (so modal closes)
+    this.send(client, 'trade_cancelled', { trade_id: tradeId })
+
     // Get updated trade lists for the sender (current client)
     const [incoming, outgoing] = await Promise.all([
       getIncomingTradeRequests(client.session.player.id),
@@ -1291,6 +1359,9 @@ export class GameHub {
     // Notify only the receiver (not all clients)
     const receiverClient = this.getClientByPlayerId(trade.receiver_id)
     if (receiverClient?.session) {
+      // Send trade_cancelled to close modal if open
+      this.send(receiverClient, 'trade_cancelled', { trade_id: tradeId })
+
       const [receiverIncoming, receiverOutgoing] = await Promise.all([
         getIncomingTradeRequests(trade.receiver_id),
         getOutgoingTradeRequests(trade.receiver_id)
@@ -1329,8 +1400,9 @@ export class GameHub {
       return
     }
 
-    if (trade.status !== 'pending') {
-      this.sendError(client, 'Trade is no longer pending')
+    // Allow offers on pending and accepted trades
+    if (trade.status !== 'pending' && trade.status !== 'accepted') {
+      this.sendError(client, 'Trade is no longer active')
       return
     }
 
@@ -1340,6 +1412,9 @@ export class GameHub {
       this.sendError(client, result.error || 'Failed to add offer')
       return
     }
+
+    // Reset ready states when offers change
+    this.resetTradeReadyState(tradeId)
 
     // Send updated offers to both players (including warning to both)
     const offers = await getTradeOffers(tradeId)
@@ -1356,7 +1431,21 @@ export class GameHub {
     const otherClient = this.getClientByPlayerId(otherPlayerId)
     if (otherClient?.session) {
       this.send(otherClient, 'trade_offers_update', updatePayload)
+
+      // Also notify them of ready state reset
+      this.send(otherClient, 'trade_ready_update', {
+        trade_id: tradeId,
+        my_ready: false,
+        their_ready: false
+      })
     }
+
+    // Notify current client of ready state reset too
+    this.send(client, 'trade_ready_update', {
+      trade_id: tradeId,
+      my_ready: false,
+      their_ready: false
+    })
   }
 
   private async handleRemoveTradeOffer(client: Client, payload: { trade_id: string; pokemon_id: string }) {
@@ -1375,8 +1464,9 @@ export class GameHub {
       return
     }
 
-    if (trade.status !== 'pending') {
-      this.sendError(client, 'Trade is no longer pending')
+    // Allow removing offers on pending and accepted trades
+    if (trade.status !== 'pending' && trade.status !== 'accepted') {
+      this.sendError(client, 'Trade is no longer active')
       return
     }
 
@@ -1387,6 +1477,9 @@ export class GameHub {
       return
     }
 
+    // Reset ready states when offers change
+    this.resetTradeReadyState(tradeId)
+
     // Send updated offers to both players
     const offers = await getTradeOffers(tradeId)
     this.send(client, 'trade_offers_update', { trade_id: tradeId, offers })
@@ -1396,7 +1489,21 @@ export class GameHub {
     const otherClient = this.getClientByPlayerId(otherPlayerId)
     if (otherClient?.session) {
       this.send(otherClient, 'trade_offers_update', { trade_id: tradeId, offers })
+
+      // Also notify them of ready state reset
+      this.send(otherClient, 'trade_ready_update', {
+        trade_id: tradeId,
+        my_ready: false,
+        their_ready: false
+      })
     }
+
+    // Notify current client of ready state reset too
+    this.send(client, 'trade_ready_update', {
+      trade_id: tradeId,
+      my_ready: false,
+      their_ready: false
+    })
   }
 
   private async handleCompleteTrade(client: Client, payload: { trade_id: string }) {
@@ -1482,5 +1589,138 @@ export class GameHub {
 
     const offers = await getTradeOffers(tradeId)
     this.send(client, 'trade_offers_data', { trade_id: tradeId, offers })
+  }
+
+  private async handleSetTradeReady(client: Client, payload: { trade_id: string; ready: boolean }) {
+    if (!client.session) return
+
+    const { trade_id: tradeId, ready } = payload
+    if (!tradeId || ready === undefined) {
+      this.sendError(client, 'Trade ID and ready status are required')
+      return
+    }
+
+    // Get the trade with player validation
+    const trade = await this.getTradeById(tradeId, client.session.player.id)
+    if (!trade) {
+      this.sendError(client, 'Trade not found')
+      return
+    }
+
+    // Only allow ready toggling on accepted trades
+    if (trade.status !== 'accepted') {
+      this.sendError(client, 'Trade must be accepted before setting ready status')
+      return
+    }
+
+    const playerId = client.session.player.id
+    const isSender = trade.sender_id === playerId
+
+    // Get or create ready state for this trade
+    let readyState = this.tradeReadyStates.get(tradeId)
+    if (!readyState) {
+      readyState = { sender_ready: false, receiver_ready: false }
+      this.tradeReadyStates.set(tradeId, readyState)
+    }
+
+    // Update the appropriate ready status
+    if (isSender) {
+      readyState.sender_ready = ready
+    } else {
+      readyState.receiver_ready = ready
+    }
+
+    // Notify both players of ready state changes
+    const otherPlayerId = isSender ? trade.receiver_id : trade.sender_id
+    const otherClient = this.getClientByPlayerId(otherPlayerId)
+
+    // Send ready update to the current client
+    this.send(client, 'trade_ready_update', {
+      trade_id: tradeId,
+      my_ready: isSender ? readyState.sender_ready : readyState.receiver_ready,
+      their_ready: isSender ? readyState.receiver_ready : readyState.sender_ready
+    })
+
+    // Send ready update to the other client
+    if (otherClient?.session) {
+      this.send(otherClient, 'trade_ready_update', {
+        trade_id: tradeId,
+        my_ready: isSender ? readyState.receiver_ready : readyState.sender_ready,
+        their_ready: isSender ? readyState.sender_ready : readyState.receiver_ready
+      })
+    }
+
+    // If both players are ready, auto-complete the trade
+    if (readyState.sender_ready && readyState.receiver_ready) {
+      // CRITICAL: Delete ready state FIRST to prevent race condition
+      // where both players click ready simultaneously and both trigger completion
+      this.tradeReadyStates.delete(tradeId)
+
+      // Complete the trade
+      const result = await completeTrade(tradeId)
+
+      if (result.success) {
+        // Notify both players of completion
+        this.send(client, 'trade_completed', {
+          trade_id: tradeId,
+          transferred_count: result.transferred_count
+        })
+
+        if (otherClient?.session) {
+          this.send(otherClient, 'trade_completed', {
+            trade_id: tradeId,
+            transferred_count: result.transferred_count
+          })
+        }
+
+        // Update trade lists for both players
+        const [currentIncoming, currentOutgoing] = await Promise.all([
+          getIncomingTradeRequests(client.session.player.id),
+          getOutgoingTradeRequests(client.session.player.id)
+        ])
+        this.send(client, 'trades_update', { incoming: currentIncoming, outgoing: currentOutgoing })
+
+        if (otherClient?.session) {
+          const [otherIncoming, otherOutgoing] = await Promise.all([
+            getIncomingTradeRequests(otherPlayerId),
+            getOutgoingTradeRequests(otherPlayerId)
+          ])
+          this.send(otherClient, 'trades_update', { incoming: otherIncoming, outgoing: otherOutgoing })
+        }
+      } else {
+        // Trade failed - notify both players, they need to re-ready to retry
+        // (we don't restore ready state because players should consciously confirm after failure)
+        this.sendError(client, result.error || 'Failed to complete trade')
+
+        // Notify both players to reset their ready states in UI
+        this.send(client, 'trade_ready_update', {
+          trade_id: tradeId,
+          my_ready: false,
+          their_ready: false
+        })
+
+        if (otherClient?.session) {
+          this.send(otherClient, 'trade_ready_update', {
+            trade_id: tradeId,
+            my_ready: false,
+            their_ready: false
+          })
+          this.sendError(otherClient, result.error || 'Failed to complete trade')
+        }
+      }
+    }
+  }
+
+  // Helper to reset ready states when trade offers change
+  // Only resets if state exists - don't create entries for non-existent/cancelled trades
+  // to prevent memory growth from stale trade IDs
+  private resetTradeReadyState(tradeId: string) {
+    const readyState = this.tradeReadyStates.get(tradeId)
+    if (readyState) {
+      readyState.sender_ready = false
+      readyState.receiver_ready = false
+    }
+    // Don't create if doesn't exist - this prevents memory leak from
+    // offers being modified on cancelled/completed trades
   }
 }
