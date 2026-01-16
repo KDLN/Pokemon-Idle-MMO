@@ -44,3 +44,6 @@ coverage/
 nul
 
 .vercel
+ROADMAP.md
+pokeapi-v2.html
+.claude/settings.local.json
