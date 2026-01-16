@@ -1231,6 +1231,7 @@ export class GameHub {
         trade_id: result.trade_id,
         from_player_id: client.session.player.id,
         from_username: client.session.player.username,
+        status: 'pending',
         created_at: new Date().toISOString()
       })
     }
