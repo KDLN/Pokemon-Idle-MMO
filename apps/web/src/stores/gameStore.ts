@@ -12,6 +12,23 @@ import type { TrainerCustomization } from '@/lib/sprites/trainerCustomization'
 import { DEFAULT_TRAINER_CUSTOMIZATION } from '@/lib/sprites/trainerCustomization'
 import type { EventCosmetics } from '@/components/game/world/SpriteTrainer'
 
+// Museum exhibit interface
+interface MuseumExhibit {
+  id: string
+  name: string
+  description: string
+  icon: string
+}
+
+// Museum state interface
+interface MuseumState {
+  isOpen: boolean
+  hasMembership: boolean
+  cost?: number
+  playerMoney?: number
+  exhibits?: MuseumExhibit[]
+}
+
 // Season progress interface
 interface SeasonProgress {
   current: number
@@ -177,6 +194,11 @@ interface GameStore {
   setTradeHistory: (history: TradeHistoryEntry[]) => void
   setTradeHistoryLoading: (loading: boolean) => void
 
+  // Museum state
+  museum: MuseumState
+  openMuseum: (data: { has_membership: boolean; cost?: number; player_money?: number; exhibits?: MuseumExhibit[] }) => void
+  closeMuseum: () => void
+
   // Reset store
   reset: () => void
 }
@@ -211,6 +233,11 @@ const initialWorldView: WorldViewState = {
   trainerPosition: { x: 50, y: 50 },
   walkDirection: 'right',
   isWalking: false,
+}
+
+const initialMuseumState: MuseumState = {
+  isOpen: false,
+  hasMembership: false,
 }
 
 const initialState = {
@@ -252,6 +279,8 @@ const initialState = {
   isTradeModalOpen: false,
   tradeHistory: [] as TradeHistoryEntry[],
   tradeHistoryLoading: false,
+  // Museum state
+  museum: initialMuseumState,
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -525,6 +554,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setTradeHistory: (history) => set({ tradeHistory: history, tradeHistoryLoading: false }),
   setTradeHistoryLoading: (loading) => set({ tradeHistoryLoading: loading }),
+
+  // Museum methods
+  openMuseum: (data) => set({
+    museum: {
+      isOpen: true,
+      hasMembership: data.has_membership,
+      cost: data.cost,
+      playerMoney: data.player_money,
+      exhibits: data.exhibits,
+    },
+  }),
+
+  closeMuseum: () => set({
+    museum: initialMuseumState,
+  }),
 
   reset: () => set(initialState),
 }))

@@ -37,6 +37,11 @@ const ZONE_DATA: Record<string, { description: string; icon: string; features: s
     icon: '🛤️',
     features: ['Tall Grass', 'Wild Pokemon', 'Path to Pewter'],
   },
+  'Pewter City': {
+    description: 'A city between rugged mountains and Pokemon fossils.',
+    icon: '🏔️',
+    features: ['Pokemon Center', 'Poke Mart', 'Gym', 'Museum'],
+  },
 }
 
 export function ZoneDisplay() {

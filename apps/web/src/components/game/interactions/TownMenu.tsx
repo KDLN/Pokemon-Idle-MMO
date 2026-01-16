@@ -98,6 +98,11 @@ export function TownMenu({ onAction }: TownMenuProps) {
       gameSocket.getGym(currentZone?.id || 1)
     }
 
+    if (actionType === 'museum') {
+      // Request museum data from server
+      gameSocket.getMuseum()
+    }
+
     onAction?.(actionType)
   }
 

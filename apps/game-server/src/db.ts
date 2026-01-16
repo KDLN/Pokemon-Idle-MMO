@@ -1708,3 +1708,53 @@ export async function getTradeHistory(
   // Apply limit after filtering
   return results.slice(0, limit)
 }
+
+// ============================================
+// MUSEUM QUERIES
+// ============================================
+
+// Check if player has museum membership
+export async function getMuseumMembership(playerId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('players')
+    .select('museum_member')
+    .eq('id', playerId)
+    .single()
+
+  if (error) {
+    console.error('Failed to get museum membership:', error)
+    return false
+  }
+
+  return data?.museum_member || false
+}
+
+// Purchase museum membership (one-time 50 currency fee)
+export async function purchaseMuseumMembership(
+  playerId: string,
+  currentMoney: number
+): Promise<{ success: boolean; newMoney: number; error?: string }> {
+  const MEMBERSHIP_COST = 50
+
+  if (currentMoney < MEMBERSHIP_COST) {
+    return { success: false, newMoney: currentMoney, error: 'Not enough money' }
+  }
+
+  const newMoney = currentMoney - MEMBERSHIP_COST
+
+  // Update player: deduct money and grant membership
+  const { error } = await supabase
+    .from('players')
+    .update({
+      pokedollars: newMoney,
+      museum_member: true
+    })
+    .eq('id', playerId)
+
+  if (error) {
+    console.error('Failed to purchase museum membership:', error)
+    return { success: false, newMoney: currentMoney, error: 'Failed to purchase membership' }
+  }
+
+  return { success: true, newMoney }
+}
