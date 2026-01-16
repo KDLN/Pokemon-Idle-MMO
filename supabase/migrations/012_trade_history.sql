@@ -71,7 +71,6 @@ DECLARE
   v_receiver_party_traded INT;
   v_transferred_count INT := 0;
   v_temp_count INT := 0;
-  v_locked_pokemon_count INT;
   v_sender_username TEXT;
   v_receiver_username TEXT;
   v_sender_pokemon JSONB;
@@ -116,8 +115,8 @@ BEGIN
   END IF;
 
   -- CRITICAL: Lock all Pokemon involved in the trade to prevent race conditions
-  SELECT COUNT(*) INTO v_locked_pokemon_count
-  FROM pokemon
+  -- Note: Can't use COUNT(*) with FOR UPDATE, so we lock rows via a subquery
+  PERFORM id FROM pokemon
   WHERE id = ANY(
     COALESCE(v_sender_offers, ARRAY[]::UUID[]) || COALESCE(v_receiver_offers, ARRAY[]::UUID[])
   )

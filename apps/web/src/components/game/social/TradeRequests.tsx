@@ -147,9 +147,14 @@ function OutgoingTradeCard({
 }
 
 export function TradeRequests({ onOpenTrade }: TradeRequestsProps) {
-  const incomingRequests = useGameStore((state) => state.incomingTradeRequests)
-  const outgoingRequests = useGameStore((state) => state.outgoingTradeRequests)
+  const rawIncomingRequests = useGameStore((state) => state.incomingTradeRequests)
+  const rawOutgoingRequests = useGameStore((state) => state.outgoingTradeRequests)
   const player = useGameStore((state) => state.player)
+
+  // Filter to only show active trades (pending or accepted)
+  // This provides extra safety in case cancelled/completed trades aren't removed from state
+  const incomingRequests = rawIncomingRequests.filter(r => r.status === 'pending' || r.status === 'accepted')
+  const outgoingRequests = rawOutgoingRequests.filter(r => r.status === 'pending' || r.status === 'accepted')
 
   const handleAccept = (request: IncomingTradeRequest) => {
     gameSocket.acceptTradeRequest(request.trade_id)

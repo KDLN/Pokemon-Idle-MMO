@@ -167,7 +167,6 @@ DECLARE
   v_sender_party_traded INT;
   v_receiver_party_traded INT;
   v_transferred_count INT := 0;
-  v_locked_pokemon_count INT;
 BEGIN
   -- Lock the trade row for update
   SELECT * INTO v_trade
@@ -205,8 +204,8 @@ BEGIN
 
   -- CRITICAL: Lock all Pokemon involved in the trade to prevent race conditions
   -- This prevents another operation from modifying these Pokemon between our checks and transfers
-  SELECT COUNT(*) INTO v_locked_pokemon_count
-  FROM pokemon
+  -- Note: Can't use COUNT(*) with FOR UPDATE, so we lock rows via PERFORM
+  PERFORM id FROM pokemon
   WHERE id = ANY(
     COALESCE(v_sender_offers, ARRAY[]::UUID[]) || COALESCE(v_receiver_offers, ARRAY[]::UUID[])
   )
