@@ -70,6 +70,7 @@ DECLARE
   v_sender_party_traded INT;
   v_receiver_party_traded INT;
   v_transferred_count INT := 0;
+  v_temp_count INT := 0;
   v_locked_pokemon_count INT;
   v_sender_username TEXT;
   v_receiver_username TEXT;
@@ -201,7 +202,8 @@ BEGIN
     WHERE id = ANY(v_receiver_offers)
       AND owner_id = v_trade.receiver_id;
 
-    GET DIAGNOSTICS v_transferred_count = v_transferred_count + ROW_COUNT;
+    GET DIAGNOSTICS v_temp_count = ROW_COUNT;
+    v_transferred_count := v_transferred_count + v_temp_count;
   END IF;
 
   -- Mark trade as completed
