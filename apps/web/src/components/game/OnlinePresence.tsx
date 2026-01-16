@@ -23,7 +23,7 @@ function PlayerActionModal({
   }
 
   const handleAddFriend = () => {
-    gameSocket.sendFriendRequest(player.id)
+    gameSocket.sendFriendRequest(player.username)
     onClose()
   }
 
