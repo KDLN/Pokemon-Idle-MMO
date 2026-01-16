@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Player, Pokemon, Zone, EncounterEvent, LevelUpEvent, ShopItem } from '@/types/game'
+import type { Player, Pokemon, Zone, EncounterEvent, LevelUpEvent, PendingEvolution, ShopItem } from '@/types/game'
 import type { ChatMessageData, ChatChannel } from '@/types/chat'
 import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
 import type { IncomingTradeRequest, OutgoingTradeRequest, ActiveTradeSession, TradeOffer, TradeHistoryEntry } from '@/types/trade'
@@ -121,6 +121,14 @@ interface GameStore {
   pendingLevelUps: LevelUpEvent[]
   addLevelUps: (levelUps: LevelUpEvent[]) => void
   clearPendingLevelUps: () => void
+
+  // Pending evolutions for modal
+  pendingEvolutions: PendingEvolution[]
+  activeEvolution: PendingEvolution | null
+  addPendingEvolutions: (evolutions: PendingEvolution[]) => void
+  setActiveEvolution: (evolution: PendingEvolution | null) => void
+  removeEvolution: (pokemonId: string) => void
+  processNextEvolution: () => void
 
   // XP gains for animation
   applyXPGains: (xpGained: Record<string, number>) => void
@@ -260,6 +268,8 @@ const initialState = {
   currentGymLeader: null,
   currentEncounter: null,
   pendingLevelUps: [],
+  pendingEvolutions: [] as PendingEvolution[],
+  activeEvolution: null as PendingEvolution | null,
   chat: initialChatState,
   worldLog: [] as LogEntry[],
   worldEvents: [] as WorldEvent[],
@@ -354,6 +364,38 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set((state) => ({ pendingLevelUps: [...state.pendingLevelUps, ...levelUps] })),
 
   clearPendingLevelUps: () => set({ pendingLevelUps: [] }),
+
+  // Evolution methods
+  addPendingEvolutions: (evolutions) =>
+    set((state) => {
+      const newPending = [...state.pendingEvolutions, ...evolutions]
+      // If no active evolution, automatically start the first one
+      if (!state.activeEvolution && newPending.length > 0) {
+        return {
+          pendingEvolutions: newPending.slice(1),
+          activeEvolution: newPending[0],
+        }
+      }
+      return { pendingEvolutions: newPending }
+    }),
+
+  setActiveEvolution: (evolution) => set({ activeEvolution: evolution }),
+
+  removeEvolution: (pokemonId) =>
+    set((state) => ({
+      pendingEvolutions: state.pendingEvolutions.filter((e) => e.pokemon_id !== pokemonId),
+      activeEvolution:
+        state.activeEvolution?.pokemon_id === pokemonId ? null : state.activeEvolution,
+    })),
+
+  processNextEvolution: () =>
+    set((state) => {
+      if (state.pendingEvolutions.length > 0) {
+        const [next, ...rest] = state.pendingEvolutions
+        return { activeEvolution: next, pendingEvolutions: rest }
+      }
+      return { activeEvolution: null }
+    }),
 
   applyXPGains: (xpGained) => {
     const party = get().party.map((p) => {

@@ -6,6 +6,8 @@ import type {
   EncounterEvent,
   CatchResult,
   LevelUpEvent,
+  PendingEvolution,
+  EvolutionEvent,
   TickResult,
   PlayerSession,
   EncounterTableEntry,
@@ -639,6 +641,97 @@ export function checkLevelUps(party: (Pokemon | null)[], speciesMap: Map<number,
   return levelUps
 }
 
+// ============================================
+// EVOLUTION LOGIC
+// ============================================
+
+// Find what species this Pokemon can evolve into at the given level
+export function findEvolutionTarget(
+  speciesId: number,
+  level: number,
+  speciesMap: Map<number, PokemonSpecies>
+): PokemonSpecies | null {
+  // Look through all species to find one that evolves from current species
+  for (const [, species] of speciesMap) {
+    if (
+      species.evolves_from_species_id === speciesId &&
+      species.evolution_method === 'level' &&
+      species.evolution_level !== null &&
+      level >= species.evolution_level
+    ) {
+      return species
+    }
+  }
+  return null
+}
+
+// Check for evolution eligibility after level ups
+// Returns pending evolutions that need player confirmation
+export function checkEvolutions(
+  party: (Pokemon | null)[],
+  levelUps: LevelUpEvent[],
+  speciesMap: Map<number, PokemonSpecies>,
+  suppressedEvolutions: Set<string> // Pokemon IDs where evolution was cancelled
+): PendingEvolution[] {
+  const pendingEvolutions: PendingEvolution[] = []
+
+  for (const levelUp of levelUps) {
+    const pokemon = party.find(p => p?.id === levelUp.pokemon_id)
+    if (!pokemon) continue
+
+    // Skip if player previously cancelled this Pokemon's evolution (this session)
+    if (suppressedEvolutions.has(pokemon.id)) continue
+
+    const currentSpecies = speciesMap.get(pokemon.species_id)
+    if (!currentSpecies) continue
+
+    // Find what this species evolves into at the new level
+    const evolutionTarget = findEvolutionTarget(pokemon.species_id, levelUp.new_level, speciesMap)
+    if (!evolutionTarget) continue
+
+    pendingEvolutions.push({
+      pokemon_id: pokemon.id,
+      pokemon_name: pokemon.nickname || currentSpecies.name,
+      current_species_id: pokemon.species_id,
+      evolution_species_id: evolutionTarget.id,
+      evolution_species_name: evolutionTarget.name,
+      trigger_level: levelUp.new_level
+    })
+  }
+
+  return pendingEvolutions
+}
+
+// Execute evolution - update Pokemon's species and recalculate stats
+export function executeEvolution(
+  pokemon: Pokemon,
+  targetSpecies: PokemonSpecies
+): EvolutionEvent {
+  const oldName = pokemon.nickname || `Pokemon #${pokemon.species_id}`
+
+  // Update species
+  pokemon.species_id = targetSpecies.id
+
+  // Recalculate stats with new base stats
+  recalculateStats(pokemon, targetSpecies)
+
+  return {
+    pokemon_id: pokemon.id,
+    pokemon_name: oldName,
+    new_species_id: targetSpecies.id,
+    new_species_name: targetSpecies.name,
+    new_level: pokemon.level,
+    new_stats: {
+      max_hp: pokemon.max_hp,
+      attack: pokemon.stat_attack,
+      defense: pokemon.stat_defense,
+      sp_attack: pokemon.stat_sp_attack,
+      sp_defense: pokemon.stat_sp_defense,
+      speed: pokemon.stat_speed
+    }
+  }
+}
+
 // Process encounter
 export function processEncounter(
   party: (Pokemon | null)[],
@@ -877,7 +970,7 @@ function simulateGymMatchup(
     } else {
       // Gym Pokemon attacks player Pokemon
         const gymMove = selectMove(
-          { id: gymPokemon.species_id, name: gymPokemon.species_name, type1: gymPokemon.type1, type2: gymPokemon.type2, base_hp: gymStats.maxHp, base_attack: gymStats.attack, base_defense: gymStats.defense, base_sp_attack: gymStats.spAttack, base_sp_defense: gymStats.spDefense, base_speed: gymStats.speed, base_catch_rate: 0, base_xp_yield: 0 },
+          { id: gymPokemon.species_id, name: gymPokemon.species_name, type1: gymPokemon.type1, type2: gymPokemon.type2, base_hp: gymStats.maxHp, base_attack: gymStats.attack, base_defense: gymStats.defense, base_sp_attack: gymStats.spAttack, base_sp_defense: gymStats.spDefense, base_speed: gymStats.speed, base_catch_rate: 0, base_xp_yield: 0, evolves_from_species_id: null, evolution_level: null, evolution_method: null },
           playerSpecies
         )
         const { damage, isCritical } = calculateDamage(

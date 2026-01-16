@@ -43,6 +43,10 @@ export interface PokemonSpecies {
   base_speed: number
   base_catch_rate: number
   base_xp_yield: number
+  // Evolution data
+  evolves_from_species_id: number | null
+  evolution_level: number | null
+  evolution_method: string | null
 }
 
 export interface Zone {
@@ -184,11 +188,39 @@ export interface LevelUpEvent {
   }
 }
 
+// Pending evolution that player can confirm or cancel
+export interface PendingEvolution {
+  pokemon_id: string
+  pokemon_name: string
+  current_species_id: number
+  evolution_species_id: number
+  evolution_species_name: string
+  trigger_level: number
+}
+
+// Evolution event sent when a Pokemon evolves
+export interface EvolutionEvent {
+  pokemon_id: string
+  pokemon_name: string // Name before evolution
+  new_species_id: number
+  new_species_name: string
+  new_level: number
+  new_stats: {
+    max_hp: number
+    attack: number
+    defense: number
+    sp_attack: number
+    sp_defense: number
+    speed: number
+  }
+}
+
 export interface TickResult {
   tick_number: number
   encounter?: EncounterEvent
   xp_gained?: Record<string, number>
   level_ups?: LevelUpEvent[]
+  pending_evolutions?: PendingEvolution[]
   pokeballs: number
   great_balls: number
   money_earned?: number
@@ -213,6 +245,9 @@ export interface PlayerSession {
   encounterTable: EncounterTableEntry[]
   pokedollars: number
   encounterCooldown: number // Ticks remaining before next encounter can occur
+  // Evolution state
+  pendingEvolutions: PendingEvolution[]
+  suppressedEvolutions: Set<string> // Pokemon IDs where evolution was cancelled (re-prompt on next level up)
 }
 
 export interface WSMessage {

@@ -629,6 +629,101 @@ a:focus-visible {
 }
 
 /* ================== */
+/* Evolution Animations */
+/* ================== */
+
+/* Evolution glow - pulsing brightness and glow effect */
+@keyframes evolution-glow {
+  0%, 100% {
+    filter: brightness(1) drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
+  }
+  50% {
+    filter: brightness(1.5) drop-shadow(0 0 25px rgba(255, 255, 255, 0.8));
+  }
+}
+
+.animate-evolution-glow {
+  animation: evolution-glow 1s ease-in-out infinite;
+}
+
+/* Evolution white-out - sprite fades to white and shrinks */
+@keyframes evolution-white-out {
+  0% {
+    filter: brightness(1);
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    filter: brightness(3) saturate(0);
+    transform: scale(1.1);
+  }
+  100% {
+    filter: brightness(5) saturate(0);
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+.animate-evolution-white-out {
+  animation: evolution-white-out 2s ease-out forwards;
+}
+
+/* Evolution reveal - new form appears with flash */
+@keyframes evolution-reveal {
+  0% {
+    opacity: 0;
+    filter: brightness(5) saturate(0);
+    transform: scale(0.5);
+  }
+  30% {
+    opacity: 1;
+    filter: brightness(3) saturate(0.5);
+    transform: scale(1.2);
+  }
+  60% {
+    filter: brightness(1.5);
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+.animate-evolution-reveal {
+  animation: evolution-reveal 1.5s ease-out forwards;
+}
+
+/* Pulse glow effect for background */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+/* Pokemon bounce for intro */
+@keyframes pokemon-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-pokemon-bounce {
+  animation: pokemon-bounce 0.8s ease-in-out infinite;
+}
+
+/* ================== */
 /* Type Border Cards  */
 /* ================== */
 

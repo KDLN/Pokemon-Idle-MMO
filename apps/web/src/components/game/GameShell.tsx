@@ -23,6 +23,7 @@ import { NearbyPlayersSection } from './NearbyPlayersSection'
 import { ShopPanel } from './ShopPanel'
 import { GymBattlePanel } from './GymBattlePanel'
 import { MuseumPanel } from './interactions/MuseumPanel'
+import { EvolutionModal } from './EvolutionModal'
 import { countOnlineFriends } from '@/lib/utils/friendUtils'
 import type { ActiveTradeSession } from '@/types/trade'
 
@@ -605,6 +606,7 @@ export function GameShell({ accessToken }: GameShellProps) {
         <GymBattlePanel />
         <MuseumPanel />
         <LevelUpToast />
+        <EvolutionModal />
         <TradeModal isOpen={isTradeModalOpen} onClose={handleCloseTrade} />
       </>
     )
@@ -647,6 +649,7 @@ export function GameShell({ accessToken }: GameShellProps) {
       <GymBattlePanel />
       <MuseumPanel />
       <LevelUpToast />
+      <EvolutionModal />
       <TradeModal isOpen={isTradeModalOpen} onClose={handleCloseTrade} />
     </>
   )

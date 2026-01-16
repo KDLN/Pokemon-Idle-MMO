@@ -5,9 +5,9 @@ import { useEffect, useRef } from 'react'
 export interface LogEntry {
   id: string
   timestamp: Date
-  type: 'catch' | 'battle' | 'levelup' | 'item' | 'travel' | 'system'
+  type: 'catch' | 'battle' | 'levelup' | 'evolution' | 'item' | 'travel' | 'system'
   message: string
-  icon: string
+  icon?: string
   highlight?: boolean
   moveName?: string
   moveType?: string
@@ -28,6 +28,8 @@ function getTypeColor(type: LogEntry['type']): string {
       return 'text-red-400'
     case 'levelup':
       return 'text-yellow-400'
+    case 'evolution':
+      return 'text-cyan-400'
     case 'item':
       return 'text-purple-400'
     case 'travel':
@@ -201,6 +203,7 @@ export function createLogEntry(
     catch: '🎯',
     battle: '⚔️',
     levelup: '⬆️',
+    evolution: '✨',
     item: '🎁',
     travel: '🚶',
     system: '📢',

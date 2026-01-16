@@ -273,6 +273,41 @@ export async function updatePokemonStats(pokemon: Pokemon): Promise<void> {
     .eq('id', pokemon.id)
 }
 
+// Update Pokemon's species after evolution (also updates stats)
+export async function evolvePokemon(
+  pokemonId: string,
+  newSpeciesId: number,
+  newStats: {
+    max_hp: number
+    stat_attack: number
+    stat_defense: number
+    stat_sp_attack: number
+    stat_sp_defense: number
+    stat_speed: number
+  }
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('pokemon')
+    .update({
+      species_id: newSpeciesId,
+      max_hp: newStats.max_hp,
+      current_hp: newStats.max_hp, // Full heal on evolution
+      stat_attack: newStats.stat_attack,
+      stat_defense: newStats.stat_defense,
+      stat_sp_attack: newStats.stat_sp_attack,
+      stat_sp_defense: newStats.stat_sp_defense,
+      stat_speed: newStats.stat_speed
+    })
+    .eq('id', pokemonId)
+
+  if (error) {
+    console.error('Failed to evolve Pokemon:', error)
+    return false
+  }
+
+  return true
+}
+
 // Update only a Pokemon's current HP - includes ownership check for security
 export async function updatePokemonHP(
   pokemonId: string,
