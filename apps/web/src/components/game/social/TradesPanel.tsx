@@ -1,21 +1,27 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import { TradeRequests } from './TradeRequests'
+import { TradeHistory } from './TradeHistory'
 import { TradeModal } from './TradeModal'
 import type { ActiveTradeSession } from '@/types/trade'
+import { cn } from '@/lib/ui'
 
 interface TradesPanelProps {
   isCollapsed?: boolean
   onToggle?: () => void
 }
 
+type TabType = 'requests' | 'history'
+
 export function TradesPanel({ isCollapsed = false, onToggle }: TradesPanelProps) {
+  const [activeTab, setActiveTab] = useState<TabType>('requests')
+  const [historyFilter, setHistoryFilter] = useState('')
+
   const incomingRequests = useGameStore((state) => state.incomingTradeRequests)
   const outgoingRequests = useGameStore((state) => state.outgoingTradeRequests)
-  const activeTrade = useGameStore((state) => state.activeTrade)
   const isTradeModalOpen = useGameStore((state) => state.isTradeModalOpen)
   const setActiveTrade = useGameStore((state) => state.setActiveTrade)
   const setTradeModalOpen = useGameStore((state) => state.setTradeModalOpen)
@@ -68,7 +74,7 @@ export function TradesPanel({ isCollapsed = false, onToggle }: TradesPanelProps)
 
   return (
     <>
-      <div className="fixed bottom-36 right-4 w-80 max-h-[400px] bg-[#1a1a2e] rounded-xl border border-[#2a2a4a] shadow-xl overflow-hidden z-50 flex flex-col">
+      <div className="fixed bottom-36 right-4 w-80 max-h-[450px] bg-[#1a1a2e] rounded-xl border border-[#2a2a4a] shadow-xl overflow-hidden z-50 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-2 border-b border-[#2a2a4a] bg-gradient-to-r from-[#2a2a4a] to-[#1a1a2e]">
           <div className="flex items-center gap-2">
@@ -76,7 +82,7 @@ export function TradesPanel({ isCollapsed = false, onToggle }: TradesPanelProps)
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 4v12m0 0l4-4m-4 4l-4-4" />
             </svg>
             <h3 className="text-white font-semibold text-sm">Trades</h3>
-            {pendingCount > 0 && (
+            {pendingCount > 0 && activeTab === 'requests' && (
               <span className="px-1.5 py-0.5 text-[10px] bg-red-500 text-white rounded-full">
                 {pendingCount} new
               </span>
@@ -98,9 +104,58 @@ export function TradesPanel({ isCollapsed = false, onToggle }: TradesPanelProps)
           </div>
         </div>
 
+        {/* Tabs */}
+        <div className="flex border-b border-[#2a2a4a]">
+          <button
+            onClick={() => setActiveTab('requests')}
+            className={cn(
+              "flex-1 px-3 py-2 text-xs font-medium transition-colors relative",
+              activeTab === 'requests'
+                ? "text-white"
+                : "text-[#606080] hover:text-[#a0a0c0]"
+            )}
+          >
+            Active
+            {totalRequests > 0 && (
+              <span className={cn(
+                "ml-1 px-1 py-0.5 text-[10px] rounded-full",
+                activeTab === 'requests'
+                  ? "bg-[#3B4CCA] text-white"
+                  : "bg-[#2a2a4a] text-[#808090]"
+              )}>
+                {totalRequests}
+              </span>
+            )}
+            {activeTab === 'requests' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#3B4CCA]" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={cn(
+              "flex-1 px-3 py-2 text-xs font-medium transition-colors relative",
+              activeTab === 'history'
+                ? "text-white"
+                : "text-[#606080] hover:text-[#a0a0c0]"
+            )}
+          >
+            History
+            {activeTab === 'history' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#3B4CCA]" />
+            )}
+          </button>
+        </div>
+
         {/* Content */}
         <div className="flex-1 overflow-y-auto min-h-0 p-3">
-          <TradeRequests onOpenTrade={handleOpenTrade} />
+          {activeTab === 'requests' ? (
+            <TradeRequests onOpenTrade={handleOpenTrade} />
+          ) : (
+            <TradeHistory
+              filterUsername={historyFilter}
+              onFilterChange={setHistoryFilter}
+            />
+          )}
         </div>
       </div>
 

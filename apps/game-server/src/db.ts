@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest } from './types.js'
+import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon } from './types.js'
 
 let supabase: SupabaseClient
 
@@ -1647,4 +1647,57 @@ export async function getTradeOffers(
       }
     }
   })
+}
+
+// ============================================
+// TRADE HISTORY QUERIES
+// ============================================
+
+/**
+ * Get trade history for a player
+ * @param playerId - The player's ID
+ * @param limit - Max number of records (default 50)
+ * @param partnerUsername - Optional filter by trade partner username
+ */
+export async function getTradeHistory(
+  playerId: string,
+  limit: number = 50,
+  partnerUsername?: string
+): Promise<TradeHistoryEntry[]> {
+  let query = supabase
+    .from('trade_history')
+    .select('*')
+    .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`)
+    .order('completed_at', { ascending: false })
+    .limit(limit)
+
+  // Filter by partner username if provided
+  if (partnerUsername) {
+    const trimmed = partnerUsername.trim().toLowerCase()
+    // Player could be in either position, filter by the OTHER player's username
+    query = query.or(
+      `and(player1_id.eq.${playerId},player2_username.ilike.%${trimmed}%),` +
+      `and(player2_id.eq.${playerId},player1_username.ilike.%${trimmed}%)`
+    )
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Failed to get trade history:', error)
+    return []
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    trade_id: row.trade_id,
+    player1_id: row.player1_id,
+    player1_username: row.player1_username,
+    player2_id: row.player2_id,
+    player2_username: row.player2_username,
+    player1_pokemon: row.player1_pokemon as TradeHistoryPokemon[],
+    player2_pokemon: row.player2_pokemon as TradeHistoryPokemon[],
+    completed_at: row.completed_at
+  }))
 }

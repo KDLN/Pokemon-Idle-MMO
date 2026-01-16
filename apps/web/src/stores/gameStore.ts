@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { Player, Pokemon, Zone, EncounterEvent, LevelUpEvent, ShopItem } from '@/types/game'
 import type { ChatMessageData, ChatChannel } from '@/types/chat'
 import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
-import type { IncomingTradeRequest, OutgoingTradeRequest, ActiveTradeSession, TradeOffer } from '@/types/trade'
+import type { IncomingTradeRequest, OutgoingTradeRequest, ActiveTradeSession, TradeOffer, TradeHistoryEntry } from '@/types/trade'
 import type { LogEntry } from '@/components/game/interactions/WorldLog'
 import type { WorldEvent } from '@/components/game/social/WorldEventsTicker'
 import type { GymLeader } from '@/components/game/GymBattlePanel'
@@ -164,6 +164,7 @@ interface GameStore {
   outgoingTradeRequests: OutgoingTradeRequest[]
   activeTrade: ActiveTradeSession | null
   isTradeModalOpen: boolean
+  tradeHistory: TradeHistoryEntry[]
   setIncomingTradeRequests: (requests: IncomingTradeRequest[]) => void
   setOutgoingTradeRequests: (requests: OutgoingTradeRequest[]) => void
   setAllTradesData: (data: { incoming: IncomingTradeRequest[]; outgoing: OutgoingTradeRequest[] }) => void
@@ -172,6 +173,7 @@ interface GameStore {
   updateTradeOffers: (tradeId: string, offers: TradeOffer[], warning?: string) => void
   setTradeWarning: (tradeId: string, warning: string) => void
   setTradeReady: (myReady: boolean, theirReady: boolean) => void
+  setTradeHistory: (history: TradeHistoryEntry[]) => void
 
   // Reset store
   reset: () => void
@@ -246,6 +248,7 @@ const initialState = {
   outgoingTradeRequests: [] as OutgoingTradeRequest[],
   activeTrade: null as ActiveTradeSession | null,
   isTradeModalOpen: false,
+  tradeHistory: [] as TradeHistoryEntry[],
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -516,6 +519,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         },
       }
     }),
+
+  setTradeHistory: (history) => set({ tradeHistory: history }),
 
   reset: () => set(initialState),
 }))

@@ -69,3 +69,24 @@ export interface TradesData {
   incoming: IncomingTradeRequest[]
   outgoing: OutgoingTradeRequest[]
 }
+
+// Trade history types
+export interface TradeHistoryPokemon {
+  pokemon_id: string
+  species_id: number
+  species_name: string
+  nickname: string | null
+  level: number
+  is_shiny: boolean
+}
+
+// Trade history entry (transformed to be relative to requesting player)
+export interface TradeHistoryEntry {
+  id: string
+  trade_id: string
+  partner_id: string | null
+  partner_username: string
+  my_pokemon: TradeHistoryPokemon[]  // What I gave away
+  their_pokemon: TradeHistoryPokemon[]  // What I received
+  completed_at: string
+}

@@ -55,7 +55,8 @@ import {
   addTradeOffer,
   removeTradeOffer,
   getTradeOffers,
-  getActiveTradeIds
+  getActiveTradeIds,
+  getTradeHistory
 } from './db.js'
 import { processTick, simulateGymBattle } from './game.js'
 
@@ -304,6 +305,9 @@ export class GameHub {
           break
         case 'set_trade_ready':
           this.handleSetTradeReady(client, msg.payload as { trade_id: string; ready: boolean })
+          break
+        case 'get_trade_history':
+          this.handleGetTradeHistory(client, msg.payload as { limit?: number; partner_username?: string })
           break
         default:
           console.log('Unknown message type:', msg.type)
@@ -1722,5 +1726,34 @@ export class GameHub {
     }
     // Don't create if doesn't exist - this prevents memory leak from
     // offers being modified on cancelled/completed trades
+  }
+
+  private async handleGetTradeHistory(client: Client, payload: { limit?: number; partner_username?: string }) {
+    if (!client.session) return
+
+    const { limit = 50, partner_username } = payload || {}
+
+    // Clamp limit to reasonable range
+    const safeLimit = Math.min(Math.max(1, limit || 50), 100)
+
+    const history = await getTradeHistory(client.session.player.id, safeLimit, partner_username)
+
+    // Transform history to be relative to the requesting player
+    // (my_pokemon = what I gave, their_pokemon = what I received)
+    const playerId = client.session.player.id
+    const transformedHistory = history.map(entry => {
+      const isPlayer1 = entry.player1_id === playerId
+      return {
+        id: entry.id,
+        trade_id: entry.trade_id,
+        partner_id: isPlayer1 ? entry.player2_id : entry.player1_id,
+        partner_username: isPlayer1 ? entry.player2_username : entry.player1_username,
+        my_pokemon: isPlayer1 ? entry.player1_pokemon : entry.player2_pokemon,
+        their_pokemon: isPlayer1 ? entry.player2_pokemon : entry.player1_pokemon,
+        completed_at: entry.completed_at
+      }
+    })
+
+    this.send(client, 'trade_history', { history: transformedHistory })
   }
 }
