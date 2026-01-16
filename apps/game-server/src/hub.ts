@@ -143,6 +143,7 @@ export class GameHub {
       await this.sendGameState(client)
       await this.sendChatHistory(client)
       await this.sendFriendsData(client)
+      await this.sendTradesData(client)
       // Notify other players in the zone that this player joined
       if (client.session) {
         this.broadcastNearbyPlayersToZone(client.session.zone.id)
@@ -1208,7 +1209,12 @@ export class GameHub {
     const result = await createTradeRequest(client.session.player.id, receiverId)
 
     if (!result.success) {
-      this.sendError(client, result.error || 'Failed to send trade request')
+      // If trade already pending, provide a more helpful error message
+      if (result.error === 'Trade already pending with this player') {
+        this.sendError(client, 'A trade is already active with this player. Check your Trades panel.')
+      } else {
+        this.sendError(client, result.error || 'Failed to send trade request')
+      }
       return
     }
 
@@ -1401,7 +1407,7 @@ export class GameHub {
     }
   }
 
-  private async handleGetTrades(client: Client) {
+  private async sendTradesData(client: Client) {
     if (!client.session) return
 
     const [incoming, outgoing] = await Promise.all([
@@ -1410,6 +1416,11 @@ export class GameHub {
     ])
 
     this.send(client, 'trades_data', { incoming, outgoing })
+  }
+
+  private async handleGetTrades(client: Client) {
+    // Reuse sendTradesData for explicit requests
+    await this.sendTradesData(client)
   }
 
   private async handleAddTradeOffer(client: Client, payload: { trade_id: string; pokemon_id: string }) {
