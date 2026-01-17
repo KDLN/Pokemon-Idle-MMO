@@ -103,13 +103,30 @@ export function EvolutionModal() {
   const oldSpecies = getSpeciesData(activeEvolution.current_species_id)
   const newSpecies = getSpeciesData(activeEvolution.evolution_species_id)
 
-  // Safety check for missing species data
+  // Safety check for missing species data - show error UI instead of silently failing
   if (!oldSpecies || !newSpecies) {
     console.error('Missing species data for evolution:', {
       current: activeEvolution.current_species_id,
       target: activeEvolution.evolution_species_id
     })
-    return null
+    return (
+      <>
+        <div className="fixed inset-0 bg-black/90 z-50" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] rounded-2xl border border-[#2a2a4a] p-6">
+            <p className="text-center text-red-400 font-medium mb-4">
+              Evolution data error. Please try again later.
+            </p>
+            <button
+              onClick={handleContinue}
+              className="w-full px-6 py-2.5 rounded-xl bg-[#1a1a2e] border border-[#2a2a4a] text-white hover:border-[#3a3a5a] transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </>
+    )
   }
 
   return (
