@@ -8,11 +8,12 @@ interface ChatTabsProps {
   unreadCounts: Record<ChatChannel, number>
 }
 
-const CHANNELS: { id: ChatChannel; label: string; icon: string }[] = [
+const CHANNELS: { id: ChatChannel; label: string; icon: string; color?: string }[] = [
   { id: 'global', label: 'Global', icon: '🌐' },
   { id: 'trade', label: 'Trade', icon: '💰' },
   { id: 'guild', label: 'Guild', icon: '⚔️' },
   { id: 'system', label: 'System', icon: '📢' },
+  { id: 'whisper', label: 'Whisper', icon: '💬', color: '#a855f7' }, // Purple for whispers
 ]
 
 export function ChatTabs({ activeChannel, onChannelChange, unreadCounts }: ChatTabsProps) {

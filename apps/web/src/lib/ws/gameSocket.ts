@@ -1,7 +1,7 @@
 import { useGameStore } from '@/stores/gameStore'
 import type { TickResult, GameState, Zone, Pokemon, ShopItem, PendingEvolution, EvolutionEvent } from '@/types/game'
 import type { GymLeader, GymBattleResult } from '@/components/game/GymBattlePanel'
-import type { ChatMessageData, ChatChannel } from '@/types/chat'
+import type { ChatMessageData, ChatChannel, WhisperMessageData, BlockedPlayerData } from '@/types/chat'
 import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
 import type { IncomingTradeRequest, OutgoingTradeRequest, TradeOffer, TradeStatus, TradeHistoryEntry } from '@/types/trade'
 
@@ -78,6 +78,14 @@ class GameSocket {
     this.handlers.set('evolution', this.handleEvolution)
     this.handlers.set('evolution_cancelled', this.handleEvolutionCancelled)
     this.handlers.set('evolution_error', this.handleEvolutionError)
+    // Whisper handlers (Issue #45)
+    this.handlers.set('whisper_sent', this.handleWhisperSent)
+    this.handlers.set('whisper_received', this.handleWhisperReceived)
+    this.handlers.set('whisper_history', this.handleWhisperHistory)
+    // Block handlers (Issue #47)
+    this.handlers.set('blocked_players', this.handleBlockedPlayers)
+    this.handlers.set('player_blocked', this.handlePlayerBlocked)
+    this.handlers.set('player_unblocked', this.handlePlayerUnblocked)
   }
 
   connect(token: string) {
@@ -451,11 +459,15 @@ class GameSocket {
       trade: [],
       guild: [],
       system: [],
+      whisper: [],
     }
 
     for (const msg of messages) {
       const chatMessage = this.mapChatPayload(msg)
-      grouped[chatMessage.channel].push(chatMessage)
+      // Only add to non-whisper channels (whispers handled separately)
+      if (chatMessage.channel !== 'whisper') {
+        grouped[chatMessage.channel].push(chatMessage)
+      }
     }
 
     useGameStore.getState().setChatMessages(grouped)
@@ -853,6 +865,165 @@ class GameSocket {
   private handleEvolutionError = (payload: unknown) => {
     const { error } = payload as { error: string }
     console.error('Evolution error:', error)
+  }
+
+  // ============================================
+  // WHISPER METHODS (Issue #45)
+  // ============================================
+
+  // Send a whisper to a friend
+  sendWhisper(toUsername: string, content: string) {
+    this.send('send_whisper', { to_username: toUsername, content })
+  }
+
+  // Request whisper history
+  getWhisperHistory() {
+    this.send('get_whisper_history')
+  }
+
+  // ============================================
+  // WHISPER HANDLERS
+  // ============================================
+
+  private handleWhisperSent = (payload: unknown) => {
+    const { success, message } = payload as {
+      success: boolean
+      message?: {
+        id: string
+        from_player_id: string
+        from_username: string
+        to_player_id: string
+        to_username: string
+        content: string
+        created_at: string
+      }
+    }
+    if (success && message) {
+      const whisper: WhisperMessageData = {
+        id: message.id,
+        fromPlayerId: message.from_player_id,
+        fromUsername: message.from_username,
+        toPlayerId: message.to_player_id,
+        toUsername: message.to_username,
+        content: message.content,
+        createdAt: new Date(message.created_at),
+      }
+      useGameStore.getState().addWhisper(whisper)
+    }
+  }
+
+  private handleWhisperReceived = (payload: unknown) => {
+    const message = payload as {
+      id: string
+      from_player_id: string
+      from_username: string
+      to_player_id: string
+      to_username: string
+      content: string
+      created_at: string
+    }
+    const whisper: WhisperMessageData = {
+      id: message.id,
+      fromPlayerId: message.from_player_id,
+      fromUsername: message.from_username,
+      toPlayerId: message.to_player_id,
+      toUsername: message.to_username,
+      content: message.content,
+      createdAt: new Date(message.created_at),
+    }
+    useGameStore.getState().addWhisper(whisper)
+  }
+
+  private handleWhisperHistory = (payload: unknown) => {
+    const { messages } = payload as {
+      messages: Array<{
+        id: string
+        from_player_id: string
+        from_username: string
+        to_player_id: string
+        to_username: string
+        content: string
+        created_at: string
+      }>
+    }
+    const whispers: WhisperMessageData[] = (messages || []).map((msg) => ({
+      id: msg.id,
+      fromPlayerId: msg.from_player_id,
+      fromUsername: msg.from_username,
+      toPlayerId: msg.to_player_id,
+      toUsername: msg.to_username,
+      content: msg.content,
+      createdAt: new Date(msg.created_at),
+    }))
+    useGameStore.getState().setWhispers(whispers)
+  }
+
+  // ============================================
+  // BLOCK METHODS (Issue #47)
+  // ============================================
+
+  // Block a player by username
+  blockPlayer(username: string) {
+    this.send('block_player', { username })
+  }
+
+  // Unblock a player by player ID
+  unblockPlayer(playerId: string) {
+    this.send('unblock_player', { player_id: playerId })
+  }
+
+  // Request list of blocked players
+  getBlockedPlayers() {
+    this.send('get_blocked_players')
+  }
+
+  // ============================================
+  // BLOCK HANDLERS
+  // ============================================
+
+  private handleBlockedPlayers = (payload: unknown) => {
+    const { players } = payload as {
+      players: Array<{
+        id: string
+        blocked_id: string
+        blocked_username: string
+        created_at: string
+      }>
+    }
+    const blockedPlayers: BlockedPlayerData[] = (players || []).map((p) => ({
+      id: p.id,
+      blockedId: p.blocked_id,
+      blockedUsername: p.blocked_username,
+      createdAt: new Date(p.created_at),
+    }))
+    useGameStore.getState().setBlockedPlayers(blockedPlayers)
+  }
+
+  private handlePlayerBlocked = (payload: unknown) => {
+    const { success, blocked_id, blocked_username } = payload as {
+      success: boolean
+      blocked_id: string
+      blocked_username: string
+    }
+    if (success) {
+      const blockedPlayer: BlockedPlayerData = {
+        id: crypto.randomUUID(), // We'll get the real ID on next fetch
+        blockedId: blocked_id,
+        blockedUsername: blocked_username,
+        createdAt: new Date(),
+      }
+      useGameStore.getState().addBlockedPlayer(blockedPlayer)
+    }
+  }
+
+  private handlePlayerUnblocked = (payload: unknown) => {
+    const { success, player_id } = payload as {
+      success: boolean
+      player_id: string
+    }
+    if (success) {
+      useGameStore.getState().removeBlockedPlayer(player_id)
+    }
   }
 }
 
