@@ -814,6 +814,8 @@ class GameSocket {
     const event = payload as EvolutionEvent
     const store = useGameStore.getState()
 
+    console.log('[Evolution Handler] Before update, party:', store.party.map(p => p ? { id: p.id, species_id: p.species_id } : null))
+
     // Update the Pokemon in party with new species and stats
     store.updatePokemonInParty(event.pokemon_id, {
       species_id: event.new_species_id,
@@ -825,6 +827,8 @@ class GameSocket {
       stat_sp_defense: event.new_stats.sp_defense,
       stat_speed: event.new_stats.speed,
     })
+
+    console.log('[Evolution Handler] After update, party:', useGameStore.getState().party.map(p => p ? { id: p.id, species_id: p.species_id } : null))
 
     // Atomically remove from pending evolutions and advance queue
     // Using combined action to avoid race conditions
