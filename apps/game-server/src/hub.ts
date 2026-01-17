@@ -1940,10 +1940,19 @@ export class GameHub {
   // EVOLUTION HANDLERS
   // ============================================
 
-  private async handleConfirmEvolution(client: Client, payload: { pokemon_id: string }) {
+  private async handleConfirmEvolution(client: Client, payload: unknown) {
     if (!client.session) return
 
-    const { pokemon_id } = payload
+    // Validate input payload
+    if (!payload || typeof payload !== 'object' || !('pokemon_id' in payload)) {
+      this.send(client, 'evolution_error', { error: 'Invalid evolution confirmation request' })
+      return
+    }
+    const { pokemon_id } = payload as { pokemon_id: unknown }
+    if (typeof pokemon_id !== 'string' || !pokemon_id) {
+      this.send(client, 'evolution_error', { error: 'Invalid pokemon_id' })
+      return
+    }
 
     // Find the pending evolution for this Pokemon
     const pendingIndex = client.session.pendingEvolutions.findIndex(
@@ -1977,6 +1986,25 @@ export class GameHub {
       return
     }
 
+    // SECURITY: Validate evolution chain - target must evolve FROM current species
+    if (targetSpecies.evolves_from_species_id !== pokemon.species_id) {
+      console.error('Invalid evolution chain:', {
+        current: pokemon.species_id,
+        target: targetSpecies.id,
+        evolves_from: targetSpecies.evolves_from_species_id
+      })
+      this.send(client, 'evolution_error', { error: 'Invalid evolution chain' })
+      return
+    }
+
+    // Re-validate level requirements (in case of race condition or stale data)
+    if (targetSpecies.evolution_method === 'level' && targetSpecies.evolution_level !== null) {
+      if (pokemon.level < targetSpecies.evolution_level) {
+        this.send(client, 'evolution_error', { error: 'Pokemon no longer meets level requirements' })
+        return
+      }
+    }
+
     // Execute the evolution (updates Pokemon in-memory)
     const evolutionEvent = executeEvolution(pokemon, targetSpecies, originalSpecies)
 
@@ -2007,14 +2035,29 @@ export class GameHub {
     // Clear suppression since evolution completed
     client.session.suppressedEvolutions.delete(pokemon_id)
 
+    // Update pokedex - mark evolved species as seen and owned
+    // Fire and forget - don't block evolution completion on pokedex update
+    updatePokedex(client.session.player.id, targetSpecies.id, true).catch(err => {
+      console.error('Failed to update pokedex after evolution:', err)
+    })
+
     // Send evolution event to client
     this.send(client, 'evolution', evolutionEvent)
   }
 
-  private handleCancelEvolution(client: Client, payload: { pokemon_id: string }) {
+  private handleCancelEvolution(client: Client, payload: unknown) {
     if (!client.session) return
 
-    const { pokemon_id } = payload
+    // Validate input payload
+    if (!payload || typeof payload !== 'object' || !('pokemon_id' in payload)) {
+      this.send(client, 'evolution_error', { error: 'Invalid evolution cancel request' })
+      return
+    }
+    const { pokemon_id } = payload as { pokemon_id: unknown }
+    if (typeof pokemon_id !== 'string' || !pokemon_id) {
+      this.send(client, 'evolution_error', { error: 'Invalid pokemon_id' })
+      return
+    }
 
     // Find the pending evolution for this Pokemon
     const pendingIndex = client.session.pendingEvolutions.findIndex(

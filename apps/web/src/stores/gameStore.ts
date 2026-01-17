@@ -370,7 +370,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
   // Evolution methods
   addPendingEvolutions: (evolutions) =>
     set((state) => {
-      const newPending = [...state.pendingEvolutions, ...evolutions]
+      // Deduplicate by pokemon_id to prevent race condition duplicates
+      const existingIds = new Set([
+        ...state.pendingEvolutions.map(e => e.pokemon_id),
+        state.activeEvolution?.pokemon_id
+      ].filter(Boolean))
+
+      const uniqueNewEvolutions = evolutions.filter(e => !existingIds.has(e.pokemon_id))
+      if (uniqueNewEvolutions.length === 0) {
+        return {} // No new evolutions to add
+      }
+
+      const newPending = [...state.pendingEvolutions, ...uniqueNewEvolutions]
       // If no active evolution, automatically start the first one
       if (!state.activeEvolution && newPending.length > 0) {
         return {
