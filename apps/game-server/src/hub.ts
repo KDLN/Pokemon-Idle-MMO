@@ -61,7 +61,7 @@ import {
   purchaseMuseumMembership,
   evolvePokemon
 } from './db.js'
-import { processTick, simulateGymBattle, checkEvolutions, executeEvolution, recalculateStats } from './game.js'
+import { processTick, simulateGymBattle, checkEvolutions, calculateEvolutionStats, applyEvolution, createEvolutionEvent, recalculateStats } from './game.js'
 
 interface Client {
   ws: WebSocket
@@ -891,8 +891,9 @@ export class GameHub {
         await updatePokedex(client.session.player.id, result.encounter.wild_pokemon.species_id, false)
       }
 
-      // Save level ups (stats changed)
-      if (result.level_ups && result.level_ups.length > 0) {
+      // Save level ups (stats changed) or XP gains
+      const hasLevelUps = result.level_ups && result.level_ups.length > 0
+      if (hasLevelUps) {
         for (const pokemon of client.session.party) {
           if (pokemon) {
             await updatePokemonStats(pokemon)
@@ -901,14 +902,14 @@ export class GameHub {
 
         // Clear suppressed evolutions for any Pokemon that leveled up
         // This allows them to be prompted for evolution again
-        for (const levelUp of result.level_ups) {
+        for (const levelUp of result.level_ups!) {
           client.session.suppressedEvolutions.delete(levelUp.pokemon_id)
         }
 
         // Check for evolutions after level ups
         const pendingEvolutions = checkEvolutions(
           client.session.party,
-          result.level_ups,
+          result.level_ups!,
           this.speciesMap,
           client.session.suppressedEvolutions
         )
@@ -920,7 +921,7 @@ export class GameHub {
           result.pending_evolutions = pendingEvolutions
         }
       } else if (result.xp_gained) {
-        // Save XP gains to database (even if no level up)
+        // Save XP gains to database (only if no level up, since level up saves full stats)
         for (const pokemon of client.session.party) {
           if (pokemon && result.xp_gained[pokemon.id]) {
             await savePokemonXP(pokemon.id, pokemon.xp)
@@ -2005,30 +2006,43 @@ export class GameHub {
       }
     }
 
-    // Execute the evolution (updates Pokemon in-memory)
-    const evolutionEvent = executeEvolution(pokemon, targetSpecies, originalSpecies)
+    // Calculate new stats BEFORE saving (don't modify Pokemon yet)
+    const newStats = calculateEvolutionStats(pokemon, targetSpecies)
 
-    // Save evolution to database BEFORE confirming to client
+    // Save evolution to database FIRST (before modifying in-memory state)
     // Include player ID for ownership verification (security)
-    const saved = await evolvePokemon(pokemon_id, client.session.player.id, targetSpecies.id, {
-      max_hp: pokemon.max_hp,
-      stat_attack: pokemon.stat_attack,
-      stat_defense: pokemon.stat_defense,
-      stat_sp_attack: pokemon.stat_sp_attack,
-      stat_sp_defense: pokemon.stat_sp_defense,
-      stat_speed: pokemon.stat_speed
-    })
+    // Also include current species_id for optimistic locking (prevents double-evolution)
+    const saved = await evolvePokemon(
+      pokemon_id,
+      client.session.player.id,
+      pokemon.species_id, // Current species for optimistic locking
+      targetSpecies.id,
+      {
+        max_hp: newStats.max_hp,
+        stat_attack: newStats.attack,
+        stat_defense: newStats.defense,
+        stat_sp_attack: newStats.sp_attack,
+        stat_sp_defense: newStats.sp_defense,
+        stat_speed: newStats.speed
+      }
+    )
 
     if (!saved) {
-      console.error('Failed to save evolution to database - rolling back')
-      // Rollback in-memory changes
-      pokemon.species_id = pending.current_species_id
-      recalculateStats(pokemon, originalSpecies)
+      console.error('Failed to save evolution to database')
       this.send(client, 'evolution_error', { error: 'Failed to save evolution. Please try again.' })
       return
     }
 
-    // Database save succeeded - now update session state and notify client
+    // Database save succeeded - NOW update in-memory state
+    applyEvolution(pokemon, targetSpecies, newStats)
+
+    // Add evolved species to cache (in case it wasn't there)
+    this.speciesMap.set(targetSpecies.id, targetSpecies)
+
+    // Create event for client notification
+    const evolutionEvent = createEvolutionEvent(pokemon, targetSpecies, originalSpecies, newStats)
+
+    // Update session state
     // Remove from pending evolutions
     client.session.pendingEvolutions.splice(pendingIndex, 1)
 

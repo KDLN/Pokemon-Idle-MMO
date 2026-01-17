@@ -275,9 +275,11 @@ export async function updatePokemonStats(pokemon: Pokemon): Promise<void> {
 
 // Update Pokemon's species after evolution (also updates stats)
 // Includes ownership check for security - only the owner can evolve their Pokemon
+// Uses optimistic locking via currentSpeciesId to prevent double-evolution race conditions
 export async function evolvePokemon(
   pokemonId: string,
   ownerId: string,
+  currentSpeciesId: number, // For optimistic locking - must match DB value
   newSpeciesId: number,
   newStats: {
     max_hp: number
@@ -302,6 +304,7 @@ export async function evolvePokemon(
     })
     .eq('id', pokemonId)
     .eq('owner_id', ownerId) // Verify ownership for security
+    .eq('species_id', currentSpeciesId) // Optimistic lock - prevent double-evolution
     .select('id') // Return updated row to verify update succeeded
 
   if (error) {
@@ -309,9 +312,9 @@ export async function evolvePokemon(
     return false
   }
 
-  // Check that we actually updated a row (ownership check passed)
+  // Check that we actually updated a row (ownership + species check passed)
   if (!data || data.length === 0) {
-    console.error('Pokemon not found or ownership check failed')
+    console.error('Pokemon not found, ownership check failed, or already evolved (species mismatch)')
     return false
   }
 

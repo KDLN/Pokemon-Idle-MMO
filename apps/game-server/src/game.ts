@@ -710,7 +710,60 @@ export function checkEvolutions(
   return pendingEvolutions
 }
 
+// Calculate what stats a Pokemon would have after evolving (without modifying the Pokemon)
+export function calculateEvolutionStats(
+  pokemon: Pokemon,
+  targetSpecies: PokemonSpecies
+): { max_hp: number; attack: number; defense: number; sp_attack: number; sp_defense: number; speed: number } {
+  // Calculate stats using the same formula as recalculateStats but without mutation
+  // Simple stat formula: base_stat * 2 + level
+  const level = pokemon.level
+  return {
+    max_hp: Math.floor(targetSpecies.base_hp * 2 + level + 10),
+    attack: Math.floor(targetSpecies.base_attack * 2 + level + 5),
+    defense: Math.floor(targetSpecies.base_defense * 2 + level + 5),
+    sp_attack: Math.floor(targetSpecies.base_sp_attack * 2 + level + 5),
+    sp_defense: Math.floor(targetSpecies.base_sp_defense * 2 + level + 5),
+    speed: Math.floor(targetSpecies.base_speed * 2 + level + 5)
+  }
+}
+
+// Apply evolution to Pokemon in-memory (call only AFTER DB save succeeds)
+export function applyEvolution(
+  pokemon: Pokemon,
+  targetSpecies: PokemonSpecies,
+  newStats: { max_hp: number; attack: number; defense: number; sp_attack: number; sp_defense: number; speed: number }
+): void {
+  pokemon.species_id = targetSpecies.id
+  pokemon.max_hp = newStats.max_hp
+  pokemon.current_hp = newStats.max_hp // Full heal on evolution
+  pokemon.stat_attack = newStats.attack
+  pokemon.stat_defense = newStats.defense
+  pokemon.stat_sp_attack = newStats.sp_attack
+  pokemon.stat_sp_defense = newStats.sp_defense
+  pokemon.stat_speed = newStats.speed
+}
+
+// Create evolution event (for client notification)
+export function createEvolutionEvent(
+  pokemon: Pokemon,
+  targetSpecies: PokemonSpecies,
+  originalSpecies: PokemonSpecies,
+  newStats: { max_hp: number; attack: number; defense: number; sp_attack: number; sp_defense: number; speed: number }
+): EvolutionEvent {
+  const oldName = pokemon.nickname || originalSpecies.name
+  return {
+    pokemon_id: pokemon.id,
+    pokemon_name: oldName,
+    new_species_id: targetSpecies.id,
+    new_species_name: targetSpecies.name,
+    new_level: pokemon.level,
+    new_stats: newStats
+  }
+}
+
 // Execute evolution - update Pokemon's species and recalculate stats
+// DEPRECATED: Use calculateEvolutionStats + applyEvolution for safer DB-first flow
 export function executeEvolution(
   pokemon: Pokemon,
   targetSpecies: PokemonSpecies,
