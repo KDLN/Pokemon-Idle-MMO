@@ -715,16 +715,16 @@ export function calculateEvolutionStats(
   pokemon: Pokemon,
   targetSpecies: PokemonSpecies
 ): { max_hp: number; attack: number; defense: number; sp_attack: number; sp_defense: number; speed: number } {
-  // Calculate stats using the same formula as recalculateStats but without mutation
-  // Simple stat formula: base_stat * 2 + level
+  // Use the same formula as recalculateStats (via calculateHP/calculateStat)
+  // to ensure evolved Pokemon have consistent stats with caught-at-evolution Pokemon
   const level = pokemon.level
   return {
-    max_hp: Math.floor(targetSpecies.base_hp * 2 + level + 10),
-    attack: Math.floor(targetSpecies.base_attack * 2 + level + 5),
-    defense: Math.floor(targetSpecies.base_defense * 2 + level + 5),
-    sp_attack: Math.floor(targetSpecies.base_sp_attack * 2 + level + 5),
-    sp_defense: Math.floor(targetSpecies.base_sp_defense * 2 + level + 5),
-    speed: Math.floor(targetSpecies.base_speed * 2 + level + 5)
+    max_hp: calculateHP(targetSpecies.base_hp, level),
+    attack: calculateStat(targetSpecies.base_attack, level),
+    defense: calculateStat(targetSpecies.base_defense, level),
+    sp_attack: calculateStat(targetSpecies.base_sp_attack, level),
+    sp_defense: calculateStat(targetSpecies.base_sp_defense, level),
+    speed: calculateStat(targetSpecies.base_speed, level)
   }
 }
 
@@ -759,38 +759,6 @@ export function createEvolutionEvent(
     new_species_name: targetSpecies.name,
     new_level: pokemon.level,
     new_stats: newStats
-  }
-}
-
-// Execute evolution - update Pokemon's species and recalculate stats
-// DEPRECATED: Use calculateEvolutionStats + applyEvolution for safer DB-first flow
-export function executeEvolution(
-  pokemon: Pokemon,
-  targetSpecies: PokemonSpecies,
-  originalSpecies: PokemonSpecies
-): EvolutionEvent {
-  const oldName = pokemon.nickname || originalSpecies.name
-
-  // Update species
-  pokemon.species_id = targetSpecies.id
-
-  // Recalculate stats with new base stats
-  recalculateStats(pokemon, targetSpecies)
-
-  return {
-    pokemon_id: pokemon.id,
-    pokemon_name: oldName,
-    new_species_id: targetSpecies.id,
-    new_species_name: targetSpecies.name,
-    new_level: pokemon.level,
-    new_stats: {
-      max_hp: pokemon.max_hp,
-      attack: pokemon.stat_attack,
-      defense: pokemon.stat_defense,
-      sp_attack: pokemon.stat_sp_attack,
-      sp_defense: pokemon.stat_sp_defense,
-      speed: pokemon.stat_speed
-    }
   }
 }
 
