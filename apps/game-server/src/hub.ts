@@ -90,6 +90,11 @@ interface Client {
 const CHAT_CHANNELS: ChatChannel[] = ['global', 'trade', 'guild', 'system']
 const MAX_CHAT_LENGTH = 280
 
+// Whisper rate limiting and storage constants
+const MAX_WHISPER_HISTORY = 100
+const WHISPER_RATE_LIMIT = 10 // Max whispers per window
+const WHISPER_RATE_WINDOW_MS = 10000 // 10 second window
+
 // Create JWKS client for Supabase ES256 tokens
 const SUPABASE_URL = process.env.SUPABASE_URL || ''
 const JWKS = createRemoteJWKSet(new URL(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`))
@@ -110,6 +115,8 @@ export class GameHub {
   private tradeReadyStates: Map<string, TradeReadyState> = new Map()
   // In-memory whisper storage (session only, no DB persistence)
   private whisperHistory: Map<string, WhisperMessage[]> = new Map()
+  // Whisper rate limiting: playerId -> timestamps of recent whispers
+  private whisperRateLimits: Map<string, number[]> = new Map()
 
   constructor(port: number) {
     this.wss = new WebSocketServer({ port })
@@ -431,8 +438,9 @@ export class GameHub {
     // Remove from reverse index before removing from clients map
     if (client.session) {
       this.clientsByPlayerId.delete(client.session.player.id)
-      // Clear whisper history to prevent memory leak
+      // Clear whisper history and rate limits to prevent memory leak
       this.whisperHistory.delete(client.session.player.id)
+      this.whisperRateLimits.delete(client.session.player.id)
     }
 
     // Always remove client from map, even if cleanup failed
@@ -2232,6 +2240,20 @@ export class GameHub {
 
     const { to_username, content } = payload || {}
 
+    // Rate limiting check
+    const playerId = client.session.player.id
+    const now = Date.now()
+    const recentWhispers = (this.whisperRateLimits.get(playerId) || [])
+      .filter(ts => now - ts < WHISPER_RATE_WINDOW_MS)
+
+    if (recentWhispers.length >= WHISPER_RATE_LIMIT) {
+      this.sendError(client, 'Sending too many whispers. Please wait a moment.')
+      return
+    }
+
+    // Record this whisper attempt
+    this.whisperRateLimits.set(playerId, [...recentWhispers, now])
+
     // Validate input
     if (!to_username || typeof to_username !== 'string') {
       this.sendError(client, 'Recipient username is required')
@@ -2301,7 +2323,7 @@ export class GameHub {
   private storeWhisper(playerId: string, whisper: WhisperMessage) {
     const history = this.whisperHistory.get(playerId) || []
     // Use slice for atomic array management to avoid race conditions
-    const newHistory = [...history, whisper].slice(-100)
+    const newHistory = [...history, whisper].slice(-MAX_WHISPER_HISTORY)
     this.whisperHistory.set(playerId, newHistory)
   }
 
