@@ -676,23 +676,55 @@ export function checkEvolutions(
   const pendingEvolutions: PendingEvolution[] = []
   const processedPokemon = new Set<string>() // Track Pokemon already queued for evolution
 
+  console.log(`[Evolution] Checking ${levelUps.length} level-ups, speciesMap size: ${speciesMap.size}`)
+
   for (const levelUp of levelUps) {
+    console.log(`[Evolution] Level up: pokemon_id=${levelUp.pokemon_id}, new_level=${levelUp.new_level}`)
+
     const pokemon = party.find(p => p?.id === levelUp.pokemon_id)
-    if (!pokemon) continue
+    if (!pokemon) {
+      console.log(`[Evolution] Pokemon not found in party`)
+      continue
+    }
+
+    console.log(`[Evolution] Found pokemon: species_id=${pokemon.species_id}, level=${pokemon.level}`)
 
     // Skip if we already queued an evolution for this Pokemon in this tick
     // (handles multi-level-up in single tick, e.g. 15→18)
-    if (processedPokemon.has(pokemon.id)) continue
+    if (processedPokemon.has(pokemon.id)) {
+      console.log(`[Evolution] Already processed this Pokemon`)
+      continue
+    }
 
     // Skip if player previously cancelled this Pokemon's evolution (this session)
-    if (suppressedEvolutions.has(pokemon.id)) continue
+    if (suppressedEvolutions.has(pokemon.id)) {
+      console.log(`[Evolution] Evolution suppressed for this Pokemon`)
+      continue
+    }
 
     const currentSpecies = speciesMap.get(pokemon.species_id)
-    if (!currentSpecies) continue
+    if (!currentSpecies) {
+      console.log(`[Evolution] Current species ${pokemon.species_id} not found in speciesMap`)
+      continue
+    }
+
+    console.log(`[Evolution] Current species: ${currentSpecies.name}`)
 
     // Find what this species evolves into at the new level
     const evolutionTarget = findEvolutionTarget(pokemon.species_id, levelUp.new_level, speciesMap)
-    if (!evolutionTarget) continue
+    if (!evolutionTarget) {
+      console.log(`[Evolution] No evolution target found for species ${pokemon.species_id} at level ${levelUp.new_level}`)
+      // Debug: check if Ivysaur exists in speciesMap
+      const ivysaur = speciesMap.get(2)
+      if (ivysaur) {
+        console.log(`[Evolution] Ivysaur in map: evolves_from=${ivysaur.evolves_from_species_id}, evo_level=${ivysaur.evolution_level}, method=${ivysaur.evolution_method}`)
+      } else {
+        console.log(`[Evolution] Ivysaur (id=2) NOT in speciesMap`)
+      }
+      continue
+    }
+
+    console.log(`[Evolution] Found evolution target: ${evolutionTarget.name}`)
 
     pendingEvolutions.push({
       pokemon_id: pokemon.id,
@@ -707,6 +739,7 @@ export function checkEvolutions(
     processedPokemon.add(pokemon.id)
   }
 
+  console.log(`[Evolution] Returning ${pendingEvolutions.length} pending evolutions`)
   return pendingEvolutions
 }
 
