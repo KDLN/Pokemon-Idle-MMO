@@ -305,6 +305,8 @@ export async function evolvePokemon(
     stat_speed: number
   }
 ): Promise<boolean> {
+  console.log(`[DB evolvePokemon] pokemonId=${pokemonId}, ownerId=${ownerId}, currentSpeciesId=${currentSpeciesId}, newSpeciesId=${newSpeciesId}`)
+
   const { data, error } = await supabase
     .from('pokemon')
     .update({
@@ -322,6 +324,8 @@ export async function evolvePokemon(
     .eq('species_id', currentSpeciesId) // Optimistic lock - prevent double-evolution
     .select('id') // Return updated row to verify update succeeded
 
+  console.log(`[DB evolvePokemon] Result: data=${JSON.stringify(data)}, error=${error ? JSON.stringify(error) : 'null'}`)
+
   if (error) {
     console.error('Failed to evolve Pokemon:', error)
     return false
@@ -329,10 +333,11 @@ export async function evolvePokemon(
 
   // Check that we actually updated a row (ownership + species check passed)
   if (!data || data.length === 0) {
-    console.error('Pokemon not found, ownership check failed, or already evolved (species mismatch)')
+    console.error(`[DB evolvePokemon] No rows updated - ownership check failed or species mismatch (expected species_id=${currentSpeciesId})`)
     return false
   }
 
+  console.log(`[DB evolvePokemon] Success - updated ${data.length} row(s)`)
   return true
 }
 

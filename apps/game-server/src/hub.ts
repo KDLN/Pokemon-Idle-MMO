@@ -2025,6 +2025,9 @@ export class GameHub {
     // Calculate new stats BEFORE saving (don't modify Pokemon yet)
     const newStats = calculateEvolutionStats(pokemon, targetSpecies)
 
+    console.log(`[Evolution Confirm] Pokemon ${pokemon_id}: species_id=${pokemon.species_id} -> ${targetSpecies.id}, owner=${client.session.player.id}`)
+    console.log(`[Evolution Confirm] New stats:`, newStats)
+
     // Save evolution to database FIRST (before modifying in-memory state)
     // Include player ID for ownership verification (security)
     // Also include current species_id for optimistic locking (prevents double-evolution)
@@ -2043,8 +2046,10 @@ export class GameHub {
       }
     )
 
+    console.log(`[Evolution Confirm] Database save result: ${saved}`)
+
     if (!saved) {
-      console.error('Failed to save evolution to database')
+      console.error(`[Evolution Confirm] Failed to save evolution to database for pokemon ${pokemon_id}`)
       this.send(client, 'evolution_error', { error: 'Failed to save evolution. Please try again.' })
       return
     }
