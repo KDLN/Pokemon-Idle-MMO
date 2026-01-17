@@ -273,6 +273,54 @@ export async function updatePokemonStats(pokemon: Pokemon): Promise<void> {
     .eq('id', pokemon.id)
 }
 
+// Update Pokemon's species after evolution (also updates stats)
+// Includes ownership check for security - only the owner can evolve their Pokemon
+// Uses optimistic locking via currentSpeciesId to prevent double-evolution race conditions
+export async function evolvePokemon(
+  pokemonId: string,
+  ownerId: string,
+  currentSpeciesId: number, // For optimistic locking - must match DB value
+  newSpeciesId: number,
+  newStats: {
+    max_hp: number
+    stat_attack: number
+    stat_defense: number
+    stat_sp_attack: number
+    stat_sp_defense: number
+    stat_speed: number
+  }
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('pokemon')
+    .update({
+      species_id: newSpeciesId,
+      max_hp: newStats.max_hp,
+      current_hp: newStats.max_hp, // Full heal on evolution
+      stat_attack: newStats.stat_attack,
+      stat_defense: newStats.stat_defense,
+      stat_sp_attack: newStats.stat_sp_attack,
+      stat_sp_defense: newStats.stat_sp_defense,
+      stat_speed: newStats.stat_speed
+    })
+    .eq('id', pokemonId)
+    .eq('owner_id', ownerId) // Verify ownership for security
+    .eq('species_id', currentSpeciesId) // Optimistic lock - prevent double-evolution
+    .select('id') // Return updated row to verify update succeeded
+
+  if (error) {
+    console.error('Failed to evolve Pokemon:', error)
+    return false
+  }
+
+  // Check that we actually updated a row (ownership + species check passed)
+  if (!data || data.length === 0) {
+    console.error('Pokemon not found, ownership check failed, or already evolved (species mismatch)')
+    return false
+  }
+
+  return true
+}
+
 // Update only a Pokemon's current HP - includes ownership check for security
 export async function updatePokemonHP(
   pokemonId: string,

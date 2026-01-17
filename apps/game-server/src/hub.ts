@@ -1,7 +1,7 @@
 import { WebSocket, WebSocketServer } from 'ws'
 import { createRemoteJWKSet, jwtVerify } from 'jose'
 import type { IncomingMessage } from 'http'
-import type { PlayerSession, WSMessage, PokemonSpecies, Zone, Pokemon, ChatChannel } from './types.js'
+import type { PlayerSession, WSMessage, PokemonSpecies, Zone, Pokemon, ChatChannel, PendingEvolution, EvolutionEvent } from './types.js'
 import {
   getPlayerByUserId,
   getPlayerParty,
@@ -58,9 +58,10 @@ import {
   getActiveTradeIds,
   getTradeHistory,
   getMuseumMembership,
-  purchaseMuseumMembership
+  purchaseMuseumMembership,
+  evolvePokemon
 } from './db.js'
-import { processTick, simulateGymBattle } from './game.js'
+import { processTick, simulateGymBattle, checkEvolutions, calculateEvolutionStats, applyEvolution, createEvolutionEvent, recalculateStats } from './game.js'
 
 interface Client {
   ws: WebSocket
@@ -223,7 +224,9 @@ export class GameHub {
       tickNumber: 0,
       encounterTable,
       pokedollars: player.pokedollars,
-      encounterCooldown: 0
+      encounterCooldown: 0,
+      pendingEvolutions: [],
+      suppressedEvolutions: new Set()
     }
   }
 
@@ -321,6 +324,12 @@ export class GameHub {
           break
         case 'buy_museum_membership':
           this.handleBuyMuseumMembership(client)
+          break
+        case 'confirm_evolution':
+          this.handleConfirmEvolution(client, msg.payload as { pokemon_id: string })
+          break
+        case 'cancel_evolution':
+          this.handleCancelEvolution(client, msg.payload as { pokemon_id: string })
           break
         default:
           console.log('Unknown message type:', msg.type)
@@ -882,15 +891,37 @@ export class GameHub {
         await updatePokedex(client.session.player.id, result.encounter.wild_pokemon.species_id, false)
       }
 
-      // Save level ups (stats changed)
-      if (result.level_ups && result.level_ups.length > 0) {
+      // Save level ups (stats changed) or XP gains
+      const hasLevelUps = result.level_ups && result.level_ups.length > 0
+      if (hasLevelUps) {
         for (const pokemon of client.session.party) {
           if (pokemon) {
             await updatePokemonStats(pokemon)
           }
         }
+
+        // Clear suppressed evolutions for any Pokemon that leveled up
+        // This allows them to be prompted for evolution again
+        for (const levelUp of result.level_ups!) {
+          client.session.suppressedEvolutions.delete(levelUp.pokemon_id)
+        }
+
+        // Check for evolutions after level ups
+        const pendingEvolutions = checkEvolutions(
+          client.session.party,
+          result.level_ups!,
+          this.speciesMap,
+          client.session.suppressedEvolutions
+        )
+
+        if (pendingEvolutions.length > 0) {
+          // Add to session's pending evolutions queue
+          client.session.pendingEvolutions.push(...pendingEvolutions)
+          // Include in tick result so client knows to show evolution modal
+          result.pending_evolutions = pendingEvolutions
+        }
       } else if (result.xp_gained) {
-        // Save XP gains to database (even if no level up)
+        // Save XP gains to database (only if no level up, since level up saves full stats)
         for (const pokemon of client.session.party) {
           if (pokemon && result.xp_gained[pokemon.id]) {
             await savePokemonXP(pokemon.id, pokemon.xp)
@@ -1904,5 +1935,160 @@ export class GameHub {
       console.error('Failed to buy museum membership:', err)
       this.send(client, 'museum_membership_error', { error: 'Failed to purchase membership' })
     }
+  }
+
+  // ============================================
+  // EVOLUTION HANDLERS
+  // ============================================
+
+  private async handleConfirmEvolution(client: Client, payload: unknown) {
+    if (!client.session) return
+
+    // Validate input payload
+    if (!payload || typeof payload !== 'object' || !('pokemon_id' in payload)) {
+      this.send(client, 'evolution_error', { error: 'Invalid evolution confirmation request' })
+      return
+    }
+    const { pokemon_id } = payload as { pokemon_id: unknown }
+    if (typeof pokemon_id !== 'string' || !pokemon_id) {
+      this.send(client, 'evolution_error', { error: 'Invalid pokemon_id' })
+      return
+    }
+
+    // Find the pending evolution for this Pokemon
+    const pendingIndex = client.session.pendingEvolutions.findIndex(
+      e => e.pokemon_id === pokemon_id
+    )
+    if (pendingIndex === -1) {
+      this.send(client, 'evolution_error', { error: 'No pending evolution for this Pokemon' })
+      return
+    }
+
+    const pending = client.session.pendingEvolutions[pendingIndex]
+
+    // Find the Pokemon in the party
+    const pokemon = client.session.party.find(p => p?.id === pokemon_id)
+    if (!pokemon) {
+      this.send(client, 'evolution_error', { error: 'Pokemon not found in party' })
+      return
+    }
+
+    // Get the target species
+    const targetSpecies = this.speciesMap.get(pending.evolution_species_id)
+    if (!targetSpecies) {
+      this.send(client, 'evolution_error', { error: 'Evolution target species not found' })
+      return
+    }
+
+    // Get the original species for potential rollback and name lookup
+    const originalSpecies = this.speciesMap.get(pending.current_species_id)
+    if (!originalSpecies) {
+      this.send(client, 'evolution_error', { error: 'Original species data not found' })
+      return
+    }
+
+    // SECURITY: Validate evolution chain - target must evolve FROM current species
+    if (targetSpecies.evolves_from_species_id !== pokemon.species_id) {
+      console.error('Invalid evolution chain:', {
+        current: pokemon.species_id,
+        target: targetSpecies.id,
+        evolves_from: targetSpecies.evolves_from_species_id
+      })
+      this.send(client, 'evolution_error', { error: 'Invalid evolution chain' })
+      return
+    }
+
+    // Re-validate level requirements (in case of race condition or stale data)
+    if (targetSpecies.evolution_method === 'level' && targetSpecies.evolution_level !== null) {
+      if (pokemon.level < targetSpecies.evolution_level) {
+        this.send(client, 'evolution_error', { error: 'Pokemon no longer meets level requirements' })
+        return
+      }
+    }
+
+    // Calculate new stats BEFORE saving (don't modify Pokemon yet)
+    const newStats = calculateEvolutionStats(pokemon, targetSpecies)
+
+    // Save evolution to database FIRST (before modifying in-memory state)
+    // Include player ID for ownership verification (security)
+    // Also include current species_id for optimistic locking (prevents double-evolution)
+    const saved = await evolvePokemon(
+      pokemon_id,
+      client.session.player.id,
+      pokemon.species_id, // Current species for optimistic locking
+      targetSpecies.id,
+      {
+        max_hp: newStats.max_hp,
+        stat_attack: newStats.attack,
+        stat_defense: newStats.defense,
+        stat_sp_attack: newStats.sp_attack,
+        stat_sp_defense: newStats.sp_defense,
+        stat_speed: newStats.speed
+      }
+    )
+
+    if (!saved) {
+      console.error('Failed to save evolution to database')
+      this.send(client, 'evolution_error', { error: 'Failed to save evolution. Please try again.' })
+      return
+    }
+
+    // Database save succeeded - NOW update in-memory state
+    applyEvolution(pokemon, targetSpecies, newStats)
+
+    // Add evolved species to cache (in case it wasn't there)
+    this.speciesMap.set(targetSpecies.id, targetSpecies)
+
+    // Create event for client notification
+    const evolutionEvent = createEvolutionEvent(pokemon, targetSpecies, originalSpecies, newStats)
+
+    // Update session state
+    // Remove from pending evolutions
+    client.session.pendingEvolutions.splice(pendingIndex, 1)
+
+    // Clear suppression since evolution completed
+    client.session.suppressedEvolutions.delete(pokemon_id)
+
+    // Update pokedex - mark evolved species as seen and owned
+    // Fire and forget - don't block evolution completion on pokedex update
+    updatePokedex(client.session.player.id, targetSpecies.id, true).catch(err => {
+      console.error('Failed to update pokedex after evolution:', err)
+    })
+
+    // Send evolution event to client
+    this.send(client, 'evolution', evolutionEvent)
+  }
+
+  private handleCancelEvolution(client: Client, payload: unknown) {
+    if (!client.session) return
+
+    // Validate input payload
+    if (!payload || typeof payload !== 'object' || !('pokemon_id' in payload)) {
+      this.send(client, 'evolution_error', { error: 'Invalid evolution cancel request' })
+      return
+    }
+    const { pokemon_id } = payload as { pokemon_id: unknown }
+    if (typeof pokemon_id !== 'string' || !pokemon_id) {
+      this.send(client, 'evolution_error', { error: 'Invalid pokemon_id' })
+      return
+    }
+
+    // Find the pending evolution for this Pokemon
+    const pendingIndex = client.session.pendingEvolutions.findIndex(
+      e => e.pokemon_id === pokemon_id
+    )
+    if (pendingIndex === -1) {
+      this.send(client, 'evolution_error', { error: 'No pending evolution for this Pokemon' })
+      return
+    }
+
+    // Remove from pending evolutions
+    client.session.pendingEvolutions.splice(pendingIndex, 1)
+
+    // Suppress future evolutions for this Pokemon until next level up
+    client.session.suppressedEvolutions.add(pokemon_id)
+
+    // Send cancellation acknowledgment
+    this.send(client, 'evolution_cancelled', { pokemon_id })
   }
 }

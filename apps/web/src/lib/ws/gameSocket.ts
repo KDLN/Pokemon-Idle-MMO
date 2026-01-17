@@ -1,5 +1,5 @@
 import { useGameStore } from '@/stores/gameStore'
-import type { TickResult, GameState, Zone, Pokemon, ShopItem } from '@/types/game'
+import type { TickResult, GameState, Zone, Pokemon, ShopItem, PendingEvolution, EvolutionEvent } from '@/types/game'
 import type { GymLeader, GymBattleResult } from '@/components/game/GymBattlePanel'
 import type { ChatMessageData, ChatChannel } from '@/types/chat'
 import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
@@ -74,6 +74,10 @@ class GameSocket {
     this.handlers.set('museum_membership_purchased', this.handleMuseumMembershipPurchased)
     this.handlers.set('museum_error', this.handleMuseumError)
     this.handlers.set('museum_membership_error', this.handleMuseumMembershipError)
+    // Evolution handlers
+    this.handlers.set('evolution', this.handleEvolution)
+    this.handlers.set('evolution_cancelled', this.handleEvolutionCancelled)
+    this.handlers.set('evolution_error', this.handleEvolutionError)
   }
 
   connect(token: string) {
@@ -316,6 +320,11 @@ class GameSocket {
           stat_speed: levelUp.new_stats.speed,
         })
       }
+    }
+
+    // Handle pending evolutions (from level ups)
+    if (result.pending_evolutions && result.pending_evolutions.length > 0) {
+      store.addPendingEvolutions(result.pending_evolutions)
     }
   }
 
@@ -775,6 +784,65 @@ class GameSocket {
     const { error } = payload as { error: string }
     console.error('Museum membership error:', error)
     useGameStore.getState().setMuseumError(error)
+  }
+
+  // ============================================
+  // EVOLUTION METHODS
+  // ============================================
+
+  // Confirm evolution (player lets it happen)
+  confirmEvolution(pokemonId: string) {
+    this.send('confirm_evolution', { pokemon_id: pokemonId })
+  }
+
+  // Cancel evolution (player presses B)
+  cancelEvolution(pokemonId: string) {
+    this.send('cancel_evolution', { pokemon_id: pokemonId })
+  }
+
+  // ============================================
+  // EVOLUTION HANDLERS
+  // ============================================
+
+  private handleEvolution = (payload: unknown) => {
+    const event = payload as EvolutionEvent
+    const store = useGameStore.getState()
+
+    // Update the Pokemon in party with new species and stats
+    store.updatePokemonInParty(event.pokemon_id, {
+      species_id: event.new_species_id,
+      max_hp: event.new_stats.max_hp,
+      current_hp: event.new_stats.max_hp, // Full heal on evolution
+      stat_attack: event.new_stats.attack,
+      stat_defense: event.new_stats.defense,
+      stat_sp_attack: event.new_stats.sp_attack,
+      stat_sp_defense: event.new_stats.sp_defense,
+      stat_speed: event.new_stats.speed,
+    })
+
+    // Atomically remove from pending evolutions and advance queue
+    // Using combined action to avoid race conditions
+    store.completeEvolutionAndAdvance(event.pokemon_id)
+
+    // Add to world log
+    store.addLogEntry({
+      id: `evolution-${event.pokemon_id}-${Date.now()}`,
+      type: 'evolution',
+      message: `${event.pokemon_name} evolved into ${event.new_species_name}!`,
+      timestamp: new Date(),
+    })
+  }
+
+  private handleEvolutionCancelled = (payload: unknown) => {
+    const { pokemon_id } = payload as { pokemon_id: string }
+    const store = useGameStore.getState()
+    // Atomically remove and advance queue
+    store.completeEvolutionAndAdvance(pokemon_id)
+  }
+
+  private handleEvolutionError = (payload: unknown) => {
+    const { error } = payload as { error: string }
+    console.error('Evolution error:', error)
   }
 }
 
