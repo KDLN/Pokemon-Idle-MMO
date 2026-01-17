@@ -1,39 +1,129 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { ChatTabs } from './ChatTabs'
 import { ChatMessage } from './ChatMessage'
 import { ChatInput } from './ChatInput'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
-import type { ChatChannel } from '@/types/chat'
+import type { ChatChannel, ChatMessageData, WhisperMessageData } from '@/types/chat'
 
 interface ChatSidebarProps {
   isCollapsed?: boolean
   onToggle?: () => void
 }
 
+// Convert whisper to chat message format for inline display
+function whisperToChatMessage(
+  whisper: WhisperMessageData,
+  currentPlayerId: string | undefined
+): ChatMessageData {
+  const isSent = whisper.fromPlayerId === currentPlayerId
+  return {
+    id: whisper.id,
+    playerId: whisper.fromPlayerId,
+    playerName: isSent ? `To ${whisper.toUsername}` : `From ${whisper.fromUsername}`,
+    channel: 'whisper' as ChatChannel,
+    content: whisper.content,
+    createdAt: whisper.createdAt,
+    isSystem: false,
+  }
+}
+
 export function ChatSidebar({ isCollapsed = false, onToggle }: ChatSidebarProps) {
   const player = useGameStore((state) => state.player)
   const chat = useGameStore((state) => state.chat)
+  const whispers = useGameStore((state) => state.whispers)
+  const whisperUnreadCount = useGameStore((state) => state.whisperUnreadCount)
+  const blockedPlayers = useGameStore((state) => state.blockedPlayers)
+  const mutedPlayers = useGameStore((state) => state.mutedPlayers)
   const setActiveChannel = useGameStore((state) => state.setActiveChannel)
+  const clearWhisperUnread = useGameStore((state) => state.clearWhisperUnread)
+  const addChatMessage = useGameStore((state) => state.addChatMessage)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [systemMessages, setSystemMessages] = useState<ChatMessageData[]>([])
 
   const activeChannel = chat.activeChannel
-  const channelMessages = chat.messages[activeChannel] ?? []
-  const totalUnread = Object.values(chat.unreadCounts).reduce((sum, value) => sum + value, 0)
+
+  // Get blocked player IDs for filtering
+  const blockedIds = useMemo(
+    () => new Set(blockedPlayers.map((p) => p.blockedId)),
+    [blockedPlayers]
+  )
+
+  // Filter messages by blocked/muted players
+  const filteredMessages = useMemo(() => {
+    if (activeChannel === 'whisper') {
+      // Show whispers as chat messages
+      return whispers.map((w) => whisperToChatMessage(w, player?.id))
+    }
+
+    const messages = chat.messages[activeChannel] ?? []
+    return messages.filter((msg) => {
+      // Don't filter system messages
+      if (msg.isSystem) return true
+      // Filter blocked players
+      if (blockedIds.has(msg.playerId)) return false
+      // Filter muted players
+      if (mutedPlayers.has(msg.playerId)) return false
+      return true
+    })
+  }, [activeChannel, chat.messages, whispers, player?.id, blockedIds, mutedPlayers])
+
+  // Include local system messages (from commands)
+  const channelMessages = useMemo(() => {
+    if (activeChannel === 'whisper') {
+      return [...filteredMessages, ...systemMessages].sort(
+        (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+      )
+    }
+    return filteredMessages
+  }, [activeChannel, filteredMessages, systemMessages])
+
+  // Calculate total unread including whispers
+  const totalUnread = useMemo(() => {
+    const chatUnread = Object.entries(chat.unreadCounts)
+      .filter(([channel]) => channel !== 'whisper')
+      .reduce((sum, [, count]) => sum + count, 0)
+    return chatUnread + whisperUnreadCount
+  }, [chat.unreadCounts, whisperUnreadCount])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [channelMessages])
 
+  // Clear whisper unread when viewing whisper channel
+  useEffect(() => {
+    if (activeChannel === 'whisper') {
+      clearWhisperUnread()
+    }
+  }, [activeChannel, clearWhisperUnread])
+
   const handleSend = (content: string) => {
     if (!player) return
+    // Don't send regular messages on whisper channel - use commands instead
+    if (activeChannel === 'whisper') {
+      return
+    }
     gameSocket.sendChatMessage(activeChannel, content)
   }
 
   const handleChannelChange = (channel: ChatChannel) => {
     setActiveChannel(channel)
+  }
+
+  // Handle system messages from commands (e.g., /help output)
+  const handleSystemMessage = (message: string) => {
+    const systemMsg: ChatMessageData = {
+      id: `system-${Date.now()}`,
+      playerId: 'system',
+      playerName: 'System',
+      channel: activeChannel,
+      content: message,
+      createdAt: new Date(),
+      isSystem: true,
+    }
+    setSystemMessages((prev) => [...prev.slice(-10), systemMsg])
   }
 
   if (isCollapsed) {
@@ -75,7 +165,10 @@ export function ChatSidebar({ isCollapsed = false, onToggle }: ChatSidebarProps)
       <ChatTabs
         activeChannel={activeChannel}
         onChannelChange={handleChannelChange}
-        unreadCounts={chat.unreadCounts}
+        unreadCounts={{
+          ...chat.unreadCounts,
+          whisper: whisperUnreadCount,
+        }}
       />
 
       {/* Messages */}
@@ -105,6 +198,7 @@ export function ChatSidebar({ isCollapsed = false, onToggle }: ChatSidebarProps)
         channel={activeChannel}
         onSend={handleSend}
         disabled={!player}
+        onSystemMessage={handleSystemMessage}
       />
     </div>
   )

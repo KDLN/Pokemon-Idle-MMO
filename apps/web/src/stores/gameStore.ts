@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Player, Pokemon, Zone, EncounterEvent, LevelUpEvent, PendingEvolution, ShopItem } from '@/types/game'
-import type { ChatMessageData, ChatChannel } from '@/types/chat'
+import type { ChatMessageData, ChatChannel, WhisperMessageData, BlockedPlayerData } from '@/types/chat'
 import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
 import type { IncomingTradeRequest, OutgoingTradeRequest, ActiveTradeSession, TradeOffer, TradeHistoryEntry } from '@/types/trade'
 import type { LogEntry } from '@/components/game/interactions/WorldLog'
@@ -47,7 +47,7 @@ interface ChatState {
   unreadCounts: Record<ChatChannel, number>
 }
 
-const CHAT_CHANNELS: ChatChannel[] = ['global', 'trade', 'guild', 'system']
+const CHAT_CHANNELS: ChatChannel[] = ['global', 'trade', 'guild', 'system', 'whisper']
 
 // World view state interface
 interface WorldViewState {
@@ -223,6 +223,26 @@ interface GameStore {
   closeMuseum: () => void
   setMuseumError: (error: string) => void
 
+  // Whisper state (Issue #45)
+  whispers: WhisperMessageData[]
+  activeWhisperPartner: string | null
+  whisperUnreadCount: number
+  addWhisper: (whisper: WhisperMessageData) => void
+  setWhispers: (whispers: WhisperMessageData[]) => void
+  setActiveWhisperPartner: (username: string | null) => void
+  clearWhisperUnread: () => void
+
+  // Block/mute state (Issue #47)
+  blockedPlayers: BlockedPlayerData[]
+  mutedPlayers: Set<string>
+  setBlockedPlayers: (players: BlockedPlayerData[]) => void
+  addBlockedPlayer: (player: BlockedPlayerData) => void
+  removeBlockedPlayer: (playerId: string) => void
+  mutePlayer: (playerId: string) => void
+  unmutePlayer: (playerId: string) => void
+  isPlayerMuted: (playerId: string) => boolean
+  isPlayerBlocked: (playerId: string) => boolean
+
   // Reset store
   reset: () => void
 }
@@ -234,12 +254,14 @@ const initialChatState: ChatState = {
     trade: [],
     guild: [],
     system: [],
+    whisper: [],
   },
   unreadCounts: {
     global: 0,
     trade: 0,
     guild: 0,
     system: 0,
+    whisper: 0,
   },
 }
 
@@ -308,6 +330,13 @@ const initialState = {
   tradeHistoryLoading: false,
   // Museum state
   museum: initialMuseumState,
+  // Whisper state (Issue #45)
+  whispers: [] as WhisperMessageData[],
+  activeWhisperPartner: null as string | null,
+  whisperUnreadCount: 0,
+  // Block/mute state (Issue #47)
+  blockedPlayers: [] as BlockedPlayerData[],
+  mutedPlayers: new Set<string>(),
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -744,6 +773,64 @@ export const useGameStore = create<GameStore>((set, get) => ({
       error,
     },
   })),
+
+  // Whisper methods (Issue #45)
+  addWhisper: (whisper) =>
+    set((state) => {
+      const isActivePartner =
+        state.activeWhisperPartner === whisper.fromUsername ||
+        state.activeWhisperPartner === whisper.toUsername
+
+      return {
+        whispers: [...state.whispers, whisper].slice(-100), // Keep last 100
+        whisperUnreadCount: isActivePartner
+          ? state.whisperUnreadCount
+          : state.whisperUnreadCount + 1,
+      }
+    }),
+
+  setWhispers: (whispers) => set({ whispers }),
+
+  setActiveWhisperPartner: (username) =>
+    set((state) => ({
+      activeWhisperPartner: username,
+      // Clear unread when viewing whispers
+      whisperUnreadCount: username ? 0 : state.whisperUnreadCount,
+    })),
+
+  clearWhisperUnread: () => set({ whisperUnreadCount: 0 }),
+
+  // Block/mute methods (Issue #47)
+  setBlockedPlayers: (players) => set({ blockedPlayers: players }),
+
+  addBlockedPlayer: (player) =>
+    set((state) => ({
+      blockedPlayers: [...state.blockedPlayers, player],
+    })),
+
+  removeBlockedPlayer: (playerId) =>
+    set((state) => ({
+      blockedPlayers: state.blockedPlayers.filter((p) => p.blockedId !== playerId),
+    })),
+
+  mutePlayer: (playerId) =>
+    set((state) => {
+      const newMuted = new Set(state.mutedPlayers)
+      newMuted.add(playerId)
+      return { mutedPlayers: newMuted }
+    }),
+
+  unmutePlayer: (playerId) =>
+    set((state) => {
+      const newMuted = new Set(state.mutedPlayers)
+      newMuted.delete(playerId)
+      return { mutedPlayers: newMuted }
+    }),
+
+  isPlayerMuted: (playerId) => get().mutedPlayers.has(playerId),
+
+  isPlayerBlocked: (playerId) =>
+    get().blockedPlayers.some((p) => p.blockedId === playerId),
 
   reset: () => set(initialState),
 }))

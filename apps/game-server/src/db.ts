@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon } from './types.js'
+import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon, BlockedPlayer } from './types.js'
 
 let supabase: SupabaseClient
 
@@ -1858,4 +1858,138 @@ export async function purchaseMuseumMembership(
   }
 
   return { success: true, newMoney }
+}
+
+// ============================================
+// BLOCK SYSTEM QUERIES (Issue #47)
+// ============================================
+
+// Block a player - also removes any existing friendship
+export async function blockPlayer(
+  blockerId: string,
+  blockedId: string
+): Promise<{ success: boolean; error?: string }> {
+  // Insert the block record
+  const { error } = await supabase
+    .from('blocked_players')
+    .insert({
+      blocker_id: blockerId,
+      blocked_id: blockedId
+    })
+
+  if (error) {
+    console.error('Failed to block player:', error)
+    if (error.code === '23505') {
+      return { success: false, error: 'Player already blocked' }
+    }
+    if (error.code === '23514') {
+      return { success: false, error: 'Cannot block yourself' }
+    }
+    return { success: false, error: 'Failed to block player' }
+  }
+
+  // Remove any existing friendship between these players (in either direction)
+  // Use Promise.all to await both deletions before returning
+  // Check for errors but don't fail the block operation if friendship removal fails
+  // (the block itself succeeded, which is the critical part)
+  try {
+    const [result1, result2] = await Promise.all([
+      supabase
+        .from('friends')
+        .delete()
+        .eq('player_id', blockerId)
+        .eq('friend_player_id', blockedId),
+      supabase
+        .from('friends')
+        .delete()
+        .eq('player_id', blockedId)
+        .eq('friend_player_id', blockerId)
+    ])
+
+    if (result1.error) {
+      console.warn('Failed to remove friendship (direction 1) after block:', result1.error)
+    }
+    if (result2.error) {
+      console.warn('Failed to remove friendship (direction 2) after block:', result2.error)
+    }
+  } catch (err) {
+    console.error('Error removing friendships after block:', err)
+    // Don't fail the block operation - block succeeded, just log the issue
+  }
+
+  return { success: true }
+}
+
+// Unblock a player
+export async function unblockPlayer(
+  blockerId: string,
+  blockedId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase
+    .from('blocked_players')
+    .delete()
+    .eq('blocker_id', blockerId)
+    .eq('blocked_id', blockedId)
+    .select()
+
+  if (error) {
+    console.error('Failed to unblock player:', error)
+    return { success: false, error: 'Failed to unblock player' }
+  }
+
+  if (!data || data.length === 0) {
+    return { success: false, error: 'Player not blocked' }
+  }
+
+  return { success: true }
+}
+
+// Get list of players blocked by this player
+export async function getBlockedPlayers(blockerId: string): Promise<BlockedPlayer[]> {
+  const { data, error } = await supabase
+    .from('blocked_players')
+    .select(`
+      id,
+      blocked_id,
+      created_at,
+      blocked:players!blocked_players_blocked_id_fkey(username)
+    `)
+    .eq('blocker_id', blockerId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Failed to get blocked players:', error)
+    return []
+  }
+
+  return (data || []).map(row => ({
+    id: row.id,
+    blocked_id: row.blocked_id,
+    blocked_username: extractUsernameFromJoin(row.blocked),
+    created_at: row.created_at
+  }))
+}
+
+// Check if either player has blocked the other (bidirectional check)
+export async function isPlayerBlocked(
+  playerId: string,
+  targetId: string
+): Promise<boolean> {
+  // Check both directions - if either player blocked the other, return true
+  const [{ data: blockedByMe }, { data: blockedByThem }] = await Promise.all([
+    supabase
+      .from('blocked_players')
+      .select('id')
+      .eq('blocker_id', playerId)
+      .eq('blocked_id', targetId)
+      .limit(1),
+    supabase
+      .from('blocked_players')
+      .select('id')
+      .eq('blocker_id', targetId)
+      .eq('blocked_id', playerId)
+      .limit(1)
+  ])
+
+  return Boolean((blockedByMe && blockedByMe.length > 0) || (blockedByThem && blockedByThem.length > 0))
 }
