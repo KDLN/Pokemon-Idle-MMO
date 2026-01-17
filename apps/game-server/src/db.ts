@@ -271,6 +271,29 @@ export async function updatePokedex(
   }
 }
 
+export async function getCaughtSpeciesForPlayer(
+  playerId: string,
+  speciesIds: number[]
+): Promise<Set<number>> {
+  if (speciesIds.length === 0) {
+    return new Set()
+  }
+
+  const { data, error } = await supabase
+    .from('pokedex_entries')
+    .select('species_id')
+    .eq('player_id', playerId)
+    .eq('caught', true)
+    .in('species_id', speciesIds)
+
+  if (error) {
+    console.error('Failed to get pokedex entries:', error)
+    return new Set()
+  }
+
+  return new Set((data || []).map(row => row.species_id))
+}
+
 export async function updatePokemonStats(pokemon: Pokemon): Promise<void> {
   await supabase
     .from('pokemon')

@@ -19,6 +19,7 @@ import {
   updatePokemonHP,
   saveCaughtPokemon,
   updatePokedex,
+  getCaughtSpeciesForPlayer,
   swapPartyMember,
   removeFromParty,
   savePokemonXP,
@@ -1642,6 +1643,8 @@ export class GameHub {
       return
     }
 
+    await this.updatePokedexForTrade(tradeId, trade.sender_id, trade.receiver_id)
+
     // Notify both players of completion
     this.send(client, 'trade_completed', {
       trade_id: tradeId,
@@ -1768,6 +1771,8 @@ export class GameHub {
       const result = await completeTrade(tradeId)
 
       if (result.success) {
+        await this.updatePokedexForTrade(tradeId, trade.sender_id, trade.receiver_id)
+
         // Notify both players of completion
         this.send(client, 'trade_completed', {
           trade_id: tradeId,
@@ -1817,6 +1822,46 @@ export class GameHub {
         }
       }
     }
+  }
+
+  private async updatePokedexForTrade(tradeId: string, senderId: string, receiverId: string) {
+    try {
+      const offers = await getTradeOffers(tradeId)
+      const senderReceivedSpecies = new Set<number>()
+      const receiverReceivedSpecies = new Set<number>()
+
+      for (const offer of offers) {
+        const speciesId = offer.pokemon?.species_id
+        if (!speciesId) continue
+
+        if (offer.offered_by === senderId) {
+          receiverReceivedSpecies.add(speciesId)
+        } else if (offer.offered_by === receiverId) {
+          senderReceivedSpecies.add(speciesId)
+        }
+      }
+
+      await Promise.all([
+        this.markNewlyCaughtSpecies(receiverId, Array.from(receiverReceivedSpecies)),
+        this.markNewlyCaughtSpecies(senderId, Array.from(senderReceivedSpecies))
+      ])
+    } catch (err) {
+      console.error('Failed to update pokedex after trade:', err)
+    }
+  }
+
+  private async markNewlyCaughtSpecies(playerId: string, speciesIds: number[]) {
+    const uniqueSpeciesIds = Array.from(new Set(speciesIds))
+    if (uniqueSpeciesIds.length === 0) {
+      return
+    }
+
+    const caughtSpecies = await getCaughtSpeciesForPlayer(playerId, uniqueSpeciesIds)
+    const newlyCaughtSpecies = uniqueSpeciesIds.filter(speciesId => !caughtSpecies.has(speciesId))
+
+    await Promise.all(
+      newlyCaughtSpecies.map(speciesId => updatePokedex(playerId, speciesId, true))
+    )
   }
 
   // Helper to reset ready states when trade offers change
@@ -2065,9 +2110,9 @@ export class GameHub {
     // Clear suppression since evolution completed
     client.session.suppressedEvolutions.delete(pokemon_id)
 
-    // Update pokedex - mark evolved species as seen and owned
+    // Update pokedex - mark evolved species as caught if newly obtained
     // Fire and forget - don't block evolution completion on pokedex update
-    updatePokedex(client.session.player.id, targetSpecies.id, true).catch(err => {
+    void this.markNewlyCaughtSpecies(client.session.player.id, [targetSpecies.id]).catch(err => {
       console.error('Failed to update pokedex after evolution:', err)
     })
 
