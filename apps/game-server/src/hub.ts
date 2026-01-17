@@ -544,6 +544,9 @@ export class GameHub {
     for (const [, otherClient] of this.clients) {
       if (!otherClient.session) continue
 
+      // Skip self - don't notify the player who moved about their own zone change
+      if (otherClient.session.player.id === playerId) continue
+
       // Check if this online user is a friend
       const isFriend = friends.some(
         f => f.friend_player_id === otherClient.session!.player.id ||
