@@ -228,6 +228,9 @@ export class GameHub {
       pendingEvolutions: [],
       suppressedEvolutions: new Set()
     }
+
+    // Update last_online immediately on connect so friends see us as online right away
+    await updatePlayerLastOnline(player.id)
   }
 
   private handleMessage(client: Client, data: string) {
