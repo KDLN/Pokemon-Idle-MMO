@@ -90,13 +90,11 @@ function parseAndExecuteCommand(
       if (args.length !== 1) {
         return { handled: true, error: 'Usage: /unfriend <player>' }
       }
-      // Need to find friend ID from friends list
+      // Find friend by username in friends list
       const friends = useGameStore.getState().friends
+      const targetFriendUsername = args[0].toLowerCase()
       const friend = friends.find(
-        (f) =>
-          f.friend_username?.toLowerCase() === args[0].toLowerCase() ||
-          (f.player_id !== currentPlayerId &&
-            f.friend_player_id !== currentPlayerId)
+        (f) => f.friend_username?.toLowerCase() === targetFriendUsername
       )
       if (!friend) {
         return { handled: true, error: `${args[0]} is not in your friends list` }
