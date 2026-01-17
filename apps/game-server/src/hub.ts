@@ -10,7 +10,9 @@ import type {
   ChatChannel,
   PendingEvolution,
   EvolutionEvent,
-  TradeOffer
+  TradeOffer,
+  WhisperMessage,
+  BlockedPlayer
 } from './types.js'
 import {
   getPlayerByUserId,
@@ -71,7 +73,11 @@ import {
   getMuseumMembership,
   purchaseMuseumMembership,
   evolvePokemon,
-  getAllSpecies
+  getAllSpecies,
+  blockPlayer,
+  unblockPlayer,
+  getBlockedPlayers,
+  isPlayerBlocked
 } from './db.js'
 import { processTick, simulateGymBattle, checkEvolutions, calculateEvolutionStats, applyEvolution, createEvolutionEvent, recalculateStats } from './game.js'
 
@@ -102,6 +108,8 @@ export class GameHub {
   private speciesMap: Map<number, PokemonSpecies> = new Map()
   private tickInterval: NodeJS.Timeout | null = null
   private tradeReadyStates: Map<string, TradeReadyState> = new Map()
+  // In-memory whisper storage (session only, no DB persistence)
+  private whisperHistory: Map<string, WhisperMessage[]> = new Map()
 
   constructor(port: number) {
     this.wss = new WebSocketServer({ port })
@@ -354,6 +362,23 @@ export class GameHub {
           break
         case 'cancel_evolution':
           this.handleCancelEvolution(client, msg.payload as { pokemon_id: string })
+          break
+        // Whisper handlers (Issue #45)
+        case 'send_whisper':
+          this.handleSendWhisper(client, msg.payload as { to_username: string; content: string })
+          break
+        case 'get_whisper_history':
+          this.handleGetWhisperHistory(client)
+          break
+        // Block handlers (Issue #47)
+        case 'block_player':
+          this.handleBlockPlayer(client, msg.payload as { username: string })
+          break
+        case 'unblock_player':
+          this.handleUnblockPlayer(client, msg.payload as { player_id: string })
+          break
+        case 'get_blocked_players':
+          this.handleGetBlockedPlayers(client)
           break
         default:
           console.log('Unknown message type:', msg.type)
@@ -2187,5 +2212,181 @@ export class GameHub {
 
     // Send cancellation acknowledgment
     this.send(client, 'evolution_cancelled', { pokemon_id })
+  }
+
+  // ============================================
+  // WHISPER HANDLERS (Issue #45)
+  // ============================================
+
+  private async handleSendWhisper(client: Client, payload: { to_username?: string; content?: string }) {
+    if (!client.session) return
+
+    const { to_username, content } = payload || {}
+
+    // Validate input
+    if (!to_username || typeof to_username !== 'string') {
+      this.sendError(client, 'Recipient username is required')
+      return
+    }
+
+    const trimmedContent = (content ?? '').trim()
+    if (!trimmedContent) {
+      this.sendError(client, 'Message cannot be empty')
+      return
+    }
+
+    const safeContent = trimmedContent.slice(0, MAX_CHAT_LENGTH)
+
+    // Can't whisper to yourself
+    if (to_username.toLowerCase() === client.session.player.username.toLowerCase()) {
+      this.sendError(client, 'Cannot whisper to yourself')
+      return
+    }
+
+    // Find the target player
+    const targetPlayer = await getPlayerByUsername(to_username)
+    if (!targetPlayer) {
+      this.sendError(client, 'Player not found')
+      return
+    }
+
+    // Check if they are friends (whispers only to friends)
+    const areFriends = await arePlayersFriends(client.session.player.id, targetPlayer.id)
+    if (!areFriends) {
+      this.sendError(client, 'Can only whisper to friends')
+      return
+    }
+
+    // Check if either player has blocked the other
+    const blocked = await isPlayerBlocked(client.session.player.id, targetPlayer.id)
+    if (blocked) {
+      this.sendError(client, 'Cannot whisper to this player')
+      return
+    }
+
+    // Create the whisper message
+    const whisper: WhisperMessage = {
+      id: crypto.randomUUID(),
+      from_player_id: client.session.player.id,
+      from_username: client.session.player.username,
+      to_player_id: targetPlayer.id,
+      to_username: targetPlayer.username,
+      content: safeContent,
+      created_at: new Date().toISOString()
+    }
+
+    // Store in memory for both sender and recipient
+    this.storeWhisper(client.session.player.id, whisper)
+    this.storeWhisper(targetPlayer.id, whisper)
+
+    // Send confirmation to sender
+    this.send(client, 'whisper_sent', { success: true, message: whisper })
+
+    // Send to recipient if online
+    const recipientClient = this.getClientByPlayerId(targetPlayer.id)
+    if (recipientClient) {
+      this.send(recipientClient, 'whisper_received', whisper)
+    }
+  }
+
+  private storeWhisper(playerId: string, whisper: WhisperMessage) {
+    const history = this.whisperHistory.get(playerId) || []
+    history.push(whisper)
+    // Keep last 100 whispers per player
+    if (history.length > 100) history.shift()
+    this.whisperHistory.set(playerId, history)
+  }
+
+  private handleGetWhisperHistory(client: Client) {
+    if (!client.session) return
+
+    const history = this.whisperHistory.get(client.session.player.id) || []
+    this.send(client, 'whisper_history', { messages: history })
+  }
+
+  // ============================================
+  // BLOCK HANDLERS (Issue #47)
+  // ============================================
+
+  private async handleBlockPlayer(client: Client, payload: { username?: string }) {
+    if (!client.session) return
+
+    const { username } = payload || {}
+
+    if (!username || typeof username !== 'string') {
+      this.sendError(client, 'Username is required')
+      return
+    }
+
+    const trimmedUsername = username.trim()
+    if (!trimmedUsername) {
+      this.sendError(client, 'Username is required')
+      return
+    }
+
+    // Can't block yourself
+    if (trimmedUsername.toLowerCase() === client.session.player.username.toLowerCase()) {
+      this.sendError(client, 'Cannot block yourself')
+      return
+    }
+
+    // Find the target player
+    const targetPlayer = await getPlayerByUsername(trimmedUsername)
+    if (!targetPlayer) {
+      this.sendError(client, 'Player not found')
+      return
+    }
+
+    // Block the player (this also removes friendship)
+    const result = await blockPlayer(client.session.player.id, targetPlayer.id)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to block player')
+      return
+    }
+
+    // Send confirmation
+    this.send(client, 'player_blocked', {
+      success: true,
+      blocked_id: targetPlayer.id,
+      blocked_username: targetPlayer.username
+    })
+
+    // Refresh friends list (blocking removes friendship)
+    await this.sendFriendsData(client)
+
+    // Send updated blocked list
+    await this.handleGetBlockedPlayers(client)
+  }
+
+  private async handleUnblockPlayer(client: Client, payload: { player_id?: string }) {
+    if (!client.session) return
+
+    const { player_id } = payload || {}
+
+    if (!player_id || typeof player_id !== 'string') {
+      this.sendError(client, 'Player ID is required')
+      return
+    }
+
+    const result = await unblockPlayer(client.session.player.id, player_id)
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to unblock player')
+      return
+    }
+
+    // Send confirmation
+    this.send(client, 'player_unblocked', { success: true, player_id })
+
+    // Send updated blocked list
+    await this.handleGetBlockedPlayers(client)
+  }
+
+  private async handleGetBlockedPlayers(client: Client) {
+    if (!client.session) return
+
+    const players = await getBlockedPlayers(client.session.player.id)
+    this.send(client, 'blocked_players', { players })
   }
 }

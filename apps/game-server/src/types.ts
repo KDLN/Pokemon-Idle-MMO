@@ -362,3 +362,22 @@ export interface TradeHistoryEntry {
   player2_pokemon: TradeHistoryPokemon[]
   completed_at: string
 }
+
+// Whisper system types (Issue #45)
+export interface WhisperMessage {
+  id: string
+  from_player_id: string
+  from_username: string
+  to_player_id: string
+  to_username: string
+  content: string
+  created_at: string
+}
+
+// Block system types (Issue #47)
+export interface BlockedPlayer {
+  id: string
+  blocked_id: string
+  blocked_username: string
+  created_at: string
+}
