@@ -179,6 +179,21 @@ export async function getSpecies(speciesId: number): Promise<PokemonSpecies | nu
   return data
 }
 
+// Load all species data (used for evolution lookups)
+// Evolution targets may not appear in encounter tables, so we need all species
+export async function getAllSpecies(): Promise<PokemonSpecies[]> {
+  const { data, error } = await supabase
+    .from('pokemon_species')
+    .select('*')
+    .order('id')
+
+  if (error) {
+    console.error('Failed to load all species:', error)
+    return []
+  }
+  return data || []
+}
+
 // Pokemon mutations
 export async function saveCaughtPokemon(
   playerId: string,

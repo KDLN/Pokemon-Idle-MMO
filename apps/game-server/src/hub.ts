@@ -59,7 +59,8 @@ import {
   getTradeHistory,
   getMuseumMembership,
   purchaseMuseumMembership,
-  evolvePokemon
+  evolvePokemon,
+  getAllSpecies
 } from './db.js'
 import { processTick, simulateGymBattle, checkEvolutions, calculateEvolutionStats, applyEvolution, createEvolutionEvent, recalculateStats } from './game.js'
 
@@ -99,7 +100,16 @@ export class GameHub {
     console.log(`WebSocket server running on port ${port}`)
   }
 
-  start() {
+  async start() {
+    // Load all species data for evolution lookups
+    // Evolution targets (like Ivysaur) may not appear in encounter tables,
+    // so we load all species upfront to support evolution checks
+    const allSpecies = await getAllSpecies()
+    for (const species of allSpecies) {
+      this.speciesMap.set(species.id, species)
+    }
+    console.log(`Loaded ${allSpecies.length} species for evolution lookups`)
+
     // Start tick loop (1 second)
     this.tickInterval = setInterval(() => this.processTicks(), 1000)
 

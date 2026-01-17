@@ -17,7 +17,7 @@ async function main() {
   // Start game server
   const port = parseInt(process.env.PORT || '8080', 10)
   const hub = new GameHub(port)
-  hub.start()
+  await hub.start()
 
   console.log(`Game server running on port ${port}`)
 

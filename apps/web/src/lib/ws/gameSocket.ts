@@ -296,35 +296,41 @@ class GameSocket {
       if (result.encounter.catch_result?.success && result.encounter.catch_result.caught_pokemon) {
         store.addToBox(result.encounter.catch_result.caught_pokemon)
       }
-    }
 
-    // Apply XP gains
-    if (result.xp_gained) {
-      store.applyXPGains(result.xp_gained)
-    }
-
-    // Handle level ups
-    if (result.level_ups && result.level_ups.length > 0) {
-      store.addLevelUps(result.level_ups)
-
-      // Update party stats for leveled up Pokemon
-      for (const levelUp of result.level_ups) {
-        store.updatePokemonInParty(levelUp.pokemon_id, {
-          level: levelUp.new_level,
-          max_hp: levelUp.new_stats.max_hp,
-          current_hp: levelUp.new_stats.max_hp, // Full heal on level up
-          stat_attack: levelUp.new_stats.attack,
-          stat_defense: levelUp.new_stats.defense,
-          stat_sp_attack: levelUp.new_stats.sp_attack,
-          stat_sp_defense: levelUp.new_stats.sp_defense,
-          stat_speed: levelUp.new_stats.speed,
-        })
+      // Queue XP/level-ups/evolutions to be applied AFTER the battle animation completes
+      // This prevents the XP bar and stats from updating before the player sees the battle
+      store.setPendingEncounterRewards({
+        xpGained: result.xp_gained || null,
+        levelUps: result.level_ups || null,
+        pendingEvolutions: result.pending_evolutions || null,
+      })
+    } else {
+      // No encounter - apply XP/level-ups/evolutions immediately (shouldn't happen, but handle it)
+      if (result.xp_gained) {
+        store.applyXPGains(result.xp_gained)
       }
-    }
 
-    // Handle pending evolutions (from level ups)
-    if (result.pending_evolutions && result.pending_evolutions.length > 0) {
-      store.addPendingEvolutions(result.pending_evolutions)
+      if (result.level_ups && result.level_ups.length > 0) {
+        store.addLevelUps(result.level_ups)
+
+        // Update party stats for leveled up Pokemon
+        for (const levelUp of result.level_ups) {
+          store.updatePokemonInParty(levelUp.pokemon_id, {
+            level: levelUp.new_level,
+            max_hp: levelUp.new_stats.max_hp,
+            current_hp: levelUp.new_stats.max_hp, // Full heal on level up
+            stat_attack: levelUp.new_stats.attack,
+            stat_defense: levelUp.new_stats.defense,
+            stat_sp_attack: levelUp.new_stats.sp_attack,
+            stat_sp_defense: levelUp.new_stats.sp_defense,
+            stat_speed: levelUp.new_stats.speed,
+          })
+        }
+      }
+
+      if (result.pending_evolutions && result.pending_evolutions.length > 0) {
+        store.addPendingEvolutions(result.pending_evolutions)
+      }
     }
   }
 

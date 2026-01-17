@@ -57,6 +57,13 @@ interface WorldViewState {
   isWalking: boolean
 }
 
+// Pending encounter rewards - applied after battle animation completes
+interface PendingEncounterRewards {
+  xpGained: Record<string, number> | null
+  levelUps: LevelUpEvent[] | null
+  pendingEvolutions: PendingEvolution[] | null
+}
+
 interface GameStore {
   // Player data
   player: Player | null
@@ -116,6 +123,11 @@ interface GameStore {
   currentEncounter: EncounterEvent | null
   setCurrentEncounter: (encounter: EncounterEvent | null) => void
   clearEncounter: () => void
+
+  // Pending encounter rewards - applied after battle animation completes
+  // This prevents XP/level-up UI from updating before the battle animation finishes
+  pendingEncounterRewards: PendingEncounterRewards | null
+  setPendingEncounterRewards: (rewards: PendingEncounterRewards | null) => void
 
   // Pending level ups for notifications
   pendingLevelUps: LevelUpEvent[]
@@ -269,6 +281,7 @@ const initialState = {
   isGymOpen: false,
   currentGymLeader: null,
   currentEncounter: null,
+  pendingEncounterRewards: null as PendingEncounterRewards | null,
   pendingLevelUps: [],
   pendingEvolutions: [] as PendingEvolution[],
   activeEvolution: null as PendingEvolution | null,
@@ -360,7 +373,85 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setCurrentEncounter: (encounter) => set({ currentEncounter: encounter }),
 
-  clearEncounter: () => set({ currentEncounter: null }),
+  setPendingEncounterRewards: (rewards) => set({ pendingEncounterRewards: rewards }),
+
+  clearEncounter: () => set((state) => {
+    // When clearing the encounter, apply any pending rewards
+    // This ensures XP/level-ups only update AFTER the battle animation completes
+    const rewards = state.pendingEncounterRewards
+
+    if (!rewards) {
+      return { currentEncounter: null }
+    }
+
+    // Apply XP gains to party
+    let newParty = state.party
+    if (rewards.xpGained) {
+      newParty = newParty.map((p) => {
+        if (p && rewards.xpGained && rewards.xpGained[p.id]) {
+          return { ...p, xp: p.xp + rewards.xpGained[p.id] }
+        }
+        return p
+      })
+    }
+
+    // Apply level-up stat changes to party
+    if (rewards.levelUps) {
+      for (const levelUp of rewards.levelUps) {
+        newParty = newParty.map((p) => {
+          if (p && p.id === levelUp.pokemon_id) {
+            return {
+              ...p,
+              level: levelUp.new_level,
+              max_hp: levelUp.new_stats.max_hp,
+              current_hp: levelUp.new_stats.max_hp, // Full heal on level up
+              stat_attack: levelUp.new_stats.attack,
+              stat_defense: levelUp.new_stats.defense,
+              stat_sp_attack: levelUp.new_stats.sp_attack,
+              stat_sp_defense: levelUp.new_stats.sp_defense,
+              stat_speed: levelUp.new_stats.speed,
+            }
+          }
+          return p
+        })
+      }
+    }
+
+    // Queue pending evolutions
+    let newPendingEvolutions = state.pendingEvolutions
+    let newActiveEvolution = state.activeEvolution
+    if (rewards.pendingEvolutions && rewards.pendingEvolutions.length > 0) {
+      // Deduplicate by pokemon_id to prevent race condition duplicates
+      const existingIds = new Set([
+        ...state.pendingEvolutions.map(e => e.pokemon_id),
+        state.activeEvolution?.pokemon_id
+      ].filter(Boolean))
+
+      const uniqueNewEvolutions = rewards.pendingEvolutions.filter(e => !existingIds.has(e.pokemon_id))
+      if (uniqueNewEvolutions.length > 0) {
+        newPendingEvolutions = [...state.pendingEvolutions, ...uniqueNewEvolutions]
+        // If no active evolution, automatically start the first one
+        if (!state.activeEvolution && newPendingEvolutions.length > 0) {
+          newActiveEvolution = newPendingEvolutions[0]
+          newPendingEvolutions = newPendingEvolutions.slice(1)
+        }
+      }
+    }
+
+    // Add level-ups to pending level-ups for notifications
+    const newPendingLevelUps = rewards.levelUps
+      ? [...state.pendingLevelUps, ...rewards.levelUps]
+      : state.pendingLevelUps
+
+    return {
+      currentEncounter: null,
+      pendingEncounterRewards: null,
+      party: newParty,
+      pendingLevelUps: newPendingLevelUps,
+      pendingEvolutions: newPendingEvolutions,
+      activeEvolution: newActiveEvolution,
+    }
+  }),
 
   addLevelUps: (levelUps) =>
     set((state) => ({ pendingLevelUps: [...state.pendingLevelUps, ...levelUps] })),
