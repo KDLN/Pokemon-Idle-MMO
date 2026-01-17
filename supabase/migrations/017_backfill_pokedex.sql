@@ -18,26 +18,27 @@
 -- - If entry exists with caught=false, update to caught=true
 -- - If entry exists with caught=true, no change needed
 -- - If entry doesn't exist, insert new entry with caught=true
+--
+-- We GROUP BY player/species first to avoid "cannot affect row a second time" error
+-- when a player has multiple Pokemon of the same species
 
 INSERT INTO pokedex_entries (player_id, species_id, seen, caught, catch_count, first_caught_at)
-SELECT DISTINCT
-  p.owner_id as player_id,
-  p.species_id,
+SELECT
+  owner_id as player_id,
+  species_id,
   true as seen,
   true as caught,
-  1 as catch_count,  -- Default to 1 for backfilled entries
-  COALESCE(p.caught_at, NOW()) as first_caught_at
-FROM pokemon p
-WHERE p.owner_id IS NOT NULL
+  COUNT(*) as catch_count,  -- Count how many of this species the player has
+  MIN(COALESCE(caught_at, NOW())) as first_caught_at  -- Earliest catch date
+FROM pokemon
+WHERE owner_id IS NOT NULL
+GROUP BY owner_id, species_id
 ON CONFLICT (player_id, species_id)
 DO UPDATE SET
   seen = true,
   caught = true,
-  -- Only update catch_count if it was 0 (meaning they hadn't caught it before)
-  catch_count = CASE
-    WHEN pokedex_entries.catch_count = 0 THEN 1
-    ELSE pokedex_entries.catch_count
-  END,
+  -- Use the greater of existing catch_count or the count from owned Pokemon
+  catch_count = GREATEST(pokedex_entries.catch_count, EXCLUDED.catch_count),
   -- Only set first_caught_at if it was null
   first_caught_at = COALESCE(pokedex_entries.first_caught_at, EXCLUDED.first_caught_at);
 
