@@ -6,20 +6,17 @@ import { getPokemonSpriteUrl } from '@/types/game'
 import type { PokedexEntry } from '@/types/game'
 import { SPECIES_DATA, getTypeColor } from '@/lib/ui'
 
-// Available Pokemon IDs in the game (sorted by dex number)
-const AVAILABLE_SPECIES_IDS = [1, 4, 7, 10, 11, 13, 14, 16, 17, 19, 20, 21, 29, 32, 43]
-
-// Build species list from centralized SPECIES_DATA
-const ALL_SPECIES = AVAILABLE_SPECIES_IDS.map(id => {
-  const data = SPECIES_DATA[id]
-  return {
-    id,
+// Build species list from centralized SPECIES_DATA (all 151 Gen 1 Pokemon)
+// Sorted by dex number
+const ALL_SPECIES = Object.entries(SPECIES_DATA)
+  .map(([id, data]) => ({
+    id: Number(id),
     name: data.name,
     type: data.type,
     type2: data.type2,
     color: data.color,
-  }
-})
+  }))
+  .sort((a, b) => a.id - b.id)
 
 interface PokedexPanelProps {
   isOpen: boolean
