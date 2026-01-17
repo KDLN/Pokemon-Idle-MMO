@@ -431,6 +431,8 @@ export class GameHub {
     // Remove from reverse index before removing from clients map
     if (client.session) {
       this.clientsByPlayerId.delete(client.session.player.id)
+      // Clear whisper history to prevent memory leak
+      this.whisperHistory.delete(client.session.player.id)
     }
 
     // Always remove client from map, even if cleanup failed
@@ -1066,6 +1068,13 @@ export class GameHub {
     const targetPlayer = await getPlayerByUsername(trimmedUsername)
     if (!targetPlayer) {
       this.sendError(client, 'Player not found')
+      return
+    }
+
+    // Check if either player has blocked the other
+    const blocked = await isPlayerBlocked(client.session.player.id, targetPlayer.id)
+    if (blocked) {
+      this.sendError(client, 'Cannot send friend request to this player')
       return
     }
 
@@ -2291,10 +2300,9 @@ export class GameHub {
 
   private storeWhisper(playerId: string, whisper: WhisperMessage) {
     const history = this.whisperHistory.get(playerId) || []
-    history.push(whisper)
-    // Keep last 100 whispers per player
-    if (history.length > 100) history.shift()
-    this.whisperHistory.set(playerId, history)
+    // Use slice for atomic array management to avoid race conditions
+    const newHistory = [...history, whisper].slice(-100)
+    this.whisperHistory.set(playerId, newHistory)
   }
 
   private handleGetWhisperHistory(client: Client) {
