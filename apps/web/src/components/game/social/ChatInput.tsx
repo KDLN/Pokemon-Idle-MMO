@@ -15,6 +15,14 @@ interface ChatInputProps {
 
 const MAX_LENGTH = 280
 
+// Sanitize username for display in system messages (prevent XSS/injection)
+function sanitizeUsername(username: string): string {
+  // Remove or escape potentially dangerous characters
+  return username
+    .replace(/[<>&"'`]/g, '') // Remove HTML/script injection chars
+    .slice(0, 20) // Enforce max length (matches schema)
+}
+
 // Command help text for /help
 const COMMAND_HELP = `Available commands:
 /w <player> <message> - Whisper to a friend
@@ -58,57 +66,62 @@ function parseAndExecuteCommand(
       if (args.length !== 1) {
         return { handled: true, error: 'Usage: /block <player>' }
       }
-      gameSocket.blockPlayer(args[0])
-      return { handled: true, systemMessage: `Blocking ${args[0]}...` }
+      const blockTarget = sanitizeUsername(args[0])
+      gameSocket.blockPlayer(blockTarget)
+      return { handled: true, systemMessage: `Blocking ${blockTarget}...` }
     }
 
     case '/unblock': {
       if (args.length !== 1) {
         return { handled: true, error: 'Usage: /unblock <player>' }
       }
+      const unblockTarget = sanitizeUsername(args[0])
       // Need to find player ID from blocked list
       const blockedPlayers = useGameStore.getState().blockedPlayers
       const blocked = blockedPlayers.find(
-        (p) => p.blockedUsername.toLowerCase() === args[0].toLowerCase()
+        (p) => p.blockedUsername.toLowerCase() === unblockTarget.toLowerCase()
       )
       if (!blocked) {
-        return { handled: true, error: `${args[0]} is not blocked` }
+        return { handled: true, error: `${unblockTarget} is not blocked` }
       }
       gameSocket.unblockPlayer(blocked.blockedId)
-      return { handled: true, systemMessage: `Unblocking ${args[0]}...` }
+      return { handled: true, systemMessage: `Unblocking ${unblockTarget}...` }
     }
 
     case '/friend': {
       if (args.length !== 1) {
         return { handled: true, error: 'Usage: /friend <player>' }
       }
-      gameSocket.sendFriendRequest(args[0])
-      return { handled: true, systemMessage: `Sending friend request to ${args[0]}...` }
+      const friendTarget = sanitizeUsername(args[0])
+      gameSocket.sendFriendRequest(friendTarget)
+      return { handled: true, systemMessage: `Sending friend request to ${friendTarget}...` }
     }
 
     case '/unfriend': {
       if (args.length !== 1) {
         return { handled: true, error: 'Usage: /unfriend <player>' }
       }
+      const unfriendTarget = sanitizeUsername(args[0])
       // Find friend by username in friends list
       const friends = useGameStore.getState().friends
-      const targetFriendUsername = args[0].toLowerCase()
+      const targetFriendUsername = unfriendTarget.toLowerCase()
       const friend = friends.find(
         (f) => f.friend_username?.toLowerCase() === targetFriendUsername
       )
       if (!friend) {
-        return { handled: true, error: `${args[0]} is not in your friends list` }
+        return { handled: true, error: `${unfriendTarget} is not in your friends list` }
       }
       gameSocket.removeFriend(friend.friend_id)
-      return { handled: true, systemMessage: `Removing ${args[0]} from friends...` }
+      return { handled: true, systemMessage: `Removing ${unfriendTarget} from friends...` }
     }
 
     case '/mute': {
       if (args.length !== 1) {
         return { handled: true, error: 'Usage: /mute <player>' }
       }
+      const muteTarget = sanitizeUsername(args[0])
       // Session-only mute - find player ID from chat messages
-      const targetUsername = args[0].toLowerCase()
+      const targetUsername = muteTarget.toLowerCase()
       const state = useGameStore.getState()
 
       // Search all channels for a message from this player
@@ -125,19 +138,20 @@ function parseAndExecuteCommand(
       }
 
       if (!playerId) {
-        return { handled: true, error: `Cannot find player "${args[0]}" in recent chat` }
+        return { handled: true, error: `Cannot find player "${muteTarget}" in recent chat` }
       }
 
       state.mutePlayer(playerId)
-      return { handled: true, systemMessage: `Muted ${args[0]} for this session` }
+      return { handled: true, systemMessage: `Muted ${muteTarget} for this session` }
     }
 
     case '/unmute': {
       if (args.length !== 1) {
         return { handled: true, error: 'Usage: /unmute <player>' }
       }
+      const unmuteTarget = sanitizeUsername(args[0])
       // Find player ID from chat messages
-      const unmuteUsername = args[0].toLowerCase()
+      const unmuteUsername = unmuteTarget.toLowerCase()
       const unmuteState = useGameStore.getState()
 
       // Search all channels for a message from this player
@@ -154,11 +168,11 @@ function parseAndExecuteCommand(
       }
 
       if (!unmutePlayerId) {
-        return { handled: true, error: `Cannot find player "${args[0]}" in recent chat` }
+        return { handled: true, error: `Cannot find player "${unmuteTarget}" in recent chat` }
       }
 
       unmuteState.unmutePlayer(unmutePlayerId)
-      return { handled: true, systemMessage: `Unmuted ${args[0]}` }
+      return { handled: true, systemMessage: `Unmuted ${unmuteTarget}` }
     }
 
     case '/help': {

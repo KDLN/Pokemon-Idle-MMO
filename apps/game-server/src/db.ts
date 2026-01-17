@@ -1890,18 +1890,32 @@ export async function blockPlayer(
 
   // Remove any existing friendship between these players (in either direction)
   // Use Promise.all to await both deletions before returning
-  await Promise.all([
-    supabase
-      .from('friends')
-      .delete()
-      .eq('player_id', blockerId)
-      .eq('friend_player_id', blockedId),
-    supabase
-      .from('friends')
-      .delete()
-      .eq('player_id', blockedId)
-      .eq('friend_player_id', blockerId)
-  ])
+  // Check for errors but don't fail the block operation if friendship removal fails
+  // (the block itself succeeded, which is the critical part)
+  try {
+    const [result1, result2] = await Promise.all([
+      supabase
+        .from('friends')
+        .delete()
+        .eq('player_id', blockerId)
+        .eq('friend_player_id', blockedId),
+      supabase
+        .from('friends')
+        .delete()
+        .eq('player_id', blockedId)
+        .eq('friend_player_id', blockerId)
+    ])
+
+    if (result1.error) {
+      console.warn('Failed to remove friendship (direction 1) after block:', result1.error)
+    }
+    if (result2.error) {
+      console.warn('Failed to remove friendship (direction 2) after block:', result2.error)
+    }
+  } catch (err) {
+    console.error('Error removing friendships after block:', err)
+    // Don't fail the block operation - block succeeded, just log the issue
+  }
 
   return { success: true }
 }

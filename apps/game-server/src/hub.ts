@@ -141,6 +141,33 @@ export class GameHub {
 
     // Update presence every 60 seconds
     setInterval(() => this.updatePresence(), 60000)
+
+    // Periodic cleanup of rate limit maps (every 5 minutes)
+    // Removes entries for disconnected players to prevent memory leak
+    setInterval(() => this.cleanupRateLimits(), 300000)
+  }
+
+  // Clean up rate limit entries for players who are no longer connected
+  private cleanupRateLimits() {
+    const connectedPlayerIds = new Set(
+      Array.from(this.clients.values())
+        .filter(c => c.session)
+        .map(c => c.session!.player.id)
+    )
+
+    // Remove rate limit entries for disconnected players
+    for (const playerId of this.whisperRateLimits.keys()) {
+      if (!connectedPlayerIds.has(playerId)) {
+        this.whisperRateLimits.delete(playerId)
+      }
+    }
+
+    // Also clean up whisper history for disconnected players
+    for (const playerId of this.whisperHistory.keys()) {
+      if (!connectedPlayerIds.has(playerId)) {
+        this.whisperHistory.delete(playerId)
+      }
+    }
   }
 
   stop() {
@@ -2321,10 +2348,15 @@ export class GameHub {
   }
 
   private storeWhisper(playerId: string, whisper: WhisperMessage) {
-    const history = this.whisperHistory.get(playerId) || []
-    // Use slice for atomic array management to avoid race conditions
-    const newHistory = [...history, whisper].slice(-MAX_WHISPER_HISTORY)
-    this.whisperHistory.set(playerId, newHistory)
+    try {
+      const history = this.whisperHistory.get(playerId) || []
+      // Use slice for atomic array management to avoid race conditions
+      const newHistory = [...history, whisper].slice(-MAX_WHISPER_HISTORY)
+      this.whisperHistory.set(playerId, newHistory)
+    } catch (err) {
+      // Log but don't throw - whisper was still sent successfully
+      console.error(`Failed to store whisper for player ${playerId}:`, err)
+    }
   }
 
   private handleGetWhisperHistory(client: Client) {
