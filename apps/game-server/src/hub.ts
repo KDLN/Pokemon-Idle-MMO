@@ -1,7 +1,17 @@
 import { WebSocket, WebSocketServer } from 'ws'
 import { createRemoteJWKSet, jwtVerify } from 'jose'
 import type { IncomingMessage } from 'http'
-import type { PlayerSession, WSMessage, PokemonSpecies, Zone, Pokemon, ChatChannel, PendingEvolution, EvolutionEvent } from './types.js'
+import type {
+  PlayerSession,
+  WSMessage,
+  PokemonSpecies,
+  Zone,
+  Pokemon,
+  ChatChannel,
+  PendingEvolution,
+  EvolutionEvent,
+  TradeOffer
+} from './types.js'
 import {
   getPlayerByUserId,
   getPlayerParty,
@@ -1635,6 +1645,8 @@ export class GameHub {
       return
     }
 
+    const offers = await getTradeOffers(tradeId)
+
     // Complete the trade (transfers Pokemon)
     const result = await completeTrade(tradeId)
 
@@ -1643,7 +1655,14 @@ export class GameHub {
       return
     }
 
-    await this.updatePokedexForTrade(tradeId, trade.sender_id, trade.receiver_id)
+    void this.updatePokedexForTradeWithOffers(
+      offers,
+      trade.sender_id,
+      trade.receiver_id,
+      tradeId
+    ).catch(err => {
+      console.error('Failed to update pokedex after trade:', err)
+    })
 
     // Notify both players of completion
     this.send(client, 'trade_completed', {
@@ -1767,11 +1786,20 @@ export class GameHub {
       // where both players click ready simultaneously and both trigger completion
       this.tradeReadyStates.delete(tradeId)
 
+      const offers = await getTradeOffers(tradeId)
+
       // Complete the trade
       const result = await completeTrade(tradeId)
 
       if (result.success) {
-        await this.updatePokedexForTrade(tradeId, trade.sender_id, trade.receiver_id)
+        void this.updatePokedexForTradeWithOffers(
+          offers,
+          trade.sender_id,
+          trade.receiver_id,
+          tradeId
+        ).catch(err => {
+          console.error('Failed to update pokedex after trade:', err)
+        })
 
         // Notify both players of completion
         this.send(client, 'trade_completed', {
@@ -1824,30 +1852,33 @@ export class GameHub {
     }
   }
 
-  private async updatePokedexForTrade(tradeId: string, senderId: string, receiverId: string) {
-    try {
-      const offers = await getTradeOffers(tradeId)
-      const senderReceivedSpecies = new Set<number>()
-      const receiverReceivedSpecies = new Set<number>()
+  private async updatePokedexForTradeWithOffers(
+    offers: TradeOffer[],
+    senderId: string,
+    receiverId: string,
+    tradeId: string
+  ) {
+    const senderReceivedSpecies = new Set<number>()
+    const receiverReceivedSpecies = new Set<number>()
 
-      for (const offer of offers) {
-        const speciesId = offer.pokemon?.species_id
-        if (!speciesId) continue
-
-        if (offer.offered_by === senderId) {
-          receiverReceivedSpecies.add(speciesId)
-        } else if (offer.offered_by === receiverId) {
-          senderReceivedSpecies.add(speciesId)
-        }
+    for (const offer of offers) {
+      const speciesId = offer.pokemon?.species_id
+      if (!speciesId) {
+        console.warn(`Missing species_id for offer ${offer.offer_id} in trade ${tradeId}`)
+        continue
       }
 
-      await Promise.all([
-        this.markNewlyCaughtSpecies(receiverId, Array.from(receiverReceivedSpecies)),
-        this.markNewlyCaughtSpecies(senderId, Array.from(senderReceivedSpecies))
-      ])
-    } catch (err) {
-      console.error('Failed to update pokedex after trade:', err)
+      if (offer.offered_by === senderId) {
+        receiverReceivedSpecies.add(speciesId)
+      } else if (offer.offered_by === receiverId) {
+        senderReceivedSpecies.add(speciesId)
+      }
     }
+
+    await Promise.all([
+      this.markNewlyCaughtSpecies(receiverId, Array.from(receiverReceivedSpecies)),
+      this.markNewlyCaughtSpecies(senderId, Array.from(senderReceivedSpecies))
+    ])
   }
 
   private async markNewlyCaughtSpecies(playerId: string, speciesIds: number[]) {
