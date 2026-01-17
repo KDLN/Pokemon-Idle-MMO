@@ -1889,17 +1889,19 @@ export async function blockPlayer(
   }
 
   // Remove any existing friendship between these players (in either direction)
-  await supabase
-    .from('friends')
-    .delete()
-    .eq('player_id', blockerId)
-    .eq('friend_player_id', blockedId)
-
-  await supabase
-    .from('friends')
-    .delete()
-    .eq('player_id', blockedId)
-    .eq('friend_player_id', blockerId)
+  // Use Promise.all to await both deletions before returning
+  await Promise.all([
+    supabase
+      .from('friends')
+      .delete()
+      .eq('player_id', blockerId)
+      .eq('friend_player_id', blockedId),
+    supabase
+      .from('friends')
+      .delete()
+      .eq('player_id', blockedId)
+      .eq('friend_player_id', blockerId)
+  ])
 
   return { success: true }
 }

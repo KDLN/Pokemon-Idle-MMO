@@ -46,8 +46,8 @@ CREATE POLICY "Players can unblock"
 INSERT INTO zones (id, name, zone_type, base_encounter_rate, min_level, max_level) VALUES
   (10, 'Mt. Moon', 'route', 0.0400, 12, 16);
 
--- Update sequence to prevent ID conflicts
-SELECT setval('zones_id_seq', 10);
+-- Update sequence to prevent ID conflicts (true = is_called, so next insert gets 11)
+SELECT setval('zones_id_seq', 10, true);
 
 -- ============================================
 -- ZONE CONNECTIONS FOR MT. MOON

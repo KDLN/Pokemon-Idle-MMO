@@ -109,9 +109,28 @@ function parseAndExecuteCommand(
       if (args.length !== 1) {
         return { handled: true, error: 'Usage: /mute <player>' }
       }
-      // Session-only mute - need to find player ID
-      // For now, mute by username (we'll need to track username -> ID mapping)
-      // This is a simplified implementation that works with player IDs only
+      // Session-only mute - find player ID from chat messages
+      const targetUsername = args[0].toLowerCase()
+      const state = useGameStore.getState()
+
+      // Search all channels for a message from this player
+      let playerId: string | null = null
+      for (const channel of ['global', 'trade', 'guild', 'system'] as const) {
+        const messages = state.chat.messages[channel] || []
+        const msg = messages.find(
+          (m) => m.playerName.toLowerCase() === targetUsername && !m.isSystem
+        )
+        if (msg) {
+          playerId = msg.playerId
+          break
+        }
+      }
+
+      if (!playerId) {
+        return { handled: true, error: `Cannot find player "${args[0]}" in recent chat` }
+      }
+
+      state.mutePlayer(playerId)
       return { handled: true, systemMessage: `Muted ${args[0]} for this session` }
     }
 
@@ -119,6 +138,28 @@ function parseAndExecuteCommand(
       if (args.length !== 1) {
         return { handled: true, error: 'Usage: /unmute <player>' }
       }
+      // Find player ID from chat messages
+      const unmuteUsername = args[0].toLowerCase()
+      const unmuteState = useGameStore.getState()
+
+      // Search all channels for a message from this player
+      let unmutePlayerId: string | null = null
+      for (const channel of ['global', 'trade', 'guild', 'system'] as const) {
+        const messages = unmuteState.chat.messages[channel] || []
+        const msg = messages.find(
+          (m) => m.playerName.toLowerCase() === unmuteUsername && !m.isSystem
+        )
+        if (msg) {
+          unmutePlayerId = msg.playerId
+          break
+        }
+      }
+
+      if (!unmutePlayerId) {
+        return { handled: true, error: `Cannot find player "${args[0]}" in recent chat` }
+      }
+
+      unmuteState.unmutePlayer(unmutePlayerId)
       return { handled: true, systemMessage: `Unmuted ${args[0]}` }
     }
 
