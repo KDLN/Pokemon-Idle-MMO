@@ -1,17 +1,98 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import { PokemonCard } from './PokemonCard'
+import { PokemonDetailPanel } from './PokemonDetailPanel'
+import type { Pokemon } from '@/types/game'
+import {
+  sortByTotalIVs,
+  sortByIVStat,
+  sortByGrade,
+  filterByMinGrade,
+  filterHasPerfectIV,
+  getIVGrade,
+  type IVStats,
+  type IVGrade,
+} from '@/lib/ivUtils'
+
+type SortOption = 'default' | 'total_ivs' | 'grade' | 'hp_iv' | 'attack_iv' | 'defense_iv' | 'sp_attack_iv' | 'sp_defense_iv' | 'speed_iv'
+type FilterOption = 'all' | 'grade_s' | 'grade_a' | 'has_perfect'
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'default', label: 'Default' },
+  { value: 'total_ivs', label: 'Total IVs' },
+  { value: 'grade', label: 'Grade' },
+  { value: 'hp_iv', label: 'HP IV' },
+  { value: 'attack_iv', label: 'Attack IV' },
+  { value: 'defense_iv', label: 'Defense IV' },
+  { value: 'sp_attack_iv', label: 'Sp.Atk IV' },
+  { value: 'sp_defense_iv', label: 'Sp.Def IV' },
+  { value: 'speed_iv', label: 'Speed IV' },
+]
+
+const FILTER_OPTIONS: { value: FilterOption; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'grade_s', label: 'S Grade' },
+  { value: 'grade_a', label: 'A+ Grade' },
+  { value: 'has_perfect', label: 'Perfect IVs' },
+]
+
+function applySorting(pokemon: Pokemon[], sort: SortOption): Pokemon[] {
+  switch (sort) {
+    case 'total_ivs':
+      return sortByTotalIVs(pokemon)
+    case 'grade':
+      return sortByGrade(pokemon)
+    case 'hp_iv':
+      return sortByIVStat(pokemon, 'hp')
+    case 'attack_iv':
+      return sortByIVStat(pokemon, 'attack')
+    case 'defense_iv':
+      return sortByIVStat(pokemon, 'defense')
+    case 'sp_attack_iv':
+      return sortByIVStat(pokemon, 'spAttack')
+    case 'sp_defense_iv':
+      return sortByIVStat(pokemon, 'spDefense')
+    case 'speed_iv':
+      return sortByIVStat(pokemon, 'speed')
+    default:
+      return pokemon
+  }
+}
+
+function applyFiltering(pokemon: Pokemon[], filter: FilterOption): Pokemon[] {
+  switch (filter) {
+    case 'grade_s':
+      return filterByMinGrade(pokemon, 'S')
+    case 'grade_a':
+      return filterByMinGrade(pokemon, 'A')
+    case 'has_perfect':
+      return filterHasPerfectIV(pokemon)
+    default:
+      return pokemon
+  }
+}
 
 export function BoxPanel() {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedPokemon, setSelectedPokemon] = useState<string | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null)
+  const [detailPokemon, setDetailPokemon] = useState<Pokemon | null>(null)
+  const [sortBy, setSortBy] = useState<SortOption>('default')
+  const [filterBy, setFilterBy] = useState<FilterOption>('all')
 
   const box = useGameStore((state) => state.box)
   const party = useGameStore((state) => state.party)
+
+  // Apply sorting and filtering
+  const displayedBox = useMemo(() => {
+    let result = [...box]
+    result = applyFiltering(result, filterBy)
+    result = applySorting(result, sortBy)
+    return result
+  }, [box, sortBy, filterBy])
 
   const handleSwap = () => {
     if (selectedPokemon && selectedSlot) {
@@ -80,6 +161,32 @@ export function BoxPanel() {
                     </svg>
                   </button>
                 </div>
+
+                {/* Sort & Filter Controls */}
+                <div className="px-4 py-2 border-b border-[#2a2a4a] flex gap-2">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortOption)}
+                    className="flex-1 px-2 py-1.5 text-xs rounded-lg bg-[#1a1a2e] border border-[#2a2a4a] text-white focus:border-[#5B6EEA] focus:outline-none"
+                  >
+                    {SORT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        Sort: {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={filterBy}
+                    onChange={(e) => setFilterBy(e.target.value as FilterOption)}
+                    className="flex-1 px-2 py-1.5 text-xs rounded-lg bg-[#1a1a2e] border border-[#2a2a4a] text-white focus:border-[#5B6EEA] focus:outline-none"
+                  >
+                    {FILTER_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        Filter: {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Swap UI */}
@@ -116,6 +223,16 @@ export function BoxPanel() {
                     </button>
                     <button
                       onClick={() => {
+                        const pokemon = box.find(p => p.id === selectedPokemon)
+                        if (pokemon) setDetailPokemon(pokemon)
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-[#1a1a2e] border border-[#5B6EEA] text-[#5B6EEA] hover:bg-[#5B6EEA]/10 transition-all duration-200"
+                      title="View IVs and stats"
+                    >
+                      Stats
+                    </button>
+                    <button
+                      onClick={() => {
                         setSelectedPokemon(null)
                         setSelectedSlot(null)
                       }}
@@ -145,9 +262,16 @@ export function BoxPanel() {
                     </div>
                     <p className="text-sm text-[#606080]">Catch Pokemon to fill it up!</p>
                   </div>
+                ) : displayedBox.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="font-pixel text-xs text-[#606080] tracking-wider mb-2">
+                      NO MATCHES
+                    </div>
+                    <p className="text-sm text-[#606080]">No Pokemon match the current filter</p>
+                  </div>
                 ) : (
                   <div className="space-y-3">
-                    {box.map((pokemon, index) => (
+                    {displayedBox.map((pokemon, index) => (
                       <div
                         key={pokemon.id}
                         className="animate-slide-up"
@@ -156,9 +280,10 @@ export function BoxPanel() {
                         <PokemonCard
                           pokemon={pokemon}
                           selected={selectedPokemon === pokemon.id}
-                          onClick={() => setSelectedPokemon(
-                            selectedPokemon === pokemon.id ? null : pokemon.id
-                          )}
+                          onClick={() => {
+                            // Single click opens details panel
+                            setDetailPokemon(pokemon)
+                          }}
                           compact
                         />
                       </div>
@@ -171,13 +296,22 @@ export function BoxPanel() {
               {!selectedPokemon && box.length > 0 && (
                 <div className="p-3 border-t border-[#2a2a4a] text-center">
                   <p className="text-xs text-[#606080]">
-                    Tap a Pokemon to swap with your party
+                    Tap to select, tap again to view details
                   </p>
                 </div>
               )}
             </div>
           </div>
         </>
+      )}
+
+      {/* Pokemon Detail Panel */}
+      {detailPokemon && (
+        <PokemonDetailPanel
+          pokemon={detailPokemon}
+          isOpen={!!detailPokemon}
+          onClose={() => setDetailPokemon(null)}
+        />
       )}
     </>
   )

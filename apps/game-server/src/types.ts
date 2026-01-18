@@ -24,9 +24,17 @@ export interface Pokemon {
   stat_sp_attack: number
   stat_sp_defense: number
   stat_speed: number
+  // Individual Values (0-31) - affect stat calculations
+  iv_hp: number
+  iv_attack: number
+  iv_defense: number
+  iv_sp_attack: number
+  iv_sp_defense: number
+  iv_speed: number
   party_slot: number | null
   caught_at: string
   is_shiny: boolean
+  catch_location?: string
   species?: PokemonSpecies
 }
 
@@ -75,6 +83,13 @@ export interface WildPokemon {
   stat_sp_attack: number
   stat_sp_defense: number
   stat_speed: number
+  // Individual Values (0-31) - transferred to caught Pokemon
+  iv_hp: number
+  iv_attack: number
+  iv_defense: number
+  iv_sp_attack: number
+  iv_sp_defense: number
+  iv_speed: number
   is_shiny: boolean
 }
 

@@ -19,24 +19,28 @@ import type {
   BallType
 } from './types.js'
 import type { GymLeader, GymLeaderPokemon } from './db.js'
+import { generateIVs, ivsToDbFormat } from './ivs.js'
 
-// Stat calculation
-export function calculateHP(baseHP: number, level: number): number {
-  return Math.floor((2 * baseHP * level / 100) + level + 10)
+// Stat calculation (with IVs)
+// Formula: HP = floor(((2 * base + IV) * level / 100) + level + 10)
+export function calculateHP(baseHP: number, level: number, iv: number = 0): number {
+  return Math.floor(((2 * baseHP + iv) * level / 100) + level + 10)
 }
 
-export function calculateStat(baseStat: number, level: number): number {
-  return Math.floor((2 * baseStat * level / 100) + 5)
+// Formula: Stat = floor(((2 * base + IV) * level / 100) + 5)
+export function calculateStat(baseStat: number, level: number, iv: number = 0): number {
+  return Math.floor(((2 * baseStat + iv) * level / 100) + 5)
 }
 
 export function recalculateStats(pokemon: Pokemon, species: PokemonSpecies): void {
   const level = pokemon.level
-  pokemon.max_hp = calculateHP(species.base_hp, level)
-  pokemon.stat_attack = calculateStat(species.base_attack, level)
-  pokemon.stat_defense = calculateStat(species.base_defense, level)
-  pokemon.stat_sp_attack = calculateStat(species.base_sp_attack, level)
-  pokemon.stat_sp_defense = calculateStat(species.base_sp_defense, level)
-  pokemon.stat_speed = calculateStat(species.base_speed, level)
+  // Use Pokemon's IVs in stat calculation
+  pokemon.max_hp = calculateHP(species.base_hp, level, pokemon.iv_hp)
+  pokemon.stat_attack = calculateStat(species.base_attack, level, pokemon.iv_attack)
+  pokemon.stat_defense = calculateStat(species.base_defense, level, pokemon.iv_defense)
+  pokemon.stat_sp_attack = calculateStat(species.base_sp_attack, level, pokemon.iv_sp_attack)
+  pokemon.stat_sp_defense = calculateStat(species.base_sp_defense, level, pokemon.iv_sp_defense)
+  pokemon.stat_speed = calculateStat(species.base_speed, level, pokemon.iv_speed)
   pokemon.current_hp = pokemon.max_hp // Full heal on level up
 }
 
@@ -45,19 +49,31 @@ export function xpForLevel(level: number): number {
   return Math.floor((6 * Math.pow(level, 3)) / 5)
 }
 
-// Generate wild pokemon with all stats
+// Generate wild pokemon with all stats and IVs
 export function generateWildPokemon(species: PokemonSpecies, level: number): WildPokemon {
+  const isShiny = rollShiny()
+  // Generate IVs - shiny Pokemon get 3 guaranteed perfect IVs and floor of 5
+  const ivs = generateIVs({ isShiny })
+  const dbIVs = ivsToDbFormat(ivs)
+
   return {
     species_id: species.id,
     species,
     level,
-    max_hp: calculateHP(species.base_hp, level),
-    stat_attack: calculateStat(species.base_attack, level),
-    stat_defense: calculateStat(species.base_defense, level),
-    stat_sp_attack: calculateStat(species.base_sp_attack, level),
-    stat_sp_defense: calculateStat(species.base_sp_defense, level),
-    stat_speed: calculateStat(species.base_speed, level),
-    is_shiny: rollShiny()
+    max_hp: calculateHP(species.base_hp, level, ivs.hp),
+    stat_attack: calculateStat(species.base_attack, level, ivs.attack),
+    stat_defense: calculateStat(species.base_defense, level, ivs.defense),
+    stat_sp_attack: calculateStat(species.base_sp_attack, level, ivs.spAttack),
+    stat_sp_defense: calculateStat(species.base_sp_defense, level, ivs.spDefense),
+    stat_speed: calculateStat(species.base_speed, level, ivs.speed),
+    // IVs stored on wild Pokemon for transfer when caught
+    iv_hp: dbIVs.iv_hp,
+    iv_attack: dbIVs.iv_attack,
+    iv_defense: dbIVs.iv_defense,
+    iv_sp_attack: dbIVs.iv_sp_attack,
+    iv_sp_defense: dbIVs.iv_sp_defense,
+    iv_speed: dbIVs.iv_speed,
+    is_shiny: isShiny
   }
 }
 

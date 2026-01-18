@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon, BlockedPlayer } from './types.js'
+import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon, BlockedPlayer, WildPokemon } from './types.js'
+import { calculateHP, calculateStat } from './game.js'
 
 let supabase: SupabaseClient
 
@@ -197,32 +198,33 @@ export async function getAllSpecies(): Promise<PokemonSpecies[]> {
 // Pokemon mutations
 export async function saveCaughtPokemon(
   playerId: string,
-  species: PokemonSpecies,
-  level: number,
-  isShiny: boolean = false
+  wild: WildPokemon,
+  catchLocation?: string
 ): Promise<Pokemon | null> {
-  const maxHp = Math.floor((2 * species.base_hp * level / 100) + level + 10)
-  const attack = Math.floor((2 * species.base_attack * level / 100) + 5)
-  const defense = Math.floor((2 * species.base_defense * level / 100) + 5)
-  const spAttack = Math.floor((2 * species.base_sp_attack * level / 100) + 5)
-  const spDefense = Math.floor((2 * species.base_sp_defense * level / 100) + 5)
-  const speed = Math.floor((2 * species.base_speed * level / 100) + 5)
-
+  // Use the wild Pokemon's IVs and pre-calculated stats
   const { data, error } = await supabase
     .from('pokemon')
     .insert({
       owner_id: playerId,
-      species_id: species.id,
-      level,
+      species_id: wild.species_id,
+      level: wild.level,
       xp: 0,
-      current_hp: maxHp,
-      max_hp: maxHp,
-      stat_attack: attack,
-      stat_defense: defense,
-      stat_sp_attack: spAttack,
-      stat_sp_defense: spDefense,
-      stat_speed: speed,
-      is_shiny: isShiny
+      current_hp: wild.max_hp,
+      max_hp: wild.max_hp,
+      stat_attack: wild.stat_attack,
+      stat_defense: wild.stat_defense,
+      stat_sp_attack: wild.stat_sp_attack,
+      stat_sp_defense: wild.stat_sp_defense,
+      stat_speed: wild.stat_speed,
+      // Transfer IVs from wild Pokemon
+      iv_hp: wild.iv_hp,
+      iv_attack: wild.iv_attack,
+      iv_defense: wild.iv_defense,
+      iv_sp_attack: wild.iv_sp_attack,
+      iv_sp_defense: wild.iv_sp_defense,
+      iv_speed: wild.iv_speed,
+      is_shiny: wild.is_shiny,
+      catch_location: catchLocation
     })
     .select()
     .single()

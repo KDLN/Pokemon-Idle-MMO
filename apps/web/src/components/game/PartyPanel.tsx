@@ -1,10 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { PokemonCard, EmptyPokemonSlot } from './PokemonCard'
+import { PokemonDetailPanel } from './PokemonDetailPanel'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { getStaggerDelayStyle } from '@/lib/ui'
 import { gameSocket } from '@/lib/ws/gameSocket'
+import type { Pokemon } from '@/types/game'
 
 // Pokeball icon component
 function PokeballIcon({ className = '' }: { className?: string }) {
@@ -33,6 +36,8 @@ function StarIcon({ filled, className = '' }: { filled: boolean; className?: str
 export function PartyPanel() {
   const party = useGameStore((state) => state.party)
   const inventory = useGameStore((state) => state.inventory)
+  const [detailPokemon, setDetailPokemon] = useState<Pokemon | null>(null)
+
   const activePartyCount = party.filter(p => p !== null).length
   const totalLevel = party.filter(p => p).reduce((sum, p) => sum + (p?.level || 0), 0)
   const powerStars = Math.min(5, Math.floor(activePartyCount * 0.8) + 1)
@@ -96,6 +101,7 @@ export function PartyPanel() {
               <PokemonCard
                 pokemon={pokemon}
                 showXP
+                onClick={() => setDetailPokemon(pokemon)}
                 canRemove={activePartyCount > 1}
                 onRemove={() => {
                   if (pokemon.party_slot) {
@@ -111,6 +117,15 @@ export function PartyPanel() {
           )
         )}
       </div>
+
+      {/* Pokemon Detail Panel */}
+      {detailPokemon && (
+        <PokemonDetailPanel
+          pokemon={detailPokemon}
+          isOpen={!!detailPokemon}
+          onClose={() => setDetailPokemon(null)}
+        />
+      )}
     </Card>
   )
 }

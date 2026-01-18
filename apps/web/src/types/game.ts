@@ -25,9 +25,20 @@ export interface Pokemon {
   stat_sp_attack: number
   stat_sp_defense: number
   stat_speed: number
+  // Individual Values (0-31) - affect stat calculations
+  iv_hp: number
+  iv_attack: number
+  iv_defense: number
+  iv_sp_attack: number
+  iv_sp_defense: number
+  iv_speed: number
   party_slot: number | null
   caught_at: string
   is_shiny?: boolean
+  // Additional info fields
+  original_trainer?: string
+  nature?: string
+  catch_location?: string
 }
 
 export interface PokemonSpecies {

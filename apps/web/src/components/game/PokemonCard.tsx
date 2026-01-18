@@ -12,6 +12,7 @@ import {
 } from '@/lib/ui'
 import { HPBar, XPBar } from '@/components/ui/ProgressBar'
 import { TypeBadge, Badge } from '@/components/ui/Badge'
+import { IVGradeBadge } from './IVGradeBadge'
 
 interface HeldItemSlotProps {
   itemId?: string | null
@@ -88,6 +89,14 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
         )}
         style={{ borderLeftColor: isShiny ? '#FFD700' : speciesData.color }}
       >
+        {/* IV Grade Badge */}
+        <div className={cn(
+          "absolute top-1 z-10",
+          isShiny ? "left-1" : "right-1"
+        )}>
+          <IVGradeBadge pokemon={pokemon} size="xs" />
+        </div>
+
         {/* Shiny indicator */}
         {isShiny && (
           <div className="absolute top-1 right-1 text-yellow-400 animate-pulse">
@@ -210,13 +219,14 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
 
       {/* Content */}
       <div className="relative p-2 sm:p-3">
-        {/* Header with type badges */}
+        {/* Header with type badges and IV grade */}
         <div className="flex items-start justify-between mb-1.5 sm:mb-2">
           <div className="flex items-center gap-1 flex-wrap">
             <TypeBadge type={speciesData.type} size="sm" />
             {speciesData.type2 && (
               <TypeBadge type={speciesData.type2} size="sm" />
             )}
+            <IVGradeBadge pokemon={pokemon} size="sm" />
             {isShiny && (
               <Badge variant="shiny" size="sm">SHINY</Badge>
             )}

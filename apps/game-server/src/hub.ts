@@ -991,11 +991,12 @@ export class GameHub {
         // Handle successful catch - save Pokemon FIRST, then consume ball
         // This prevents losing balls if Pokemon save fails
         if (catchResult.success) {
+          // Pass the entire wild Pokemon to transfer IVs and stats
+          // Also pass the zone name as catch location
           const pokemon = await saveCaughtPokemon(
             client.session.player.id,
-            wild.species,
-            wild.level,
-            wild.is_shiny
+            wild,
+            client.session.zone.name
           )
           if (pokemon) {
             // Pokemon saved successfully - now save ball consumption
