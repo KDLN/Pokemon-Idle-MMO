@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon, BlockedPlayer, WildPokemon } from './types.js'
+import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon, BlockedPlayer, WildPokemon, Guild, GuildMember, GuildPreview, PlayerGuildInfo } from './types.js'
 import { calculateHP, calculateStat } from './game.js'
 
 let supabase: SupabaseClient
@@ -2292,5 +2292,212 @@ export async function updateWeeklyStats(
         highest_level: update.level || 0,
         pokedex_count: update.pokedex || 0
       })
+  }
+}
+
+// ============================================
+// GUILD QUERIES
+// ============================================
+
+/**
+ * Create a new guild (calls database function)
+ * The database function handles:
+ * - Validating player is not already in a guild
+ * - Checking 24hr cooldown since leaving previous guild
+ * - Creating guild record
+ * - Creating guild_member record with 'leader' role
+ * - Incrementing member_count
+ */
+export async function createGuild(
+  playerId: string,
+  name: string,
+  tag: string,
+  description?: string
+): Promise<{ success: boolean; guild_id?: string; error?: string }> {
+  const { data, error } = await supabase.rpc('create_guild', {
+    p_player_id: playerId,
+    p_name: name,
+    p_tag: tag,
+    p_description: description || null
+  })
+
+  if (error) {
+    console.error('Error creating guild:', error)
+    return { success: false, error: 'Database error' }
+  }
+
+  return data as { success: boolean; guild_id?: string; error?: string }
+}
+
+/**
+ * Join an open guild (calls database function)
+ * The database function handles:
+ * - Validating player is not already in a guild
+ * - Checking 24hr cooldown since leaving previous guild
+ * - Checking guild exists and is 'open' join mode
+ * - Checking guild is not full (member_count < max_members)
+ * - Creating guild_member record with 'member' role
+ * - Incrementing member_count
+ */
+export async function joinGuild(
+  playerId: string,
+  guildId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('join_guild', {
+    p_player_id: playerId,
+    p_guild_id: guildId
+  })
+
+  if (error) {
+    console.error('Error joining guild:', error)
+    return { success: false, error: 'Database error' }
+  }
+
+  return data as { success: boolean; error?: string }
+}
+
+/**
+ * Leave current guild (calls database function)
+ * The database function handles:
+ * - Validating player is in a guild
+ * - If leader with other members: error (must transfer leadership first)
+ * - If leader and only member: disband guild (delete it)
+ * - Otherwise: remove from guild, decrement member_count, set left_guild_at
+ */
+export async function leaveGuild(
+  playerId: string
+): Promise<{ success: boolean; guild_disbanded?: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('leave_guild', {
+    p_player_id: playerId
+  })
+
+  if (error) {
+    console.error('Error leaving guild:', error)
+    return { success: false, error: 'Database error' }
+  }
+
+  return data as { success: boolean; guild_disbanded?: boolean; error?: string }
+}
+
+/**
+ * Get guild by ID with full details
+ */
+export async function getGuildById(guildId: string): Promise<Guild | null> {
+  const { data, error } = await supabase
+    .from('guilds')
+    .select('*')
+    .eq('id', guildId)
+    .single()
+
+  if (error || !data) return null
+  return data as Guild
+}
+
+/**
+ * Get guild members with player info, sorted by role then join date
+ * Role sorting: leader (1) -> officer (2) -> member (3)
+ */
+export async function getGuildMembers(guildId: string): Promise<GuildMember[]> {
+  const { data, error } = await supabase
+    .from('guild_members')
+    .select(`
+      id,
+      guild_id,
+      player_id,
+      role,
+      joined_at,
+      players!inner (
+        username,
+        last_online
+      )
+    `)
+    .eq('guild_id', guildId)
+    .order('role', { ascending: true })
+    .order('joined_at', { ascending: true })
+
+  if (error || !data) return []
+
+  // Transform to flatten players join
+  return data.map((m: { id: string; guild_id: string; player_id: string; role: string; joined_at: string; players: { username: string; last_online: string | null } | { username: string; last_online: string | null }[] }) => {
+    // Handle both object and array forms from Supabase join
+    const playerData = Array.isArray(m.players) ? m.players[0] : m.players
+    return {
+      id: m.id,
+      guild_id: m.guild_id,
+      player_id: m.player_id,
+      role: m.role as GuildMember['role'],
+      joined_at: m.joined_at,
+      username: playerData.username,
+      last_online: playerData.last_online
+    }
+  })
+}
+
+/**
+ * Get player's current guild info (for session loading)
+ * Returns lightweight object for caching in PlayerSession
+ */
+export async function getPlayerGuild(playerId: string): Promise<PlayerGuildInfo | null> {
+  const { data, error } = await supabase
+    .from('guild_members')
+    .select(`
+      role,
+      guilds!inner (
+        id,
+        name,
+        tag
+      )
+    `)
+    .eq('player_id', playerId)
+    .single()
+
+  if (error || !data) return null
+
+  // Handle both object and array forms from Supabase join
+  const d = data as { role: string; guilds: { id: string; name: string; tag: string } | { id: string; name: string; tag: string }[] }
+  const guildData = Array.isArray(d.guilds) ? d.guilds[0] : d.guilds
+
+  return {
+    id: guildData.id,
+    name: guildData.name,
+    tag: guildData.tag,
+    role: d.role as PlayerGuildInfo['role']
+  }
+}
+
+/**
+ * Search/list guilds with pagination
+ * Searches by name or tag (case-insensitive)
+ * Returns GuildPreview (subset of Guild for discovery)
+ */
+export async function searchGuilds(
+  query?: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<{ guilds: GuildPreview[]; total: number }> {
+  const offset = (page - 1) * limit
+
+  let queryBuilder = supabase
+    .from('guilds')
+    .select('id, name, tag, description, member_count, max_members, join_mode', { count: 'exact' })
+
+  // Filter by search query if provided
+  if (query && query.trim()) {
+    const searchTerm = `%${query.trim()}%`
+    queryBuilder = queryBuilder.or(`name.ilike.${searchTerm},tag.ilike.${searchTerm}`)
+  }
+
+  const { data, error, count } = await queryBuilder
+    .order('member_count', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (error) {
+    console.error('Error searching guilds:', error)
+    return { guilds: [], total: 0 }
+  }
+
+  return {
+    guilds: (data || []) as GuildPreview[],
+    total: count || 0
   }
 }
