@@ -72,6 +72,9 @@ export interface WildPokemon {
   max_hp: number
   stat_attack: number
   stat_defense: number
+  stat_sp_attack: number
+  stat_sp_defense: number
+  stat_speed: number
   is_shiny: boolean
 }
 

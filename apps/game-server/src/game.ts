@@ -45,7 +45,7 @@ export function xpForLevel(level: number): number {
   return Math.floor((6 * Math.pow(level, 3)) / 5)
 }
 
-// Generate wild pokemon
+// Generate wild pokemon with all stats
 export function generateWildPokemon(species: PokemonSpecies, level: number): WildPokemon {
   return {
     species_id: species.id,
@@ -54,6 +54,9 @@ export function generateWildPokemon(species: PokemonSpecies, level: number): Wil
     max_hp: calculateHP(species.base_hp, level),
     stat_attack: calculateStat(species.base_attack, level),
     stat_defense: calculateStat(species.base_defense, level),
+    stat_sp_attack: calculateStat(species.base_sp_attack, level),
+    stat_sp_defense: calculateStat(species.base_sp_defense, level),
+    stat_speed: calculateStat(species.base_speed, level),
     is_shiny: rollShiny()
   }
 }
@@ -338,7 +341,7 @@ export function simulate1v1Battle(
   const MAX_TURNS = 10  // Prevent infinite loops
 
   // Determine who goes first (speed comparison)
-  const leadFirst = lead.stat_speed >= wild.stat_attack // Using stat_attack as proxy for wild speed
+  const leadFirst = lead.stat_speed >= wild.stat_speed
 
   while (leadHP > 0 && wildHP > 0 && turnNumber < MAX_TURNS) {
     // Determine attacker based on turn and speed
@@ -348,14 +351,16 @@ export function simulate1v1Battle(
     if (playerAttacks) {
       // Lead Pokemon attacks wild
       const attackStat = Math.max(lead.stat_attack, lead.stat_sp_attack)
-  const leadMove = selectMove(leadSpecies, wild.species)
-  const { damage, isCritical } = calculateDamage(
-    lead.level,
-    attackStat,
-    wild.stat_defense,
-    leadTypeMultiplier,
-    leadMove.power
-  )
+      const leadMove = selectMove(leadSpecies, wild.species)
+      // Use max of defense/sp_defense for wild Pokemon (same as player)
+      const wildDefenseStat = Math.max(wild.stat_defense, wild.stat_sp_defense)
+      const { damage, isCritical } = calculateDamage(
+        lead.level,
+        attackStat,
+        wildDefenseStat,
+        leadTypeMultiplier,
+        leadMove.power
+      )
 
       const wildHPBefore = wildHP
       wildHP = Math.max(0, wildHP - damage)
@@ -382,9 +387,11 @@ export function simulate1v1Battle(
     } else {
       // Wild Pokemon attacks lead
       const wildMove = selectMove(wild.species, leadSpecies)
+      // Use max of attack/sp_attack for wild Pokemon (same as player)
+      const wildAttackStat = Math.max(wild.stat_attack, wild.stat_sp_attack)
       const { damage, isCritical } = calculateDamage(
         wild.level,
-        wild.stat_attack,
+        wildAttackStat,
         Math.max(lead.stat_defense, lead.stat_sp_defense),
         wildTypeMultiplier,
         wildMove.power
@@ -687,7 +694,7 @@ export function checkEvolutions(
       continue
     }
 
-    console.log(`[Evolution] Found pokemon: species_id=${pokemon.species_id}, level=${pokemon.level}`)
+    console.log(`[Evolution] Found pokemon: id=${pokemon.id}, species_id=${pokemon.species_id}, level=${pokemon.level}`)
 
     // Skip if we already queued an evolution for this Pokemon in this tick
     // (handles multi-level-up in single tick, e.g. 15→18)
@@ -767,7 +774,9 @@ export function applyEvolution(
   targetSpecies: PokemonSpecies,
   newStats: { max_hp: number; attack: number; defense: number; sp_attack: number; sp_defense: number; speed: number }
 ): void {
+  console.log(`[applyEvolution] BEFORE: pokemon.id=${pokemon.id}, species_id=${pokemon.species_id}`)
   pokemon.species_id = targetSpecies.id
+  console.log(`[applyEvolution] AFTER: pokemon.id=${pokemon.id}, species_id=${pokemon.species_id}, targetSpecies.id=${targetSpecies.id}`)
   pokemon.max_hp = newStats.max_hp
   pokemon.current_hp = newStats.max_hp // Full heal on evolution
   pokemon.stat_attack = newStats.attack
