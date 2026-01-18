@@ -20,6 +20,15 @@ Phases are ordered by dependency: foundation before features, simpler features b
 
 **Dependencies:** None (first phase)
 
+**Plans:** 5 plans
+
+Plans:
+- [ ] 01-01-PLAN.md - Database schema (guilds, guild_members, RLS, functions)
+- [ ] 01-02-PLAN.md - Shared types for guild system
+- [ ] 01-03-PLAN.md - Game server handlers (create, join, leave, search)
+- [ ] 01-04-PLAN.md - Role management (promote, demote, kick, transfer, disband)
+- [ ] 01-05-PLAN.md - Frontend UI (guild panel, modals, member roster)
+
 **Success Criteria:**
 - [ ] Player can create guild with unique name (3-30 chars), tag (2-5 chars uppercase), and description
 - [ ] Guild creation fails if name or tag already exists
@@ -184,15 +193,15 @@ Phases are ordered by dependency: foundation before features, simpler features b
 
 ## Progress
 
-| Phase | Name | Requirements | Status |
-|-------|------|--------------|--------|
-| 1 | Guild Foundation | 14 | Not Started |
-| 2 | Guild Invites | 5 | Not Started |
-| 3 | Guild Chat | 3 | Not Started |
-| 4 | Guild Bank | 18 | Not Started |
-| 5 | Guild Quests | 6 | Not Started |
-| 6 | Guild Shop & Statistics | 12 | Not Started |
-| 7 | Zone Content | 5 | Not Started |
+| Phase | Name | Requirements | Plans | Status |
+|-------|------|--------------|-------|--------|
+| 1 | Guild Foundation | 14 | 5 | Planned |
+| 2 | Guild Invites | 5 | 0 | Not Started |
+| 3 | Guild Chat | 3 | 0 | Not Started |
+| 4 | Guild Bank | 18 | 0 | Not Started |
+| 5 | Guild Quests | 6 | 0 | Not Started |
+| 6 | Guild Shop & Statistics | 12 | 0 | Not Started |
+| 7 | Zone Content | 5 | 0 | Not Started |
 
 **Total:** 63 requirements mapped (55 v1 + 8 expanded success criteria)
 
