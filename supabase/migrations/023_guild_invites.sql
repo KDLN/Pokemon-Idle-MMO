@@ -29,8 +29,10 @@ CREATE INDEX idx_guild_invites_guild ON guild_invites(guild_id);
 -- Find invites by player (for players viewing received invites)
 CREATE INDEX idx_guild_invites_player ON guild_invites(player_id);
 
--- Find non-expired invites efficiently
-CREATE INDEX idx_guild_invites_expires ON guild_invites(expires_at) WHERE expires_at > NOW();
+-- Index on expires_at for filtering non-expired invites
+-- Note: We filter expires_at > NOW() at query time, not in the index predicate
+-- (NOW() is not IMMUTABLE so can't be used in partial index)
+CREATE INDEX idx_guild_invites_expires ON guild_invites(expires_at);
 
 -- ============================================
 -- ROW LEVEL SECURITY
