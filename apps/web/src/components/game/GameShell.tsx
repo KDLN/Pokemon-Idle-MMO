@@ -26,6 +26,7 @@ import { MuseumPanel } from './interactions/MuseumPanel'
 import { EvolutionModal } from './EvolutionModal'
 import { countOnlineFriends } from '@/lib/utils/friendUtils'
 import type { ActiveTradeSession } from '@/types/trade'
+import { GuildPanel } from './guild'
 
 // ============================================================================
 // LAYOUT-B: Compact 3-Column Grid Layout
@@ -203,7 +204,7 @@ function MapSidebar({ className = '' }: { className?: string }) {
 }
 
 // ===== SOCIAL SIDEBAR COMPONENT =====
-type SocialTab = 'chat' | 'friends' | 'trades'
+type SocialTab = 'chat' | 'friends' | 'trades' | 'guild'
 type TradesSubTab = 'active' | 'history'
 
 function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSession) => void }) {
@@ -226,7 +227,7 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
   // so badge counts are accurate on all mobile tabs immediately after connect
 
   // Keyboard navigation for tabs per WAI-ARIA tab pattern
-  const tabs: SocialTab[] = ['chat', 'friends', 'trades']
+  const tabs: SocialTab[] = ['chat', 'friends', 'trades', 'guild']
   const handleTabKeyDown = (e: React.KeyboardEvent, currentTab: SocialTab) => {
     const currentIndex = tabs.indexOf(currentTab)
     let newIndex = currentIndex
@@ -294,6 +295,18 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
             <span className="trade-count">{tradeRequestCount}</span>
           )}
         </button>
+        <button
+          id="social-tab-guild"
+          className={`stab ${tab === 'guild' ? 'active' : ''}`}
+          onClick={() => setTab('guild')}
+          onKeyDown={(e) => handleTabKeyDown(e, 'guild')}
+          role="tab"
+          aria-selected={tab === 'guild'}
+          aria-controls="social-panel-guild"
+          tabIndex={tab === 'guild' ? 0 : -1}
+        >
+          Guild
+        </button>
       </div>
 
       <div className="social-content">
@@ -354,6 +367,12 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
                 onFilterChange={setHistoryFilter}
               />
             )}
+          </div>
+        )}
+
+        {tab === 'guild' && (
+          <div id="social-panel-guild" role="tabpanel" aria-labelledby="social-tab-guild" className="guild-area">
+            <GuildPanel />
           </div>
         )}
       </div>
