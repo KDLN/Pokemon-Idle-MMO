@@ -45,6 +45,22 @@ export type {
   LeaderboardType,
   LeaderboardTimeframe,
   PlayerRank,
+  // Guild
+  Guild,
+  GuildMember,
+  GuildRole,
+  GuildJoinMode,
+  GuildPreview,
+  PlayerGuildInfo,
+  CreateGuildPayload,
+  JoinGuildPayload,
+  SearchGuildsPayload,
+  UpdateGuildSettingsPayload,
+  GuildDataPayload,
+  GuildListPayload,
+  GuildMemberJoinedPayload,
+  GuildMemberLeftPayload,
+  GuildErrorPayload,
   // Common
   WSMessage,
   ShopItem,
@@ -55,7 +71,7 @@ export type {
 // Backend-only types below
 // ========================
 
-import type { Player, Pokemon, PokemonSpecies, Zone, PendingEvolution, Trade } from '@pokemon-idle/shared'
+import type { Player, Pokemon, PokemonSpecies, Zone, PendingEvolution, Trade, PlayerGuildInfo } from '@pokemon-idle/shared'
 
 // Move data (backend battle calculation)
 export interface Move {
@@ -93,6 +109,8 @@ export interface PlayerSession {
   suppressedEvolutions: Set<string> // Pokemon IDs where evolution was cancelled (re-prompt on next level up)
   // Trade state
   activeTrade?: Trade
+  // Guild state (loaded on connect, updated on guild changes)
+  guild?: PlayerGuildInfo
 }
 
 // Weekly stats tracking
