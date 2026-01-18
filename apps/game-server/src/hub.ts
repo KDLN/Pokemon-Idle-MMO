@@ -359,7 +359,12 @@ export class GameHub {
           this.sendGameState(client)
           break
         case 'debug_levelup':
-          this.handleDebugLevelUp(client, msg.payload as { pokemon_id?: string; levels?: number })
+          // Only allow in development environment
+          if (process.env.NODE_ENV === 'development') {
+            this.handleDebugLevelUp(client, msg.payload as { pokemon_id?: string; levels?: number })
+          } else {
+            this.sendError(client, 'Debug commands are not available in production')
+          }
           break
         case 'chat_message':
           this.handleChatMessage(client, msg.payload as { channel: ChatChannel; content: string })
@@ -1007,12 +1012,14 @@ export class GameHub {
             }
             await updatePokedex(client.session.player.id, wild.species_id, true)
           } else {
-            // Pokemon save failed - refund the ball in memory (will sync on next tick)
+            // Pokemon save failed - refund the ball in memory AND database
             // and mark catch as failed
             if (catchResult.ball_type === 'great_ball') {
               client.session.great_balls++
+              await updatePlayerGreatBalls(client.session.player.id, client.session.great_balls)
             } else {
               client.session.pokeballs++
+              await updatePlayerPokeballs(client.session.player.id, client.session.pokeballs)
             }
             catchResult.success = false
             console.error(`Failed to save caught Pokemon for player ${client.session.player.id}`)
@@ -1077,11 +1084,12 @@ export class GameHub {
       }
 
       // Save HP after battles (even without level-up)
-      // This ensures battle damage persists across page reloads
+      // This ensures battle damage persists across page reloads for ALL party members
       if (result.encounter) {
-        const lead = client.session.party.find(p => p && p.current_hp > 0)
-        if (lead) {
-          await updatePokemonHP(lead.id, lead.current_hp, client.session.player.id)
+        for (const pokemon of client.session.party) {
+          if (pokemon) {
+            await updatePokemonHP(pokemon.id, pokemon.current_hp, client.session.player.id)
+          }
         }
       }
 

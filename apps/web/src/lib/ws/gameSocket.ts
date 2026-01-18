@@ -1071,7 +1071,7 @@ class GameSocket {
 // Singleton instance
 export const gameSocket = new GameSocket()
 
-// Expose for debugging in browser console
-if (typeof window !== 'undefined') {
+// Expose for debugging in browser console (development only)
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   (window as unknown as { __gameSocket: GameSocket }).__gameSocket = gameSocket
 }
