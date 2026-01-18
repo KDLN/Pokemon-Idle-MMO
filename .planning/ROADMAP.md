@@ -88,6 +88,15 @@ Plans:
 
 **Dependencies:** Phase 1 (requires guild membership)
 
+**Plans:** 3 plans
+
+**Status:** Not Started
+
+Plans:
+- [ ] 03-01-PLAN.md - Database migration (guild_messages table, RLS)
+- [ ] 03-02-PLAN.md - Game server handlers (send message, get history, broadcast)
+- [ ] 03-03-PLAN.md - Frontend integration (enable guild channel, role badges, history loading)
+
 **Success Criteria:**
 - [ ] Guild has dedicated chat channel visible only to guild members
 - [ ] Non-members cannot see or access guild chat
@@ -208,7 +217,7 @@ Plans:
 |-------|------|--------------|-------|--------|
 | 1 | Guild Foundation | 14 | 5 | Complete |
 | 2 | Guild Invites | 5 | 3 | Complete |
-| 3 | Guild Chat | 3 | 0 | Not Started |
+| 3 | Guild Chat | 3 | 3 | Not Started |
 | 4 | Guild Bank | 18 | 0 | Not Started |
 | 5 | Guild Quests | 6 | 0 | Not Started |
 | 6 | Guild Shop & Statistics | 12 | 0 | Not Started |
