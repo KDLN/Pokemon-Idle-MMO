@@ -59,23 +59,24 @@ Plans:
 
 **Dependencies:** Phase 1 (requires guilds and roles to exist)
 
-**Plans:** 4 plans
+**Plans:** 3 plans
+
+**Status:** Complete (2026-01-18)
 
 Plans:
-- [ ] 02-01-PLAN.md - Database migration (guild_invites table, RLS, functions)
-- [ ] 02-02-PLAN.md - Shared types for invite system
-- [ ] 02-03-PLAN.md - Game server handlers (send, accept, decline, list invites)
-- [ ] 02-04-PLAN.md - Frontend UI (invite button, pending invites list, accept/decline)
+- [x] 02-01-PLAN.md - Database migration (guild_invites table, RLS, functions)
+- [x] 02-02-PLAN.md - Shared types for invite system
+- [x] 02-03-PLAN.md - Game server handlers (send, accept, decline, list invites)
 
 **Success Criteria:**
-- [ ] Leader or Officer can send invite to any player not currently in a guild
-- [ ] Player receives notification when invited to a guild
-- [ ] Player can view list of pending invites received
-- [ ] Player can accept invite (joins guild as Member)
-- [ ] Player can decline invite (removes from pending list)
-- [ ] Invites automatically expire and are removed after 7 days
-- [ ] Guild can set join mode: Open (anyone can join), Invite-Only (requires invite), or Closed (no new members)
-- [ ] Join mode is respected: Open guilds allow direct join, Invite-Only requires invite, Closed blocks all joins
+- [x] Leader or Officer can send invite to any player not currently in a guild
+- [x] Player receives notification when invited to a guild
+- [x] Player can view list of pending invites received
+- [x] Player can accept invite (joins guild as Member)
+- [x] Player can decline invite (removes from pending list)
+- [x] Invites automatically expire and are removed after 7 days
+- [x] Guild can set join mode: Open (anyone can join), Invite-Only (requires invite), or Closed (no new members)
+- [x] Join mode is respected: Open guilds allow direct join, Invite-Only requires invite, Closed blocks all joins
 
 ---
 
@@ -206,7 +207,7 @@ Plans:
 | Phase | Name | Requirements | Plans | Status |
 |-------|------|--------------|-------|--------|
 | 1 | Guild Foundation | 14 | 5 | Complete |
-| 2 | Guild Invites | 5 | 4 | Planned |
+| 2 | Guild Invites | 5 | 3 | Complete |
 | 3 | Guild Chat | 3 | 0 | Not Started |
 | 4 | Guild Bank | 18 | 0 | Not Started |
 | 5 | Guild Quests | 6 | 0 | Not Started |
@@ -214,7 +215,7 @@ Plans:
 | 7 | Zone Content | 5 | 0 | Not Started |
 
 **Total:** 63 requirements mapped (55 v1 + 8 expanded success criteria)
-**Progress:** 14/55 requirements complete (25%)
+**Progress:** 19/55 requirements complete (35%)
 
 ---
 
