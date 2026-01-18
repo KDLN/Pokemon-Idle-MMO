@@ -1,0 +1,15 @@
+{
+  "name": "pokemon-idle-mmo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pokemon Idle MMO - A web-based idle game where players deploy trainers to catch Pokemon",
+  "scripts": {
+    "build:shared": "cd packages/shared && npm run build",
+    "dev:server": "npm run build:shared && cd apps/game-server && npm run dev",
+    "dev:web": "npm run build:shared && cd apps/web && npm run dev",
+    "build:server": "npm run build:shared && cd apps/game-server && npm run build",
+    "build:web": "npm run build:shared && cd apps/web && npm run build",
+    "build:all": "npm run build:shared && npm run build:server && npm run build:web",
+    "typecheck": "npm run build:shared && cd apps/game-server && npx tsc --noEmit && cd ../web && npx tsc --noEmit"
+  }
+}

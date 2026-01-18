@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@pokemon-idle/shared": ["../../packages/shared/dist/index"]
     }
   },
   "include": [
