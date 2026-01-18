@@ -113,6 +113,8 @@ export class GameHub {
   private speciesMap: Map<number, PokemonSpecies> = new Map()
   private tickInterval: NodeJS.Timeout | null = null
   private tradeReadyStates: Map<string, TradeReadyState> = new Map()
+  // Tracks trades currently being completed to prevent double-completion race condition
+  private tradesBeingCompleted: Set<string> = new Set()
   // In-memory whisper storage (session only, no DB persistence)
   private whisperHistory: Map<string, WhisperMessage[]> = new Map()
   // Whisper rate limiting: playerId -> timestamps of recent whispers
@@ -148,7 +150,7 @@ export class GameHub {
   }
 
   // Clean up rate limit entries for players who are no longer connected
-  private cleanupRateLimits() {
+  private async cleanupRateLimits() {
     const connectedPlayerIds = new Set(
       Array.from(this.clients.values())
         .filter(c => c.session)
@@ -166,6 +168,37 @@ export class GameHub {
     for (const playerId of this.whisperHistory.keys()) {
       if (!connectedPlayerIds.has(playerId)) {
         this.whisperHistory.delete(playerId)
+      }
+    }
+
+    // Clean up trade ready states for trades where both players are offline
+    // or for trades that no longer exist in the database
+    for (const tradeId of this.tradeReadyStates.keys()) {
+      // Check if any client has this trade as active
+      let tradeStillActive = false
+      for (const client of this.clients.values()) {
+        if (client.session?.activeTrade?.trade_id === tradeId) {
+          tradeStillActive = true
+          break
+        }
+      }
+      if (!tradeStillActive) {
+        this.tradeReadyStates.delete(tradeId)
+      }
+    }
+
+    // Clean up trades being completed set (should be empty normally, but just in case)
+    // Only keep entries for actually connected players with active trades
+    for (const tradeId of this.tradesBeingCompleted) {
+      let tradeStillActive = false
+      for (const client of this.clients.values()) {
+        if (client.session?.activeTrade?.trade_id === tradeId) {
+          tradeStillActive = true
+          break
+        }
+      }
+      if (!tradeStillActive) {
+        this.tradesBeingCompleted.delete(tradeId)
       }
     }
   }
@@ -324,6 +357,9 @@ export class GameHub {
           break
         case 'get_state':
           this.sendGameState(client)
+          break
+        case 'debug_levelup':
+          this.handleDebugLevelUp(client, msg.payload as { pokemon_id?: string; levels?: number })
           break
         case 'chat_message':
           this.handleChatMessage(client, msg.payload as { channel: ChatChannel; content: string })
@@ -947,14 +983,8 @@ export class GameHub {
         const catchResult = result.encounter.catch_result
         const wild = result.encounter.wild_pokemon
 
-        // Save the ball that was consumed
-        if (catchResult.ball_type === 'great_ball') {
-          await updatePlayerGreatBalls(client.session.player.id, client.session.great_balls)
-        } else {
-          await updatePlayerPokeballs(client.session.player.id, client.session.pokeballs)
-        }
-
-        // Handle successful catch
+        // Handle successful catch - save Pokemon FIRST, then consume ball
+        // This prevents losing balls if Pokemon save fails
         if (catchResult.success) {
           const pokemon = await saveCaughtPokemon(
             client.session.player.id,
@@ -963,6 +993,12 @@ export class GameHub {
             wild.is_shiny
           )
           if (pokemon) {
+            // Pokemon saved successfully - now save ball consumption
+            if (catchResult.ball_type === 'great_ball') {
+              await updatePlayerGreatBalls(client.session.player.id, client.session.great_balls)
+            } else {
+              await updatePlayerPokeballs(client.session.player.id, client.session.pokeballs)
+            }
             result.encounter.catch_result.pokemon_id = pokemon.id
             // Add the caught pokemon to the result so the client can add it to their box
             result.encounter.catch_result.caught_pokemon = {
@@ -970,9 +1006,25 @@ export class GameHub {
               species: wild.species
             }
             await updatePokedex(client.session.player.id, wild.species_id, true)
+          } else {
+            // Pokemon save failed - refund the ball in memory (will sync on next tick)
+            // and mark catch as failed
+            if (catchResult.ball_type === 'great_ball') {
+              client.session.great_balls++
+            } else {
+              client.session.pokeballs++
+            }
+            catchResult.success = false
+            console.error(`Failed to save caught Pokemon for player ${client.session.player.id}`)
           }
         } else {
-          // Failed catch - still mark as seen
+          // Failed catch - save ball consumption
+          if (catchResult.ball_type === 'great_ball') {
+            await updatePlayerGreatBalls(client.session.player.id, client.session.great_balls)
+          } else {
+            await updatePlayerPokeballs(client.session.player.id, client.session.pokeballs)
+          }
+          // Mark as seen in pokedex
           await updatePokedex(client.session.player.id, wild.species_id, false)
         }
       } else if (result.encounter) {
@@ -1004,10 +1056,16 @@ export class GameHub {
         )
 
         if (pendingEvolutions.length > 0) {
-          // Add to session's pending evolutions queue
-          client.session.pendingEvolutions.push(...pendingEvolutions)
-          // Include in tick result so client knows to show evolution modal
-          result.pending_evolutions = pendingEvolutions
+          // Filter out evolutions that are already pending (prevent duplicates across ticks)
+          const existingPokemonIds = new Set(client.session.pendingEvolutions.map(e => e.pokemon_id))
+          const newEvolutions = pendingEvolutions.filter(e => !existingPokemonIds.has(e.pokemon_id))
+
+          if (newEvolutions.length > 0) {
+            // Add to session's pending evolutions queue
+            client.session.pendingEvolutions.push(...newEvolutions)
+            // Include in tick result so client knows to show evolution modal
+            result.pending_evolutions = newEvolutions
+          }
         }
       } else if (result.xp_gained) {
         // Save XP gains to database (only if no level up, since level up saves full stats)
@@ -1015,6 +1073,15 @@ export class GameHub {
           if (pokemon && result.xp_gained[pokemon.id]) {
             await savePokemonXP(pokemon.id, pokemon.xp)
           }
+        }
+      }
+
+      // Save HP after battles (even without level-up)
+      // This ensures battle damage persists across page reloads
+      if (result.encounter) {
+        const lead = client.session.party.find(p => p && p.current_hp > 0)
+        if (lead) {
+          await updatePokemonHP(lead.id, lead.current_hp, client.session.player.id)
         }
       }
 
@@ -1851,8 +1918,13 @@ export class GameHub {
 
     // If both players are ready, auto-complete the trade
     if (readyState.sender_ready && readyState.receiver_ready) {
-      // CRITICAL: Delete ready state FIRST to prevent race condition
+      // CRITICAL: Use mutex to prevent double-completion race condition
       // where both players click ready simultaneously and both trigger completion
+      if (this.tradesBeingCompleted.has(tradeId)) {
+        console.log(`[Trade] Trade ${tradeId} completion already in progress, skipping`)
+        return
+      }
+      this.tradesBeingCompleted.add(tradeId)
       this.tradeReadyStates.delete(tradeId)
 
       const offers = await getTradeOffers(tradeId)
@@ -1918,6 +1990,9 @@ export class GameHub {
           this.sendError(otherClient, result.error || 'Failed to complete trade')
         }
       }
+
+      // Clean up the completion mutex
+      this.tradesBeingCompleted.delete(tradeId)
     }
   }
 
@@ -2200,7 +2275,10 @@ export class GameHub {
     }
 
     // Database save succeeded - NOW update in-memory state
+    console.log(`[Evolution Confirm] Party BEFORE applyEvolution:`, client.session.party.map(p => p ? { id: p.id, species_id: p.species_id } : null))
     applyEvolution(pokemon, targetSpecies, newStats)
+    console.log(`[Evolution Confirm] Party AFTER applyEvolution:`, client.session.party.map(p => p ? { id: p.id, species_id: p.species_id } : null))
+    console.log(`[Evolution Confirm] Pokemon object species_id=${pokemon.species_id}`)
 
     // Add evolved species to cache (in case it wasn't there)
     this.speciesMap.set(targetSpecies.id, targetSpecies)
@@ -2223,6 +2301,80 @@ export class GameHub {
 
     // Send evolution event to client
     this.send(client, 'evolution', evolutionEvent)
+  }
+
+  // DEBUG: Quick level up for testing evolutions
+  private async handleDebugLevelUp(client: Client, payload: { pokemon_id?: string; levels?: number }) {
+    if (!client.session) return
+
+    const levels = payload.levels || 1
+    const pokemon = payload.pokemon_id
+      ? client.session.party.find(p => p?.id === payload.pokemon_id)
+      : client.session.party.find(p => p !== null) // First Pokemon in party
+
+    if (!pokemon) {
+      this.sendError(client, 'No Pokemon found')
+      return
+    }
+
+    const oldLevel = pokemon.level
+    pokemon.level = Math.min(100, pokemon.level + levels)
+
+    // Recalculate stats
+    const species = this.speciesMap.get(pokemon.species_id)
+    if (species) {
+      recalculateStats(pokemon, species)
+    }
+
+    // Save to DB
+    await updatePokemonStats(pokemon)
+
+    console.log(`[DEBUG] Leveled up Pokemon ${pokemon.id} from ${oldLevel} to ${pokemon.level}`)
+
+    // Check for evolutions
+    const levelUps = [{
+      pokemon_id: pokemon.id,
+      pokemon_name: pokemon.nickname || species?.name || 'Pokemon',
+      new_level: pokemon.level,
+      new_stats: {
+        max_hp: pokemon.max_hp,
+        attack: pokemon.stat_attack,
+        defense: pokemon.stat_defense,
+        sp_attack: pokemon.stat_sp_attack,
+        sp_defense: pokemon.stat_sp_defense,
+        speed: pokemon.stat_speed
+      }
+    }]
+
+    const pendingEvolutions = checkEvolutions(
+      client.session.party,
+      levelUps,
+      this.speciesMap,
+      client.session.suppressedEvolutions
+    )
+
+    if (pendingEvolutions.length > 0) {
+      // Filter duplicates
+      const existingPokemonIds = new Set(client.session.pendingEvolutions.map(e => e.pokemon_id))
+      const newEvolutions = pendingEvolutions.filter(e => !existingPokemonIds.has(e.pokemon_id))
+      if (newEvolutions.length > 0) {
+        client.session.pendingEvolutions.push(...newEvolutions)
+      }
+    }
+
+    // Send updated state to client
+    this.send(client, 'debug_levelup_result', {
+      pokemon_id: pokemon.id,
+      old_level: oldLevel,
+      new_level: pokemon.level,
+      pending_evolutions: pendingEvolutions
+    })
+
+    // Also send party update so UI refreshes
+    this.send(client, 'party_update', {
+      party: client.session.party,
+      box: await getPlayerBox(client.session.player.id)
+    })
   }
 
   private handleCancelEvolution(client: Client, payload: unknown) {
@@ -2340,9 +2492,9 @@ export class GameHub {
     // Send confirmation to sender
     this.send(client, 'whisper_sent', { success: true, message: whisper })
 
-    // Send to recipient if online
+    // Send to recipient if online and WebSocket is in OPEN state
     const recipientClient = this.getClientByPlayerId(targetPlayer.id)
-    if (recipientClient) {
+    if (recipientClient && recipientClient.ws.readyState === WebSocket.OPEN) {
       this.send(recipientClient, 'whisper_received', whisper)
     }
   }
@@ -2359,11 +2511,20 @@ export class GameHub {
     }
   }
 
-  private handleGetWhisperHistory(client: Client) {
+  private async handleGetWhisperHistory(client: Client) {
     if (!client.session) return
 
     const history = this.whisperHistory.get(client.session.player.id) || []
-    this.send(client, 'whisper_history', { messages: history })
+
+    // Filter out messages from/to blocked players
+    const blockedPlayers = await getBlockedPlayers(client.session.player.id)
+    const blockedIds = new Set(blockedPlayers.map(b => b.blocked_id))
+
+    const filteredHistory = history.filter(msg =>
+      !blockedIds.has(msg.from_player_id) && !blockedIds.has(msg.to_player_id)
+    )
+
+    this.send(client, 'whisper_history', { messages: filteredHistory })
   }
 
   // ============================================
