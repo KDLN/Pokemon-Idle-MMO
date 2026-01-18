@@ -134,6 +134,7 @@ class GameSocket {
     this.handlers.set('guild_invite_accepted', this.handleGuildInviteAccepted)
     this.handlers.set('guild_invite_declined', this.handleGuildInviteDeclined)
     this.handlers.set('guild_invite_cancelled', this.handleGuildInviteCancelled)
+    this.handlers.set('guild_invite_error', this.handleGuildInviteError)
   }
 
   connect(token: string) {
@@ -1328,6 +1329,16 @@ class GameSocket {
       expires_at: data.expires_at,
     }
     useGameStore.getState().addGuildInvite(invite)
+    // Show notification in system chat
+    useGameStore.getState().addChatMessage({
+      id: `guild-invite-${data.invite_id}`,
+      playerId: 'system',
+      playerName: 'System',
+      channel: 'system',
+      content: `You received a guild invite from [${data.guild_tag}] ${data.guild_name}! Check the Guild tab to respond.`,
+      createdAt: new Date(),
+      isSystem: true
+    })
   }
 
   private handleGuildInviteSent = (payload: unknown) => {
@@ -1354,6 +1365,22 @@ class GameSocket {
   private handleGuildInviteCancelled = (payload: unknown) => {
     const data = payload as GuildInviteCancelledPayload
     useGameStore.getState().removeGuildOutgoingInvite(data.invite_id)
+  }
+
+  private handleGuildInviteError = (payload: unknown) => {
+    const data = payload as { error: string }
+    // Show error in system chat and set guild error state
+    useGameStore.getState().setGuildError(data.error)
+    // Also add to system chat for visibility
+    useGameStore.getState().addChatMessage({
+      id: `guild-invite-error-${Date.now()}`,
+      playerId: 'system',
+      playerName: 'System',
+      channel: 'system',
+      content: `Guild invite failed: ${data.error}`,
+      createdAt: new Date(),
+      isSystem: true
+    })
   }
 }
 
