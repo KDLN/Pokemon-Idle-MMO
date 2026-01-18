@@ -219,8 +219,10 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
   const outgoingFriendRequests = useGameStore((state) => state.outgoingFriendRequests)
   const incomingTradeRequests = useGameStore((state) => state.incomingTradeRequests)
   const outgoingTradeRequests = useGameStore((state) => state.outgoingTradeRequests)
+  const guildInvites = useGameStore((state) => state.guildInvites)
 
   const onlineCount = useMemo(() => countOnlineFriends(friends), [friends])
+  const guildInviteCount = guildInvites.length
   const friendRequestCount = incomingFriendRequests.length + outgoingFriendRequests.length
   const tradeRequestCount = incomingTradeRequests.length + outgoingTradeRequests.length
 
@@ -307,6 +309,9 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
           tabIndex={tab === 'guild' ? 0 : -1}
         >
           Guild
+          {guildInviteCount > 0 && (
+            <span className="trade-count">{guildInviteCount}</span>
+          )}
         </button>
       </div>
 
