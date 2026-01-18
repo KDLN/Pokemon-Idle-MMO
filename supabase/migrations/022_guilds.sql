@@ -167,3 +167,167 @@ CREATE POLICY "No direct member update"
 CREATE POLICY "No direct member delete"
   ON guild_members FOR DELETE
   USING (false);
+
+-- ============================================
+-- ATOMIC DATABASE FUNCTIONS
+-- ============================================
+
+-- Create a new guild with the player as leader
+CREATE OR REPLACE FUNCTION create_guild(
+  p_player_id UUID,
+  p_name TEXT,
+  p_tag TEXT,
+  p_description TEXT DEFAULT NULL
+) RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_guild_id UUID;
+  v_left_guild_at TIMESTAMPTZ;
+BEGIN
+  -- Check player isn't already in a guild
+  IF EXISTS (SELECT 1 FROM guild_members WHERE player_id = p_player_id) THEN
+    RETURN json_build_object('success', false, 'error', 'Already in a guild');
+  END IF;
+
+  -- Check 24hr cooldown from leaving previous guild
+  SELECT left_guild_at INTO v_left_guild_at FROM players WHERE id = p_player_id;
+  IF v_left_guild_at IS NOT NULL AND v_left_guild_at > NOW() - INTERVAL '24 hours' THEN
+    RETURN json_build_object('success', false, 'error', 'Must wait 24 hours after leaving a guild');
+  END IF;
+
+  -- Validate name format (additional server-side check)
+  IF char_length(p_name) < 3 OR char_length(p_name) > 30 THEN
+    RETURN json_build_object('success', false, 'error', 'Guild name must be 3-30 characters');
+  END IF;
+  IF NOT p_name ~ '^[a-zA-Z0-9 ]+$' THEN
+    RETURN json_build_object('success', false, 'error', 'Guild name can only contain letters, numbers, and spaces');
+  END IF;
+
+  -- Validate tag format
+  IF char_length(p_tag) < 2 OR char_length(p_tag) > 5 THEN
+    RETURN json_build_object('success', false, 'error', 'Guild tag must be 2-5 characters');
+  END IF;
+  IF NOT UPPER(p_tag) ~ '^[A-Z0-9]+$' THEN
+    RETURN json_build_object('success', false, 'error', 'Guild tag can only contain letters and numbers');
+  END IF;
+
+  -- Create guild (will fail on unique constraint if name/tag exists)
+  BEGIN
+    INSERT INTO guilds (name, tag, description, leader_id)
+    VALUES (TRIM(p_name), UPPER(TRIM(p_tag)), NULLIF(TRIM(p_description), ''), p_player_id)
+    RETURNING id INTO v_guild_id;
+  EXCEPTION WHEN unique_violation THEN
+    RETURN json_build_object('success', false, 'error', 'Guild name or tag already exists');
+  END;
+
+  -- Add leader as member (triggers sync_player_guild_id)
+  INSERT INTO guild_members (guild_id, player_id, role)
+  VALUES (v_guild_id, p_player_id, 'leader');
+
+  -- Clear cooldown timestamp
+  UPDATE players SET left_guild_at = NULL WHERE id = p_player_id;
+
+  RETURN json_build_object('success', true, 'guild_id', v_guild_id);
+END;
+$$;
+
+-- Join an existing guild as a member
+CREATE OR REPLACE FUNCTION join_guild(
+  p_player_id UUID,
+  p_guild_id UUID
+) RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_guild RECORD;
+  v_left_guild_at TIMESTAMPTZ;
+BEGIN
+  -- Lock guild row to prevent race condition on member_count
+  SELECT * INTO v_guild FROM guilds WHERE id = p_guild_id FOR UPDATE;
+
+  IF v_guild IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'Guild not found');
+  END IF;
+
+  -- Check join mode
+  IF v_guild.join_mode != 'open' THEN
+    RETURN json_build_object('success', false, 'error', 'Guild is not accepting new members');
+  END IF;
+
+  -- Check member cap
+  IF v_guild.member_count >= v_guild.max_members THEN
+    RETURN json_build_object('success', false, 'error', 'Guild is full');
+  END IF;
+
+  -- Check player isn't already in a guild
+  IF EXISTS (SELECT 1 FROM guild_members WHERE player_id = p_player_id) THEN
+    RETURN json_build_object('success', false, 'error', 'Already in a guild');
+  END IF;
+
+  -- Check 24hr cooldown
+  SELECT left_guild_at INTO v_left_guild_at FROM players WHERE id = p_player_id;
+  IF v_left_guild_at IS NOT NULL AND v_left_guild_at > NOW() - INTERVAL '24 hours' THEN
+    RETURN json_build_object('success', false, 'error', 'Must wait 24 hours after leaving a guild');
+  END IF;
+
+  -- Add member
+  INSERT INTO guild_members (guild_id, player_id, role)
+  VALUES (p_guild_id, p_player_id, 'member');
+
+  -- Update member count
+  UPDATE guilds SET member_count = member_count + 1 WHERE id = p_guild_id;
+
+  -- Clear cooldown timestamp
+  UPDATE players SET left_guild_at = NULL WHERE id = p_player_id;
+
+  RETURN json_build_object('success', true);
+END;
+$$;
+
+-- Leave current guild
+CREATE OR REPLACE FUNCTION leave_guild(p_player_id UUID)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_member RECORD;
+  v_member_count INT;
+BEGIN
+  -- Get member info with lock
+  SELECT gm.*, g.id as g_id INTO v_member
+  FROM guild_members gm
+  JOIN guilds g ON g.id = gm.guild_id
+  WHERE gm.player_id = p_player_id
+  FOR UPDATE OF gm;
+
+  IF v_member IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'Not in a guild');
+  END IF;
+
+  -- Check if leader
+  IF v_member.role = 'leader' THEN
+    -- Count remaining members
+    SELECT COUNT(*) INTO v_member_count FROM guild_members WHERE guild_id = v_member.guild_id;
+
+    IF v_member_count > 1 THEN
+      RETURN json_build_object('success', false, 'error', 'Leader must transfer leadership or disband guild before leaving');
+    END IF;
+
+    -- Last member - delete guild (cascade deletes member)
+    DELETE FROM guilds WHERE id = v_member.guild_id;
+    RETURN json_build_object('success', true, 'guild_disbanded', true);
+  END IF;
+
+  -- Remove member (triggers sync_player_guild_id which sets left_guild_at)
+  DELETE FROM guild_members WHERE player_id = p_player_id;
+
+  -- Update member count
+  UPDATE guilds SET member_count = member_count - 1 WHERE id = v_member.guild_id;
+
+  RETURN json_build_object('success', true);
+END;
+$$;
