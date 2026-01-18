@@ -201,8 +201,8 @@ interface GameStore {
   updateFriendZone: (friendPlayerId: string, zoneId: number, zoneName: string) => void
 
   // Nearby players state
-  nearbyPlayers: { id: string; username: string }[]
-  setNearbyPlayers: (players: { id: string; username: string }[]) => void
+  nearbyPlayers: { id: string; username: string; guild_id?: string | null }[]
+  setNearbyPlayers: (players: { id: string; username: string; guild_id?: string | null }[]) => void
 
   // Trade state
   incomingTradeRequests: IncomingTradeRequest[]
@@ -294,6 +294,11 @@ interface GameStore {
   clearGuildInvites: () => void
   removeGuildOutgoingInvite: (inviteId: string) => void
 
+  // Player action modal state (global clickable usernames)
+  selectedPlayer: { id: string; username: string; guild_id?: string | null; is_online?: boolean; is_friend?: boolean } | null
+  openPlayerModal: (player: { id: string; username: string; guild_id?: string | null; is_online?: boolean; is_friend?: boolean }) => void
+  closePlayerModal: () => void
+
   // Reset store
   reset: () => void
 }
@@ -372,7 +377,7 @@ const initialState = {
   incomingFriendRequests: [] as FriendRequest[],
   outgoingFriendRequests: [] as OutgoingFriendRequest[],
   // Nearby players state
-  nearbyPlayers: [] as { id: string; username: string }[],
+  nearbyPlayers: [] as { id: string; username: string; guild_id?: string | null }[],
   // Trade state
   incomingTradeRequests: [] as IncomingTradeRequest[],
   outgoingTradeRequests: [] as OutgoingTradeRequest[],
@@ -1002,6 +1007,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set((state) => ({
       guildOutgoingInvites: state.guildOutgoingInvites.filter((invite) => invite.id !== inviteId),
     })),
+
+  // Player action modal
+  selectedPlayer: null,
+  openPlayerModal: (player) => set({ selectedPlayer: player }),
+  closePlayerModal: () => set({ selectedPlayer: null }),
 
   reset: () => set(initialState),
 }))

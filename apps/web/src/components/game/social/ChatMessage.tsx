@@ -1,6 +1,7 @@
 'use client'
 
 import type { ChatChannel, ChatMessageData } from '@/types/chat'
+import { ClickableUsername } from '../ClickableUsername'
 
 interface ChatMessageProps {
   message: ChatMessageData
@@ -55,11 +56,11 @@ export function ChatMessage({ message, isOwnMessage }: ChatMessageProps) {
       <div className="flex items-baseline gap-2 mb-0.5">
         <span className="text-[10px] text-[#606080]">{formatTime(message.createdAt)}</span>
         {isWhisper && <span className="text-[10px] text-purple-400">[Whisper]</span>}
-        <span
+        <ClickableUsername
+          playerId={message.playerId}
+          username={message.playerName}
           className={`font-semibold ${isOwnMessage && !isWhisper ? 'text-[#5B6EEA]' : getChannelColor(message.channel)}`}
-        >
-          {message.playerName}
-        </span>
+        />
       </div>
       <p className={`break-words ${isWhisper ? 'text-purple-200' : 'text-[#e0e0e0]'}`}>
         {message.content}

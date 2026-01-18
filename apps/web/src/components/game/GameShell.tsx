@@ -27,6 +27,7 @@ import { EvolutionModal } from './EvolutionModal'
 import { countOnlineFriends } from '@/lib/utils/friendUtils'
 import type { ActiveTradeSession } from '@/types/trade'
 import { GuildPanel } from './guild'
+import { PlayerActionModal } from './PlayerActionModal'
 
 // ============================================================================
 // LAYOUT-B: Compact 3-Column Grid Layout
@@ -669,6 +670,22 @@ export function GameShell({ accessToken }: GameShellProps) {
       <LevelUpToast />
       <EvolutionModal />
       <TradeModal isOpen={isTradeModalOpen} onClose={handleCloseTrade} />
+      <GlobalPlayerModal />
     </>
+  )
+}
+
+// Global player action modal - listens to store for selectedPlayer
+function GlobalPlayerModal() {
+  const selectedPlayer = useGameStore(state => state.selectedPlayer)
+  const closePlayerModal = useGameStore(state => state.closePlayerModal)
+
+  if (!selectedPlayer) return null
+
+  return (
+    <PlayerActionModal
+      player={selectedPlayer}
+      onClose={closePlayerModal}
+    />
   )
 }

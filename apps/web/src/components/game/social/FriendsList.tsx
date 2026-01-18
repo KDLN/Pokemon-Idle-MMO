@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import { isFriendOnline, sortFriendsByOnlineStatus } from '@/lib/utils/friendUtils'
+import { ClickableUsername } from '../ClickableUsername'
 import type { Friend } from '@/types/friends'
 
 interface FriendsListProps {
@@ -89,9 +90,13 @@ export function FriendsList({ friends }: FriendsListProps) {
               {/* Friend info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-white text-sm font-medium truncate">
-                    {friend.friend_username}
-                  </span>
+                  <ClickableUsername
+                    playerId={friend.friend_id}
+                    username={friend.friend_username}
+                    isOnline={online}
+                    isFriend={true}
+                    className="text-white text-sm font-medium truncate"
+                  />
                 </div>
                 {/* Zone info (Issue #14) */}
                 <div className="text-xs text-[#606080] truncate">
