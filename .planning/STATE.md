@@ -1,7 +1,7 @@
 # Project State: Pokemon Idle MMO - Guild Milestone
 
 **Last Updated:** 2026-01-18
-**Session:** Plan 01-04 Execution
+**Session:** Plan 01-05 Execution
 
 ## Project Reference
 
@@ -12,13 +12,13 @@
 ## Current Position
 
 **Phase:** 1 of 7 - Guild Foundation
-**Plan:** 4 of 4 complete
+**Plan:** 5 of 5 complete
 **Status:** Phase Complete
-**Last activity:** 2026-01-18 - Completed 01-04-PLAN.md (Guild API Endpoints - Role Management)
+**Last activity:** 2026-01-18 - Completed 01-05-PLAN.md (Frontend Guild UI)
 
 **Progress:**
 ```
-Phase 1: [==========] Guild Foundation (4/4 plans complete)
+Phase 1: [==========] Guild Foundation (5/5 plans complete)
 Phase 2: [          ] Guild Invites (0/? plans)
 Phase 3: [          ] Guild Chat (0/? plans)
 Phase 4: [          ] Guild Bank (0/? plans)
@@ -33,8 +33,8 @@ Phase 7: [          ] Zone Content (0/? plans)
 
 | Metric | Value |
 |--------|-------|
-| Plans Completed | 4 |
-| Tasks Completed | 11 |
+| Plans Completed | 5 |
+| Tasks Completed | 14 |
 | Phases Completed | 1 |
 | Days Elapsed | 1 |
 
@@ -56,6 +56,8 @@ Phase 7: [          ] Zone Content (0/? plans)
 | Fire-and-forget async handlers | Consistent with existing game-server handler patterns (no await in switch cases) | 2026-01-18 |
 | Uppercase guild tag in handler | Ensure consistent display regardless of user input | 2026-01-18 |
 | Role hierarchy: leader > officer > member | Standard guild hierarchy; officers assist leader with management | 2026-01-18 |
+| Guild component directory structure | apps/web/src/components/game/guild/ with index.ts barrel | 2026-01-18 |
+| Role-based UI button visibility | Permission checks computed per-member in MemberRow component | 2026-01-18 |
 
 ### Technical Notes
 
@@ -79,6 +81,9 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Guild database functions in db.ts call RPC for mutations, direct queries for reads
 - broadcastToGuild() filters by session.guild.id for targeted messaging
 - Session guild role updated in real-time when role changes (updatePlayerGuildRole helper)
+- Frontend guild state in Zustand with WebSocket message handlers in gameSocket.ts
+- Guild UI components organized in apps/web/src/components/game/guild/
+- Role-based button visibility computed per-member for maintainability
 
 ### TODOs
 
@@ -87,6 +92,7 @@ Phase 7: [          ] Zone Content (0/? plans)
 - [x] Execute 01-02-PLAN.md (Shared Types for Guild System)
 - [x] Execute 01-03-PLAN.md (WebSocket Handlers)
 - [x] Execute 01-04-PLAN.md (Role Management API)
+- [x] Execute 01-05-PLAN.md (Frontend Guild UI)
 - [ ] Create Phase 2 plans (Guild Invites)
 
 ### Blockers
@@ -97,12 +103,12 @@ None currently.
 
 ### Last Session Summary
 
-Completed Plan 01-04 (Guild API Endpoints - Role Management):
-- Added 5 database functions for role management (promote, demote, kick, transfer, disband)
-- Added 6 TypeScript wrappers in db.ts
-- Added 5 WebSocket handlers in hub.ts with switch cases
-- Added type exports for role management payloads
-- All handlers broadcast changes to guild members for real-time UI updates
+Completed Plan 01-05 (Frontend Guild UI):
+- Added guild state to Zustand store (guild, members, role, search)
+- Added WebSocket message handlers for 10 guild message types
+- Created GuildPanel, CreateGuildModal, GuildList, GuildMembers components
+- Integrated GuildPanel into GameShell social sidebar
+- Role-based UI buttons with computed permissions per member
 
 ### Next Actions
 
@@ -112,11 +118,15 @@ Completed Plan 01-04 (Guild API Endpoints - Role Management):
 
 ### Files Modified This Session
 
-- `supabase/migrations/022_guilds.sql` (modified - 5 role management functions)
-- `apps/game-server/src/db.ts` (modified - 6 role management wrappers)
-- `apps/game-server/src/hub.ts` (modified - 5 handlers + switch cases)
-- `apps/game-server/src/types.ts` (modified - role management type exports)
-- `.planning/phases/01-guild-foundation/01-04-SUMMARY.md` (created)
+- `apps/web/src/stores/gameStore.ts` (modified - guild state and actions)
+- `apps/web/src/lib/ws/gameSocket.ts` (modified - guild message handlers)
+- `apps/web/src/components/game/guild/GuildPanel.tsx` (created)
+- `apps/web/src/components/game/guild/CreateGuildModal.tsx` (created)
+- `apps/web/src/components/game/guild/GuildList.tsx` (created)
+- `apps/web/src/components/game/guild/GuildMembers.tsx` (created)
+- `apps/web/src/components/game/guild/index.ts` (created)
+- `apps/web/src/components/game/GameShell.tsx` (modified - added GuildPanel)
+- `.planning/phases/01-guild-foundation/01-05-SUMMARY.md` (created)
 - `.planning/STATE.md` (updated)
 
 ---
