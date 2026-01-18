@@ -20,32 +20,34 @@ Phases are ordered by dependency: foundation before features, simpler features b
 
 **Dependencies:** None (first phase)
 
-**Plans:** 5 plans
+**Plans:** 5 plans ✓
+
+**Status:** Complete (2026-01-18)
 
 Plans:
-- [ ] 01-01-PLAN.md - Database schema (guilds, guild_members, RLS, functions)
-- [ ] 01-02-PLAN.md - Shared types for guild system
-- [ ] 01-03-PLAN.md - Game server handlers (create, join, leave, search)
-- [ ] 01-04-PLAN.md - Role management (promote, demote, kick, transfer, disband)
-- [ ] 01-05-PLAN.md - Frontend UI (guild panel, modals, member roster)
+- [x] 01-01-PLAN.md - Database schema (guilds, guild_members, RLS, functions)
+- [x] 01-02-PLAN.md - Shared types for guild system
+- [x] 01-03-PLAN.md - Game server handlers (create, join, leave, search)
+- [x] 01-04-PLAN.md - Role management (promote, demote, kick, transfer, disband)
+- [x] 01-05-PLAN.md - Frontend UI (guild panel, modals, member roster)
 
 **Success Criteria:**
-- [ ] Player can create guild with unique name (3-30 chars), tag (2-5 chars uppercase), and description
-- [ ] Guild creation fails if name or tag already exists
-- [ ] Guild enforces 50 member maximum cap - new members blocked when cap reached
-- [ ] Player can view list of public guilds with search by name/tag
-- [ ] Player can join an open guild directly (if under member cap)
-- [ ] Player can leave a guild - 24hr cooldown prevents joining another guild immediately
-- [ ] Player can view guild member roster showing online status, role, and last active time
-- [ ] Guild founder automatically assigned Leader role on creation
-- [ ] Guild has exactly three roles: Leader, Officer, Member
-- [ ] Leader can promote Member to Officer
-- [ ] Leader can demote Officer to Member
-- [ ] Leader can transfer leadership to another member (becomes Officer/Member)
-- [ ] Leader can kick any member (Officer or Member)
-- [ ] Officer can kick Members but not other Officers
-- [ ] Leader can disband guild (requires typing guild name to confirm)
-- [ ] Disbanded guild removes all members and deletes all guild data
+- [x] Player can create guild with unique name (3-30 chars), tag (2-5 chars uppercase), and description
+- [x] Guild creation fails if name or tag already exists
+- [x] Guild enforces 50 member maximum cap - new members blocked when cap reached
+- [x] Player can view list of public guilds with search by name/tag
+- [x] Player can join an open guild directly (if under member cap)
+- [x] Player can leave a guild - 24hr cooldown prevents joining another guild immediately
+- [x] Player can view guild member roster showing online status, role, and last active time
+- [x] Guild founder automatically assigned Leader role on creation
+- [x] Guild has exactly three roles: Leader, Officer, Member
+- [x] Leader can promote Member to Officer
+- [x] Leader can demote Officer to Member
+- [x] Leader can transfer leadership to another member (becomes Officer/Member)
+- [x] Leader can kick any member (Officer or Member)
+- [x] Officer can kick Members but not other Officers
+- [x] Leader can disband guild (requires typing guild name to confirm)
+- [x] Disbanded guild removes all members and deletes all guild data
 
 ---
 
@@ -195,7 +197,7 @@ Plans:
 
 | Phase | Name | Requirements | Plans | Status |
 |-------|------|--------------|-------|--------|
-| 1 | Guild Foundation | 14 | 5 | Planned |
+| 1 | Guild Foundation | 14 | 5 | ✓ Complete |
 | 2 | Guild Invites | 5 | 0 | Not Started |
 | 3 | Guild Chat | 3 | 0 | Not Started |
 | 4 | Guild Bank | 18 | 0 | Not Started |
@@ -204,6 +206,7 @@ Plans:
 | 7 | Zone Content | 5 | 0 | Not Started |
 
 **Total:** 63 requirements mapped (55 v1 + 8 expanded success criteria)
+**Progress:** 14/55 requirements complete (25%)
 
 ---
 
