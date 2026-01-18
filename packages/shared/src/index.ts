@@ -13,14 +13,15 @@ export function xpForLevel(level: number): number {
 }
 
 // Get XP progress within current level
-export function getXPProgress(currentXP: number, currentLevel: number): { current: number; needed: number; percent: number } {
-  const currentLevelXP = xpForLevel(currentLevel)
-  const nextLevelXP = xpForLevel(currentLevel + 1)
-  const xpIntoLevel = currentXP - currentLevelXP
+// Shows XP accumulated in current level vs XP needed to reach next level
+export function getXPProgress(xp: number, level: number): { current: number; needed: number; percentage: number } {
+  const currentLevelXP = xpForLevel(level)
+  const nextLevelXP = xpForLevel(level + 1)
+  const xpIntoLevel = xp - currentLevelXP
   const xpNeeded = nextLevelXP - currentLevelXP
   return {
     current: xpIntoLevel,
     needed: xpNeeded,
-    percent: Math.min(100, Math.max(0, (xpIntoLevel / xpNeeded) * 100))
+    percentage: Math.min(100, Math.max(0, (xpIntoLevel / xpNeeded) * 100))
   }
 }

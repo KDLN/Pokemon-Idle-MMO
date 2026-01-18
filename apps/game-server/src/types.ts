@@ -55,7 +55,7 @@ export type {
 // Backend-only types below
 // ========================
 
-import type { Pokemon, PokemonSpecies, Zone, PendingEvolution, Trade } from '@pokemon-idle/shared'
+import type { Player, Pokemon, PokemonSpecies, Zone, PendingEvolution, Trade } from '@pokemon-idle/shared'
 
 // Move data (backend battle calculation)
 export interface Move {
@@ -79,7 +79,7 @@ export interface EncounterTableEntry {
 
 // Player session state (in-memory only)
 export interface PlayerSession {
-  player: { id: string; user_id: string; username: string; current_zone_id: number; pokedollars: number; last_online: string; badges: string[] }
+  player: Player
   party: (Pokemon | null)[]
   zone: Zone
   pokeballs: number
