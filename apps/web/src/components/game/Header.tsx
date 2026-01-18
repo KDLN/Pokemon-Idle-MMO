@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { PokedexPanel } from './PokedexPanel'
+import { LeaderboardPanel } from './LeaderboardPanel'
 import { CurrencyDisplay } from './header/CurrencyDisplay'
 import { BadgeCase } from './header/BadgeCase'
 import { BattlePassProgress } from './header/BattlePassProgress'
@@ -15,6 +16,7 @@ export function Header() {
   const badges = useGameStore((state) => state.badges)
   const seasonProgress = useGameStore((state) => state.seasonProgress)
   const [showPokedex, setShowPokedex] = useState(false)
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showCustomizer, setShowCustomizer] = useState(false)
 
   return (
@@ -58,6 +60,17 @@ export function Header() {
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
                 </svg>
                 <span className="text-white text-xs font-semibold">Pokedex</span>
+              </button>
+
+              {/* Leaderboard Button */}
+              <button
+                onClick={() => setShowLeaderboard(true)}
+                className="group flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-b from-[#B8860B] to-[#8B6508] border border-[#FFD700]/30 hover:from-[#DAA520] hover:to-[#B8860B] transition-all duration-200 shadow-lg shadow-yellow-900/30"
+              >
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                <span className="text-white text-xs font-semibold">Leaderboard</span>
               </button>
 
               {/* Divider */}
@@ -123,6 +136,16 @@ export function Header() {
                 </>
               )}
 
+              {/* Mobile Leaderboard Button */}
+              <button
+                onClick={() => setShowLeaderboard(true)}
+                className="lg:hidden p-1.5 rounded-lg bg-gradient-to-b from-[#B8860B] to-[#8B6508] border border-[#FFD700]/30"
+              >
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+              </button>
+
               {/* Mobile Pokedex Button */}
               <button
                 onClick={() => setShowPokedex(true)}
@@ -142,6 +165,9 @@ export function Header() {
 
       {/* Pokedex Modal */}
       <PokedexPanel isOpen={showPokedex} onClose={() => setShowPokedex(false)} />
+
+      {/* Leaderboard Modal */}
+      <LeaderboardPanel isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} />
 
       {/* Trainer Customizer Modal */}
       <TrainerCustomizerModal isOpen={showCustomizer} onClose={() => setShowCustomizer(false)} />

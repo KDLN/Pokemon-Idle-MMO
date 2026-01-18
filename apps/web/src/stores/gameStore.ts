@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Player, Pokemon, Zone, EncounterEvent, LevelUpEvent, PendingEvolution, ShopItem } from '@/types/game'
+import type { Player, Pokemon, Zone, EncounterEvent, LevelUpEvent, PendingEvolution, ShopItem, LeaderboardEntry, LeaderboardType, LeaderboardTimeframe, PlayerRank } from '@/types/game'
 import type { ChatMessageData, ChatChannel, WhisperMessageData, BlockedPlayerData } from '@/types/chat'
 import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
 import type { IncomingTradeRequest, OutgoingTradeRequest, ActiveTradeSession, TradeOffer, TradeHistoryEntry } from '@/types/trade'
@@ -243,6 +243,24 @@ interface GameStore {
   isPlayerMuted: (playerId: string) => boolean
   isPlayerBlocked: (playerId: string) => boolean
 
+  // Leaderboard state (Issues #51-54)
+  leaderboardEntries: LeaderboardEntry[]
+  leaderboardType: LeaderboardType
+  leaderboardTimeframe: LeaderboardTimeframe
+  leaderboardPlayerRank: PlayerRank | null
+  leaderboardLoading: boolean
+  isLeaderboardOpen: boolean
+  setLeaderboardData: (data: {
+    entries: LeaderboardEntry[]
+    type: LeaderboardType
+    timeframe: LeaderboardTimeframe
+    playerRank: PlayerRank | null
+  }) => void
+  setLeaderboardLoading: (loading: boolean) => void
+  setLeaderboardOpen: (open: boolean) => void
+  setLeaderboardType: (type: LeaderboardType) => void
+  setLeaderboardTimeframe: (timeframe: LeaderboardTimeframe) => void
+
   // Reset store
   reset: () => void
 }
@@ -337,6 +355,13 @@ const initialState = {
   // Block/mute state (Issue #47)
   blockedPlayers: [] as BlockedPlayerData[],
   mutedPlayers: new Set<string>(),
+  // Leaderboard state (Issues #51-54)
+  leaderboardEntries: [] as LeaderboardEntry[],
+  leaderboardType: 'pokedex' as LeaderboardType,
+  leaderboardTimeframe: 'alltime' as LeaderboardTimeframe,
+  leaderboardPlayerRank: null as PlayerRank | null,
+  leaderboardLoading: false,
+  isLeaderboardOpen: false,
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -831,6 +856,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   isPlayerBlocked: (playerId) =>
     get().blockedPlayers.some((p) => p.blockedId === playerId),
+
+  // Leaderboard methods (Issues #51-54)
+  setLeaderboardData: (data) => set({
+    leaderboardEntries: data.entries,
+    leaderboardType: data.type,
+    leaderboardTimeframe: data.timeframe,
+    leaderboardPlayerRank: data.playerRank,
+    leaderboardLoading: false,
+  }),
+
+  setLeaderboardLoading: (loading) => set({ leaderboardLoading: loading }),
+
+  setLeaderboardOpen: (open) => set({ isLeaderboardOpen: open }),
+
+  setLeaderboardType: (type) => set({ leaderboardType: type }),
+
+  setLeaderboardTimeframe: (timeframe) => set({ leaderboardTimeframe: timeframe }),
 
   reset: () => set(initialState),
 }))

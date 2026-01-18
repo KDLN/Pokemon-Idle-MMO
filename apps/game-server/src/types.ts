@@ -401,3 +401,32 @@ export interface BlockedPlayer {
   blocked_username: string
   created_at: string
 }
+
+// Leaderboard system types (Issues #51-54)
+export interface LeaderboardEntry {
+  rank: number
+  player_id: string
+  username: string
+  value: number
+  // For level leaderboard - show which Pokemon
+  pokemon_name?: string
+  pokemon_species_id?: number
+}
+
+export type LeaderboardType = 'pokedex' | 'catches' | 'level'
+export type LeaderboardTimeframe = 'alltime' | 'weekly'
+
+export interface PlayerRank {
+  rank: number
+  value: number
+}
+
+export interface WeeklyStats {
+  id: string
+  player_id: string
+  week_start: string
+  pokemon_caught: number
+  highest_level: number
+  pokedex_count: number
+  created_at: string
+}

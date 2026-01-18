@@ -600,7 +600,7 @@ export function GameShell({ accessToken }: GameShellProps) {
           badges={{ friends: friendBadgeCount, trades: tradeBadgeCount }}
         />
 
-        {/* Floating modals */}
+        {/* Floating modals/panels */}
         <BoxPanel />
         <ShopPanel />
         <GymBattlePanel />
@@ -643,7 +643,7 @@ export function GameShell({ accessToken }: GameShellProps) {
         <PartyColumn />
       </div>
 
-      {/* Floating modals */}
+      {/* Floating modals/panels */}
       <BoxPanel />
       <ShopPanel />
       <GymBattlePanel />

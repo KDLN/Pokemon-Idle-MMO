@@ -1995,3 +1995,277 @@ export async function isPlayerBlocked(
 
   return Boolean((blockedByMe && blockedByMe.length > 0) || (blockedByThem && blockedByThem.length > 0))
 }
+
+// ============================================
+// LEADERBOARD QUERIES (Issues #51-54)
+// ============================================
+
+import type { LeaderboardEntry, LeaderboardType, LeaderboardTimeframe, PlayerRank } from './types.js'
+
+// Helper to get the Monday of the current week (UTC)
+function getCurrentWeekStart(): string {
+  const now = new Date()
+  const dayOfWeek = now.getUTCDay() // 0 = Sunday, 1 = Monday, ...
+  const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Days since Monday
+  const monday = new Date(now)
+  monday.setUTCDate(now.getUTCDate() - diff)
+  monday.setUTCHours(0, 0, 0, 0)
+  return monday.toISOString().split('T')[0] // YYYY-MM-DD format
+}
+
+/**
+ * Get Pokedex leaderboard - ranked by number of unique species caught
+ * Issue #51
+ */
+export async function getPokedexLeaderboard(limit: number = 50): Promise<LeaderboardEntry[]> {
+  // Use raw SQL via RPC for aggregation
+  const { data, error } = await supabase.rpc('get_pokedex_leaderboard', { result_limit: limit })
+
+  if (error) {
+    console.error('Failed to get pokedex leaderboard:', error)
+    return []
+  }
+
+  return (data || []).map((row: { player_id: string; username: string; caught_count: number }, index: number) => ({
+    rank: index + 1,
+    player_id: row.player_id,
+    username: row.username,
+    value: row.caught_count
+  }))
+}
+
+/**
+ * Get Catch leaderboard - ranked by total Pokemon caught
+ * Issue #52
+ */
+export async function getCatchLeaderboard(limit: number = 50): Promise<LeaderboardEntry[]> {
+  const { data, error } = await supabase.rpc('get_catch_leaderboard', { result_limit: limit })
+
+  if (error) {
+    console.error('Failed to get catch leaderboard:', error)
+    return []
+  }
+
+  return (data || []).map((row: { player_id: string; username: string; total_catches: number }, index: number) => ({
+    rank: index + 1,
+    player_id: row.player_id,
+    username: row.username,
+    value: row.total_catches
+  }))
+}
+
+/**
+ * Get Level leaderboard - ranked by highest Pokemon level
+ * Issue #53
+ */
+export async function getLevelLeaderboard(limit: number = 50): Promise<LeaderboardEntry[]> {
+  const { data, error } = await supabase.rpc('get_level_leaderboard', { result_limit: limit })
+
+  if (error) {
+    console.error('Failed to get level leaderboard:', error)
+    return []
+  }
+
+  return (data || []).map((row: { player_id: string; username: string; max_level: number; pokemon_name: string; species_id: number }, index: number) => ({
+    rank: index + 1,
+    player_id: row.player_id,
+    username: row.username,
+    value: row.max_level,
+    pokemon_name: row.pokemon_name,
+    pokemon_species_id: row.species_id
+  }))
+}
+
+/**
+ * Get weekly leaderboard based on type
+ * Issue #54
+ */
+export async function getWeeklyLeaderboard(
+  type: LeaderboardType,
+  limit: number = 50
+): Promise<LeaderboardEntry[]> {
+  const weekStart = getCurrentWeekStart()
+
+  const { data, error } = await supabase
+    .from('weekly_stats')
+    .select(`
+      player_id,
+      pokemon_caught,
+      highest_level,
+      pokedex_count,
+      player:players(username)
+    `)
+    .eq('week_start', weekStart)
+    .order(
+      type === 'pokedex' ? 'pokedex_count' :
+      type === 'catches' ? 'pokemon_caught' : 'highest_level',
+      { ascending: false }
+    )
+    .limit(limit)
+
+  if (error) {
+    console.error('Failed to get weekly leaderboard:', error)
+    return []
+  }
+
+  return (data || []).map((row, index) => ({
+    rank: index + 1,
+    player_id: row.player_id,
+    username: extractUsernameFromJoin(row.player),
+    value: type === 'pokedex' ? row.pokedex_count :
+           type === 'catches' ? row.pokemon_caught : row.highest_level
+  }))
+}
+
+/**
+ * Get leaderboard based on type and timeframe
+ */
+export async function getLeaderboard(
+  type: LeaderboardType,
+  timeframe: LeaderboardTimeframe,
+  limit: number = 50
+): Promise<LeaderboardEntry[]> {
+  if (timeframe === 'weekly') {
+    return getWeeklyLeaderboard(type, limit)
+  }
+
+  switch (type) {
+    case 'pokedex':
+      return getPokedexLeaderboard(limit)
+    case 'catches':
+      return getCatchLeaderboard(limit)
+    case 'level':
+      return getLevelLeaderboard(limit)
+    default:
+      return []
+  }
+}
+
+/**
+ * Get a player's rank for a specific leaderboard
+ */
+export async function getPlayerRank(
+  playerId: string,
+  type: LeaderboardType,
+  timeframe: LeaderboardTimeframe
+): Promise<PlayerRank | null> {
+  if (timeframe === 'weekly') {
+    return getWeeklyPlayerRank(playerId, type)
+  }
+
+  const { data, error } = await supabase.rpc('get_player_rank', {
+    p_player_id: playerId,
+    p_type: type
+  })
+
+  if (error) {
+    console.error('Failed to get player rank:', error)
+    return null
+  }
+
+  if (!data || data.length === 0) return null
+
+  return {
+    rank: data[0].rank,
+    value: data[0].value
+  }
+}
+
+/**
+ * Get a player's weekly rank
+ */
+async function getWeeklyPlayerRank(
+  playerId: string,
+  type: LeaderboardType
+): Promise<PlayerRank | null> {
+  const weekStart = getCurrentWeekStart()
+
+  const { data, error } = await supabase
+    .from('weekly_stats')
+    .select('pokemon_caught, highest_level, pokedex_count')
+    .eq('player_id', playerId)
+    .eq('week_start', weekStart)
+    .single()
+
+  if (error || !data) return null
+
+  const value = type === 'pokedex' ? data.pokedex_count :
+                type === 'catches' ? data.pokemon_caught : data.highest_level
+
+  // Count how many players have a higher value
+  const column = type === 'pokedex' ? 'pokedex_count' :
+                 type === 'catches' ? 'pokemon_caught' : 'highest_level'
+
+  const { count, error: countError } = await supabase
+    .from('weekly_stats')
+    .select('player_id', { count: 'exact', head: true })
+    .eq('week_start', weekStart)
+    .gt(column, value)
+
+  if (countError) {
+    console.error('Failed to count higher ranks:', countError)
+    return null
+  }
+
+  return {
+    rank: (count || 0) + 1,
+    value
+  }
+}
+
+/**
+ * Update weekly stats for a player
+ * Called when catching Pokemon or leveling up
+ */
+export async function updateWeeklyStats(
+  playerId: string,
+  update: {
+    catches?: number    // Increment catch count
+    level?: number      // New highest level (only updates if higher)
+    pokedex?: number    // Increment pokedex count
+  }
+): Promise<void> {
+  const weekStart = getCurrentWeekStart()
+
+  // Get current stats
+  const { data: existing } = await supabase
+    .from('weekly_stats')
+    .select('pokemon_caught, highest_level, pokedex_count')
+    .eq('player_id', playerId)
+    .eq('week_start', weekStart)
+    .single()
+
+  if (existing) {
+    // Update existing record
+    const updates: Record<string, number> = {}
+
+    if (update.catches) {
+      updates.pokemon_caught = existing.pokemon_caught + update.catches
+    }
+    if (update.level && update.level > existing.highest_level) {
+      updates.highest_level = update.level
+    }
+    if (update.pokedex) {
+      updates.pokedex_count = existing.pokedex_count + update.pokedex
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await supabase
+        .from('weekly_stats')
+        .update(updates)
+        .eq('player_id', playerId)
+        .eq('week_start', weekStart)
+    }
+  } else {
+    // Insert new record
+    await supabase
+      .from('weekly_stats')
+      .insert({
+        player_id: playerId,
+        week_start: weekStart,
+        pokemon_caught: update.catches || 0,
+        highest_level: update.level || 0,
+        pokedex_count: update.pokedex || 0
+      })
+  }
+}

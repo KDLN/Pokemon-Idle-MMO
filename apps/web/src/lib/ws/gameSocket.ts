@@ -1,5 +1,5 @@
 import { useGameStore } from '@/stores/gameStore'
-import type { TickResult, GameState, Zone, Pokemon, ShopItem, PendingEvolution, EvolutionEvent } from '@/types/game'
+import type { TickResult, GameState, Zone, Pokemon, ShopItem, PendingEvolution, EvolutionEvent, LeaderboardEntry, LeaderboardType, LeaderboardTimeframe, PlayerRank } from '@/types/game'
 import type { GymLeader, GymBattleResult } from '@/components/game/GymBattlePanel'
 import type { ChatMessageData, ChatChannel, WhisperMessageData, BlockedPlayerData } from '@/types/chat'
 import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
@@ -88,6 +88,8 @@ class GameSocket {
     this.handlers.set('blocked_players', this.handleBlockedPlayers)
     this.handlers.set('player_blocked', this.handlePlayerBlocked)
     this.handlers.set('player_unblocked', this.handlePlayerUnblocked)
+    // Leaderboard handlers (Issues #51-54)
+    this.handlers.set('leaderboard_data', this.handleLeaderboardData)
   }
 
   connect(token: string) {
@@ -1065,6 +1067,26 @@ class GameSocket {
     if (success) {
       useGameStore.getState().removeBlockedPlayer(player_id)
     }
+  }
+
+  // ============================================
+  // LEADERBOARD HANDLERS (Issues #51-54)
+  // ============================================
+
+  private handleLeaderboardData = (payload: unknown) => {
+    const data = payload as {
+      type: LeaderboardType
+      timeframe: LeaderboardTimeframe
+      entries: LeaderboardEntry[]
+      playerRank: PlayerRank | null
+    }
+    useGameStore.getState().setLeaderboardData(data)
+  }
+
+  // Request leaderboard data
+  getLeaderboard(type: LeaderboardType, timeframe: LeaderboardTimeframe) {
+    useGameStore.getState().setLeaderboardLoading(true)
+    this.send('get_leaderboard', { type, timeframe })
   }
 }
 

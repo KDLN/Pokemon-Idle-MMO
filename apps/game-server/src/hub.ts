@@ -12,7 +12,9 @@ import type {
   EvolutionEvent,
   TradeOffer,
   WhisperMessage,
-  BlockedPlayer
+  BlockedPlayer,
+  LeaderboardType,
+  LeaderboardTimeframe
 } from './types.js'
 import {
   getPlayerByUserId,
@@ -77,7 +79,10 @@ import {
   blockPlayer,
   unblockPlayer,
   getBlockedPlayers,
-  isPlayerBlocked
+  isPlayerBlocked,
+  getLeaderboard,
+  getPlayerRank,
+  updateWeeklyStats
 } from './db.js'
 import { processTick, simulateGymBattle, checkEvolutions, calculateEvolutionStats, applyEvolution, createEvolutionEvent, recalculateStats } from './game.js'
 
@@ -454,6 +459,9 @@ export class GameHub {
           break
         case 'get_blocked_players':
           this.handleGetBlockedPlayers(client)
+          break
+        case 'get_leaderboard':
+          this.handleGetLeaderboard(client, msg.payload as { type: LeaderboardType; timeframe: LeaderboardTimeframe })
           break
         default:
           console.log('Unknown message type:', msg.type)
@@ -1011,7 +1019,17 @@ export class GameHub {
               ...pokemon,
               species: wild.species
             }
+            // Check if this is a new species BEFORE updating pokedex
+            const previouslyCaught = await getCaughtSpeciesForPlayer(client.session.player.id, [wild.species_id])
+            const isNewSpecies = previouslyCaught.size === 0
+
             await updatePokedex(client.session.player.id, wild.species_id, true)
+
+            // Update weekly stats for catch (Issue #54)
+            await updateWeeklyStats(client.session.player.id, {
+              catches: 1,
+              pokedex: isNewSpecies ? 1 : 0
+            })
           } else {
             // Pokemon save failed - refund the ball in memory AND database
             // and mark catch as failed
@@ -1048,6 +1066,12 @@ export class GameHub {
             await updatePokemonStats(pokemon)
           }
         }
+
+        // Update weekly stats with highest level achieved (Issue #54)
+        const highestLevelUp = Math.max(...result.level_ups!.map(lu => lu.new_level))
+        await updateWeeklyStats(client.session.player.id, {
+          level: highestLevelUp
+        })
 
         // Clear suppressed evolutions for any Pokemon that leveled up
         // This allows them to be prompted for evolution again
@@ -2620,5 +2644,45 @@ export class GameHub {
 
     const players = await getBlockedPlayers(client.session.player.id)
     this.send(client, 'blocked_players', { players })
+  }
+
+  // ============================================
+  // LEADERBOARD HANDLERS (Issues #51-54)
+  // ============================================
+
+  private async handleGetLeaderboard(
+    client: Client,
+    payload: { type: LeaderboardType; timeframe: LeaderboardTimeframe }
+  ) {
+    if (!client.session) return
+
+    const { type, timeframe } = payload
+
+    // Validate input
+    if (!['pokedex', 'catches', 'level'].includes(type)) {
+      this.sendError(client, 'Invalid leaderboard type')
+      return
+    }
+    if (!['alltime', 'weekly'].includes(timeframe)) {
+      this.sendError(client, 'Invalid leaderboard timeframe')
+      return
+    }
+
+    // Fetch leaderboard data
+    const entries = await getLeaderboard(type, timeframe, 50)
+
+    // Get player's own rank
+    const playerRank = await getPlayerRank(
+      client.session.player.id,
+      type,
+      timeframe
+    )
+
+    this.send(client, 'leaderboard_data', {
+      type,
+      timeframe,
+      entries,
+      playerRank
+    })
   }
 }
