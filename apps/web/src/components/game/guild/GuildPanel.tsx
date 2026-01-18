@@ -6,6 +6,7 @@ import { gameSocket } from '@/lib/ws/gameSocket'
 import { CreateGuildModal } from './CreateGuildModal'
 import { GuildList } from './GuildList'
 import { GuildMembers } from './GuildMembers'
+import { GuildInviteList } from './GuildInviteList'
 
 export function GuildPanel() {
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -66,6 +67,10 @@ export function GuildPanel() {
           </div>
         )}
 
+        {/* Pending guild invites */}
+        <GuildInviteList />
+
+        {/* Guild discovery list */}
         <GuildList />
 
         <CreateGuildModal
