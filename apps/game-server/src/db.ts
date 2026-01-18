@@ -2501,3 +2501,118 @@ export async function searchGuilds(
     total: count || 0
   }
 }
+
+// ============================================
+// GUILD ROLE MANAGEMENT QUERIES
+// ============================================
+
+// Promote a member to officer (leader only)
+export async function promoteMember(
+  actorId: string,
+  targetId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('promote_member', {
+    p_actor_id: actorId,
+    p_target_id: targetId
+  })
+
+  if (error) {
+    console.error('Error promoting member:', error)
+    return { success: false, error: 'Database error' }
+  }
+
+  return data as { success: boolean; error?: string }
+}
+
+// Demote an officer to member (leader only)
+export async function demoteMember(
+  actorId: string,
+  targetId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('demote_member', {
+    p_actor_id: actorId,
+    p_target_id: targetId
+  })
+
+  if (error) {
+    console.error('Error demoting member:', error)
+    return { success: false, error: 'Database error' }
+  }
+
+  return data as { success: boolean; error?: string }
+}
+
+// Kick a member from guild
+export async function kickMember(
+  actorId: string,
+  targetId: string
+): Promise<{ success: boolean; guild_id?: string; error?: string }> {
+  const { data, error } = await supabase.rpc('kick_member', {
+    p_actor_id: actorId,
+    p_target_id: targetId
+  })
+
+  if (error) {
+    console.error('Error kicking member:', error)
+    return { success: false, error: 'Database error' }
+  }
+
+  return data as { success: boolean; guild_id?: string; error?: string }
+}
+
+// Transfer leadership to another member (leader only)
+export async function transferLeadership(
+  actorId: string,
+  targetId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('transfer_leadership', {
+    p_actor_id: actorId,
+    p_target_id: targetId
+  })
+
+  if (error) {
+    console.error('Error transferring leadership:', error)
+    return { success: false, error: 'Database error' }
+  }
+
+  return data as { success: boolean; error?: string }
+}
+
+// Disband guild (leader only, requires confirmation)
+export async function disbandGuild(
+  actorId: string,
+  confirmation: string
+): Promise<{ success: boolean; guild_name?: string; error?: string }> {
+  const { data, error } = await supabase.rpc('disband_guild', {
+    p_actor_id: actorId,
+    p_confirmation: confirmation
+  })
+
+  if (error) {
+    console.error('Error disbanding guild:', error)
+    return { success: false, error: 'Database error' }
+  }
+
+  return data as { success: boolean; guild_name?: string; error?: string }
+}
+
+// Get member info by player ID (for notifications)
+export async function getGuildMemberByPlayerId(
+  playerId: string
+): Promise<{ username: string; role: string } | null> {
+  const { data, error } = await supabase
+    .from('guild_members')
+    .select(`
+      role,
+      players!inner (username)
+    `)
+    .eq('player_id', playerId)
+    .single()
+
+  if (error || !data) return null
+
+  return {
+    username: (data as unknown as { players: { username: string } }).players.username,
+    role: data.role
+  }
+}
