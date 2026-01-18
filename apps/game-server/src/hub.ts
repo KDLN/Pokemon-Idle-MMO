@@ -23,7 +23,11 @@ import type {
   DemoteMemberPayload,
   KickMemberPayload,
   TransferLeadershipPayload,
-  DisbandGuildPayload
+  DisbandGuildPayload,
+  SendGuildInvitePayload,
+  AcceptGuildInvitePayload,
+  DeclineGuildInvitePayload,
+  CancelGuildInvitePayload
 } from './types.js'
 import {
   getPlayerByUserId,
@@ -104,7 +108,14 @@ import {
   kickMember,
   transferLeadership,
   disbandGuild,
-  getGuildMemberByPlayerId
+  getGuildMemberByPlayerId,
+  sendGuildInvite,
+  acceptGuildInvite,
+  declineGuildInvite,
+  cancelGuildInvite,
+  getIncomingGuildInvites,
+  getOutgoingGuildInvites,
+  getSupabase
 } from './db.js'
 import { processTick, simulateGymBattle, checkEvolutions, calculateEvolutionStats, applyEvolution, createEvolutionEvent, recalculateStats } from './game.js'
 
@@ -529,6 +540,25 @@ export class GameHub {
           break
         case 'disband_guild':
           this.handleDisbandGuild(client, msg.payload as DisbandGuildPayload)
+          break
+        // Guild invite handlers
+        case 'guild_invite_send':
+          this.handleSendGuildInvite(client, msg.payload as SendGuildInvitePayload)
+          break
+        case 'guild_invite_accept':
+          this.handleAcceptGuildInvite(client, msg.payload as AcceptGuildInvitePayload)
+          break
+        case 'guild_invite_decline':
+          this.handleDeclineGuildInvite(client, msg.payload as DeclineGuildInvitePayload)
+          break
+        case 'guild_invite_cancel':
+          this.handleCancelGuildInvite(client, msg.payload as CancelGuildInvitePayload)
+          break
+        case 'get_guild_invites':
+          this.handleGetGuildInvites(client)
+          break
+        case 'get_guild_outgoing_invites':
+          this.handleGetOutgoingGuildInvites(client)
           break
         default:
           console.log('Unknown message type:', msg.type)
@@ -3219,5 +3249,232 @@ export class GameHub {
     if (playerClient?.session?.guild) {
       playerClient.session.guild.role = newRole
     }
+  }
+
+  // ============================================
+  // GUILD INVITE HANDLERS
+  // ============================================
+
+  private async handleSendGuildInvite(client: Client, payload: SendGuildInvitePayload) {
+    if (!client.session) return
+
+    const targetPlayerId = payload?.player_id
+    if (!targetPlayerId || typeof targetPlayerId !== 'string') {
+      this.sendError(client, 'Player ID is required')
+      return
+    }
+
+    // Check actor is in a guild and has invite permission
+    if (!client.session.guild) {
+      this.sendError(client, 'You are not in a guild')
+      return
+    }
+
+    if (!['leader', 'officer'].includes(client.session.guild.role)) {
+      this.sendError(client, 'Only leaders and officers can send invites')
+      return
+    }
+
+    // Check if blocked (reuse existing pattern from friend requests)
+    const blocked = await isPlayerBlocked(client.session.player.id, targetPlayerId)
+    if (blocked) {
+      this.sendError(client, 'Cannot send invite to this player')
+      return
+    }
+
+    const result = await sendGuildInvite(client.session.player.id, targetPlayerId)
+
+    if (!result.success) {
+      this.send(client, 'guild_invite_error', { error: result.error })
+      return
+    }
+
+    // Get target player username for notification
+    const supabase = getSupabase()
+    const { data: targetData } = await supabase
+      .from('players')
+      .select('username')
+      .eq('id', targetPlayerId)
+      .single()
+
+    const targetUsername = targetData?.username || 'Unknown'
+
+    // Notify sender
+    this.send(client, 'guild_invite_sent', {
+      success: true,
+      player_id: targetPlayerId,
+      player_username: targetUsername
+    })
+
+    // Notify target if online
+    const targetClient = this.getClientByPlayerId(targetPlayerId)
+    if (targetClient) {
+      // Fetch current guild info for the notification
+      const guild = await getGuildById(client.session.guild.id)
+      this.send(targetClient, 'guild_invite_received', {
+        invite_id: result.invite_id,
+        guild_id: client.session.guild.id,
+        guild_name: client.session.guild.name,
+        guild_tag: client.session.guild.tag,
+        member_count: guild?.member_count || 0,
+        max_members: guild?.max_members || 50,
+        invited_by_id: client.session.player.id,
+        invited_by_username: client.session.player.username,
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+      })
+    }
+  }
+
+  private async handleAcceptGuildInvite(client: Client, payload: AcceptGuildInvitePayload) {
+    if (!client.session) return
+
+    const inviteId = payload?.invite_id
+    if (!inviteId || typeof inviteId !== 'string') {
+      this.sendError(client, 'Invite ID is required')
+      return
+    }
+
+    // Check not already in a guild
+    if (client.session.guild) {
+      this.sendError(client, 'Already in a guild')
+      return
+    }
+
+    const result = await acceptGuildInvite(client.session.player.id, inviteId)
+
+    if (!result.success) {
+      this.send(client, 'guild_invite_error', { error: result.error })
+      return
+    }
+
+    // Load guild data for session update
+    const guild = await getGuildById(result.guild_id!)
+    if (!guild) {
+      this.sendError(client, 'Failed to load guild')
+      return
+    }
+
+    // Update session (same pattern as handleJoinGuild)
+    client.session.guild = {
+      id: guild.id,
+      name: guild.name,
+      tag: guild.tag,
+      role: 'member'
+    }
+
+    // Send guild data to the new member
+    const members = await getGuildMembers(guild.id)
+    this.send(client, 'guild_data', {
+      guild,
+      members: members.map(m => ({
+        ...m,
+        is_online: this.isPlayerOnline(m.player_id)
+      })),
+      my_role: 'member'
+    })
+
+    // Notify sender of acceptance
+    this.send(client, 'guild_invite_accepted', {
+      guild_id: guild.id,
+      guild_name: guild.name
+    })
+
+    // Broadcast to guild that a new member joined
+    this.broadcastToGuild(guild.id, 'guild_member_joined', {
+      member: {
+        id: '', // Member record ID not needed for notification
+        guild_id: guild.id,
+        player_id: client.session.player.id,
+        role: 'member',
+        joined_at: new Date().toISOString(),
+        username: client.session.player.username,
+        last_online: new Date().toISOString(),
+        is_online: true
+      }
+    })
+  }
+
+  private async handleDeclineGuildInvite(client: Client, payload: DeclineGuildInvitePayload) {
+    if (!client.session) return
+
+    const inviteId = payload?.invite_id
+    if (!inviteId || typeof inviteId !== 'string') {
+      this.sendError(client, 'Invite ID is required')
+      return
+    }
+
+    const result = await declineGuildInvite(client.session.player.id, inviteId)
+
+    if (!result.success) {
+      this.send(client, 'guild_invite_error', { error: result.error })
+      return
+    }
+
+    // Confirm decline to client
+    this.send(client, 'guild_invite_declined', { invite_id: inviteId })
+
+    // Refresh their invite list
+    const invites = await getIncomingGuildInvites(client.session.player.id)
+    this.send(client, 'guild_invites_list', { invites })
+  }
+
+  private async handleCancelGuildInvite(client: Client, payload: CancelGuildInvitePayload) {
+    if (!client.session) return
+
+    const inviteId = payload?.invite_id
+    if (!inviteId || typeof inviteId !== 'string') {
+      this.sendError(client, 'Invite ID is required')
+      return
+    }
+
+    // Check in guild with permission
+    if (!client.session.guild) {
+      this.sendError(client, 'You are not in a guild')
+      return
+    }
+
+    if (!['leader', 'officer'].includes(client.session.guild.role)) {
+      this.sendError(client, 'Only leaders and officers can cancel invites')
+      return
+    }
+
+    const result = await cancelGuildInvite(client.session.player.id, inviteId)
+
+    if (!result.success) {
+      this.send(client, 'guild_invite_error', { error: result.error })
+      return
+    }
+
+    // Confirm cancel to client
+    this.send(client, 'guild_invite_cancelled', { invite_id: inviteId })
+
+    // Refresh outgoing invites list
+    const invites = await getOutgoingGuildInvites(client.session.guild.id)
+    this.send(client, 'guild_outgoing_invites', { invites })
+  }
+
+  private async handleGetGuildInvites(client: Client) {
+    if (!client.session) return
+
+    const invites = await getIncomingGuildInvites(client.session.player.id)
+    this.send(client, 'guild_invites_list', { invites })
+  }
+
+  private async handleGetOutgoingGuildInvites(client: Client) {
+    if (!client.session) return
+
+    if (!client.session.guild) {
+      this.send(client, 'guild_outgoing_invites', { invites: [] })
+      return
+    }
+
+    if (!['leader', 'officer'].includes(client.session.guild.role)) {
+      this.send(client, 'guild_outgoing_invites', { invites: [] })
+      return
+    }
+
+    const invites = await getOutgoingGuildInvites(client.session.guild.id)
+    this.send(client, 'guild_outgoing_invites', { invites })
   }
 }

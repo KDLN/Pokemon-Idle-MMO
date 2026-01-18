@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon, BlockedPlayer, WildPokemon, Guild, GuildMember, GuildPreview, PlayerGuildInfo } from './types.js'
+import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon, BlockedPlayer, WildPokemon, Guild, GuildMember, GuildPreview, PlayerGuildInfo, GuildInvite, GuildOutgoingInvite } from './types.js'
 import { calculateHP, calculateStat } from './game.js'
 
 let supabase: SupabaseClient
@@ -2615,4 +2615,193 @@ export async function getGuildMemberByPlayerId(
     username: (data as unknown as { players: { username: string } }).players.username,
     role: data.role
   }
+}
+
+// ============================================
+// GUILD INVITE QUERIES
+// ============================================
+
+/**
+ * Send a guild invite (leader/officer only)
+ * The database function handles:
+ * - Validating actor is leader/officer
+ * - Checking guild is not closed or full
+ * - Validating target player exists and is not in a guild
+ * - Checking for existing pending invite
+ * - Creating the invite record
+ */
+export async function sendGuildInvite(
+  actorId: string,
+  targetPlayerId: string
+): Promise<{ success: boolean; invite_id?: string; guild_name?: string; error?: string }> {
+  const { data, error } = await supabase.rpc('send_guild_invite', {
+    p_actor_id: actorId,
+    p_target_player_id: targetPlayerId
+  })
+
+  if (error) {
+    console.error('Error sending guild invite:', error)
+    return { success: false, error: 'Database error' }
+  }
+
+  return data as { success: boolean; invite_id?: string; guild_name?: string; error?: string }
+}
+
+/**
+ * Accept a guild invite (joins guild as member)
+ * The database function handles:
+ * - Validating invite exists and belongs to player
+ * - Checking invite not expired
+ * - Checking player not already in a guild
+ * - Checking 24hr cooldown from leaving previous guild
+ * - Checking guild not full
+ * - Deleting invite and adding member
+ */
+export async function acceptGuildInvite(
+  playerId: string,
+  inviteId: string
+): Promise<{ success: boolean; guild_id?: string; guild_name?: string; error?: string }> {
+  const { data, error } = await supabase.rpc('accept_guild_invite', {
+    p_player_id: playerId,
+    p_invite_id: inviteId
+  })
+
+  if (error) {
+    console.error('Error accepting guild invite:', error)
+    return { success: false, error: 'Database error' }
+  }
+
+  return data as { success: boolean; guild_id?: string; guild_name?: string; error?: string }
+}
+
+/**
+ * Decline a guild invite
+ * The database function handles:
+ * - Validating invite exists and belongs to player
+ * - Deleting the invite
+ */
+export async function declineGuildInvite(
+  playerId: string,
+  inviteId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('decline_guild_invite', {
+    p_player_id: playerId,
+    p_invite_id: inviteId
+  })
+
+  if (error) {
+    console.error('Error declining guild invite:', error)
+    return { success: false, error: 'Database error' }
+  }
+
+  return data as { success: boolean; error?: string }
+}
+
+/**
+ * Cancel a guild invite (leader/officer only)
+ * The database function handles:
+ * - Validating actor is leader/officer in the guild
+ * - Validating invite exists and belongs to actor's guild
+ * - Deleting the invite
+ */
+export async function cancelGuildInvite(
+  actorId: string,
+  inviteId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('cancel_guild_invite', {
+    p_actor_id: actorId,
+    p_invite_id: inviteId
+  })
+
+  if (error) {
+    console.error('Error cancelling guild invite:', error)
+    return { success: false, error: 'Database error' }
+  }
+
+  return data as { success: boolean; error?: string }
+}
+
+/**
+ * Get incoming guild invites for a player (non-expired only)
+ * Returns invites with guild info and inviter username
+ */
+export async function getIncomingGuildInvites(playerId: string): Promise<GuildInvite[]> {
+  const { data, error } = await supabase
+    .from('guild_invites')
+    .select(`
+      id,
+      guild_id,
+      invited_by,
+      created_at,
+      expires_at,
+      guilds!inner (
+        name,
+        tag,
+        member_count,
+        max_members
+      ),
+      inviter:players!guild_invites_invited_by_fkey(username)
+    `)
+    .eq('player_id', playerId)
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Failed to get guild invites:', error)
+    return []
+  }
+
+  // Transform to flatten joins
+  return (data || []).map(row => {
+    // Handle both object and array forms from Supabase join
+    const guildData = Array.isArray(row.guilds) ? row.guilds[0] : row.guilds
+    return {
+      id: row.id,
+      guild_id: row.guild_id,
+      guild_name: guildData?.name || 'Unknown',
+      guild_tag: guildData?.tag || '???',
+      member_count: guildData?.member_count || 0,
+      max_members: guildData?.max_members || 50,
+      invited_by: row.invited_by,
+      invited_by_username: extractUsernameFromJoin(row.inviter),
+      created_at: row.created_at,
+      expires_at: row.expires_at
+    }
+  })
+}
+
+/**
+ * Get outgoing guild invites for a guild (leader/officer viewing)
+ * Returns invites with player username
+ */
+export async function getOutgoingGuildInvites(guildId: string): Promise<GuildOutgoingInvite[]> {
+  const { data, error } = await supabase
+    .from('guild_invites')
+    .select(`
+      id,
+      player_id,
+      invited_by,
+      created_at,
+      expires_at,
+      target:players!guild_invites_player_id_fkey(username),
+      inviter:players!guild_invites_invited_by_fkey(username)
+    `)
+    .eq('guild_id', guildId)
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Failed to get outgoing guild invites:', error)
+    return []
+  }
+
+  return (data || []).map(row => ({
+    id: row.id,
+    player_id: row.player_id,
+    player_username: extractUsernameFromJoin(row.target),
+    invited_by: row.invited_by,
+    invited_by_username: extractUsernameFromJoin(row.inviter),
+    created_at: row.created_at,
+    expires_at: row.expires_at
+  }))
 }
