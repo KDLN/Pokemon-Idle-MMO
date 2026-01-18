@@ -139,3 +139,108 @@ export interface GuildDisbandedPayload {
 export interface GuildErrorPayload {
   error: string
 }
+
+// ================================
+// Guild Invite Types
+// ================================
+
+// Invite data (for displaying pending invites)
+export interface GuildInvite {
+  id: string
+  guild_id: string
+  guild_name: string
+  guild_tag: string
+  member_count: number
+  max_members: number
+  invited_by: string | null
+  invited_by_username: string
+  created_at: string
+  expires_at: string
+}
+
+// Outgoing invite (for guild staff viewing sent invites)
+export interface GuildOutgoingInvite {
+  id: string
+  player_id: string
+  player_username: string
+  invited_by: string
+  invited_by_username: string
+  created_at: string
+  expires_at: string
+}
+
+// ================================
+// Guild Invite WebSocket Payloads
+// ================================
+
+// Client -> Server payloads
+
+export interface SendGuildInvitePayload {
+  player_id: string
+}
+
+export interface AcceptGuildInvitePayload {
+  invite_id: string
+}
+
+export interface DeclineGuildInvitePayload {
+  invite_id: string
+}
+
+export interface CancelGuildInvitePayload {
+  invite_id: string
+}
+
+export interface GetGuildInvitesPayload {
+  // Empty - just requests list of pending invites
+}
+
+// Server -> Client payloads
+
+export interface GuildInviteSentPayload {
+  success: boolean
+  player_id: string
+  player_username: string
+}
+
+export interface GuildInviteReceivedPayload {
+  invite_id: string
+  guild_id: string
+  guild_name: string
+  guild_tag: string
+  member_count: number
+  max_members: number
+  invited_by_id: string
+  invited_by_username: string
+  created_at: string
+  expires_at: string
+}
+
+export interface GuildInvitesListPayload {
+  invites: GuildInvite[]
+}
+
+export interface GuildOutgoingInvitesPayload {
+  invites: GuildOutgoingInvite[]
+}
+
+export interface GuildInviteAcceptedPayload {
+  guild_id: string
+  guild_name: string
+}
+
+export interface GuildInviteDeclinedPayload {
+  invite_id: string
+}
+
+export interface GuildInviteCancelledPayload {
+  invite_id: string
+}
+
+// Notification when someone accepts an invite (sent to guild members)
+export interface GuildMemberJoinedViaInvitePayload {
+  player_id: string
+  username: string
+  invited_by_id: string
+  invited_by_username: string
+}
