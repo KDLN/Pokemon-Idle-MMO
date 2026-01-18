@@ -65,7 +65,7 @@ export function ChatSidebar({ isCollapsed = false, onToggle }: ChatSidebarProps)
       // Filter blocked players
       if (blockedIds.has(msg.playerId)) return false
       // Filter muted players
-      if (mutedPlayers.has(msg.playerId)) return false
+      if (mutedPlayers.includes(msg.playerId)) return false
       return true
     })
   }, [activeChannel, chat.messages, whispers, player?.id, blockedIds, mutedPlayers])

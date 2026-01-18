@@ -99,6 +99,8 @@ export function GymBattlePanel() {
   const badges = useGameStore((state) => state.badges)
   const setGymOpen = useGameStore((state) => state.setGymOpen)
   const party = useGameStore((state) => state.party)
+  const pendingGymBattleResult = useGameStore((state) => state.pendingGymBattleResult)
+  const setPendingGymBattleResult = useGameStore((state) => state.setPendingGymBattleResult)
 
   const [battlePhase, setBattlePhase] = useState<GymBattlePhase>('intro')
   const [battleResult, setBattleResult] = useState<GymBattleResult | null>(null)
@@ -308,24 +310,25 @@ export function GymBattlePanel() {
     return () => clearPendingTimeout()
   }, [battlePhase, currentTurn, currentTurnIndex, currentMatchupIndex, battleResult, currentGymLeader, clearPendingTimeout])
 
-  // Expose handler for socket - must be before early return to maintain hook order
+  // React to gym battle results from the store
   useEffect(() => {
-    const handler = (result: GymBattleResult) => {
-      setBattleResult(result)
-
-      if (result.success && result.badge_earned) {
-        useGameStore.getState().addBadge(result.badge_earned)
-      }
+    if (pendingGymBattleResult) {
+      setBattleResult(pendingGymBattleResult)
 
       // Start the battle animation
-      startBattleAnimation(result)
+      startBattleAnimation(pendingGymBattleResult)
+
+      // Clear the pending result so we don't re-trigger
+      setPendingGymBattleResult(null)
     }
-    ;(window as unknown as { __gymBattleHandler?: (result: GymBattleResult) => void }).__gymBattleHandler = handler
+  }, [pendingGymBattleResult, startBattleAnimation, setPendingGymBattleResult])
+
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
-      delete (window as unknown as { __gymBattleHandler?: (result: GymBattleResult) => void }).__gymBattleHandler
       clearPendingTimeout()
     }
-  }, [startBattleAnimation, clearPendingTimeout])
+  }, [clearPendingTimeout])
 
   if (!isGymOpen || !currentGymLeader) return null
 

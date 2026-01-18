@@ -530,10 +530,9 @@ export function GameShell({ accessToken }: GameShellProps) {
   const hasEncounter = currentEncounter !== null
 
   // Badge counts for mobile tab bar
-  // Note: friendBadgeCount only shows incoming (action needed from user)
-  // while SocialSidebar's friendRequestCount includes outgoing (for full visibility)
+  // Only show incoming requests (action needed from user) for consistency
   const friendBadgeCount = incomingFriendRequests.length
-  const tradeBadgeCount = incomingTradeRequests.length + outgoingTradeRequests.length
+  const tradeBadgeCount = incomingTradeRequests.length
 
   if (isLoading) {
     return (

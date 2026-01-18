@@ -117,6 +117,8 @@ export class GameHub {
   private clientsByPlayerId: Map<string, Client> = new Map()
   private speciesMap: Map<number, PokemonSpecies> = new Map()
   private tickInterval: NodeJS.Timeout | null = null
+  private presenceInterval: NodeJS.Timeout | null = null
+  private cleanupInterval: NodeJS.Timeout | null = null
   private tradeReadyStates: Map<string, TradeReadyState> = new Map()
   // Tracks trades currently being completed to prevent double-completion race condition
   private tradesBeingCompleted: Set<string> = new Set()
@@ -147,11 +149,11 @@ export class GameHub {
     this.tickInterval = setInterval(() => this.processTicks(), 1000)
 
     // Update presence every 60 seconds
-    setInterval(() => this.updatePresence(), 60000)
+    this.presenceInterval = setInterval(() => this.updatePresence(), 60000)
 
     // Periodic cleanup of rate limit maps (every 5 minutes)
     // Removes entries for disconnected players to prevent memory leak
-    setInterval(() => this.cleanupRateLimits(), 300000)
+    this.cleanupInterval = setInterval(() => this.cleanupRateLimits(), 300000)
   }
 
   // Clean up rate limit entries for players who are no longer connected
@@ -211,6 +213,12 @@ export class GameHub {
   stop() {
     if (this.tickInterval) {
       clearInterval(this.tickInterval)
+    }
+    if (this.presenceInterval) {
+      clearInterval(this.presenceInterval)
+    }
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval)
     }
     this.wss.close()
   }

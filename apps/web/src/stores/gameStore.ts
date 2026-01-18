@@ -6,7 +6,7 @@ import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/frien
 import type { IncomingTradeRequest, OutgoingTradeRequest, ActiveTradeSession, TradeOffer, TradeHistoryEntry } from '@/types/trade'
 import type { LogEntry } from '@/components/game/interactions/WorldLog'
 import type { WorldEvent } from '@/components/game/social/WorldEventsTicker'
-import type { GymLeader } from '@/components/game/GymBattlePanel'
+import type { GymLeader, GymBattleResult } from '@/components/game/GymBattlePanel'
 import type { TimeOfDay } from '@/lib/time/timeOfDay'
 import type { TrainerCustomization } from '@/lib/sprites/trainerCustomization'
 import { DEFAULT_TRAINER_CUSTOMIZATION } from '@/lib/sprites/trainerCustomization'
@@ -98,6 +98,10 @@ interface GameStore {
   badges: string[]
   setBadges: (badges: string[]) => void
   addBadge: (badgeId: string) => void
+
+  // Gym battle result (for communication between gameSocket and GymBattlePanel)
+  pendingGymBattleResult: GymBattleResult | null
+  setPendingGymBattleResult: (result: GymBattleResult | null) => void
 
   // Season progress
   seasonProgress: SeasonProgress
@@ -234,7 +238,7 @@ interface GameStore {
 
   // Block/mute state (Issue #47)
   blockedPlayers: BlockedPlayerData[]
-  mutedPlayers: Set<string>
+  mutedPlayers: string[]  // Array for proper serialization (session-only, not persisted)
   setBlockedPlayers: (players: BlockedPlayerData[]) => void
   addBlockedPlayer: (player: BlockedPlayerData) => void
   removeBlockedPlayer: (playerId: string) => void
@@ -314,6 +318,7 @@ const initialState = {
   pokedollars: 0,
   battlePoints: 0,
   badges: [] as string[],
+  pendingGymBattleResult: null as GymBattleResult | null,
   seasonProgress: initialSeasonProgress,
   inventory: {},
   shopItems: [],
@@ -354,7 +359,7 @@ const initialState = {
   whisperUnreadCount: 0,
   // Block/mute state (Issue #47)
   blockedPlayers: [] as BlockedPlayerData[],
-  mutedPlayers: new Set<string>(),
+  mutedPlayers: [] as string[],
   // Leaderboard state (Issues #51-54)
   leaderboardEntries: [] as LeaderboardEntry[],
   leaderboardType: 'pokedex' as LeaderboardType,
@@ -409,6 +414,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         ? state.badges
         : [...state.badges, badgeId],
     })),
+
+  setPendingGymBattleResult: (result) => set({ pendingGymBattleResult: result }),
 
   setSeasonProgress: (progress) =>
     set((state) => ({
@@ -476,12 +483,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     let newActiveEvolution = state.activeEvolution
     if (rewards.pendingEvolutions && rewards.pendingEvolutions.length > 0) {
       // Deduplicate by pokemon_id to prevent race condition duplicates
+      // Check against existing pending, active, AND incoming rewards (in case of duplicates within batch)
       const existingIds = new Set([
         ...state.pendingEvolutions.map(e => e.pokemon_id),
         state.activeEvolution?.pokemon_id
       ].filter(Boolean))
 
-      const uniqueNewEvolutions = rewards.pendingEvolutions.filter(e => !existingIds.has(e.pokemon_id))
+      // Also deduplicate within the incoming batch itself
+      const seenInBatch = new Set<string>()
+      const uniqueNewEvolutions = rewards.pendingEvolutions.filter(e => {
+        if (existingIds.has(e.pokemon_id) || seenInBatch.has(e.pokemon_id)) {
+          return false
+        }
+        seenInBatch.add(e.pokemon_id)
+        return true
+      })
+
       if (uniqueNewEvolutions.length > 0) {
         newPendingEvolutions = [...state.pendingEvolutions, ...uniqueNewEvolutions]
         // If no active evolution, automatically start the first one
@@ -839,20 +856,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     })),
 
   mutePlayer: (playerId) =>
-    set((state) => {
-      const newMuted = new Set(state.mutedPlayers)
-      newMuted.add(playerId)
-      return { mutedPlayers: newMuted }
-    }),
+    set((state) => ({
+      mutedPlayers: state.mutedPlayers.includes(playerId)
+        ? state.mutedPlayers
+        : [...state.mutedPlayers, playerId]
+    })),
 
   unmutePlayer: (playerId) =>
-    set((state) => {
-      const newMuted = new Set(state.mutedPlayers)
-      newMuted.delete(playerId)
-      return { mutedPlayers: newMuted }
-    }),
+    set((state) => ({
+      mutedPlayers: state.mutedPlayers.filter(id => id !== playerId)
+    })),
 
-  isPlayerMuted: (playerId) => get().mutedPlayers.has(playerId),
+  isPlayerMuted: (playerId) => get().mutedPlayers.includes(playerId),
 
   isPlayerBlocked: (playerId) =>
     get().blockedPlayers.some((p) => p.blockedId === playerId),

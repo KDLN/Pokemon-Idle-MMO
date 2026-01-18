@@ -8,7 +8,7 @@ An idle MMO monster-catching game where players deploy their trainer into the wo
 pokemon-idle-mmo/
 ├── apps/
 │   ├── web/                # Next.js frontend
-│   └── game-server/        # Go WebSocket game server
+│   └── game-server/        # Node.js WebSocket game server
 ├── supabase/
 │   └── migrations/         # Database schema
 └── pokemon-idle-mmo-gdd.md # Game Design Document
@@ -16,17 +16,16 @@ pokemon-idle-mmo/
 
 ## Tech Stack
 
-- **Frontend:** Next.js 14+ (App Router), TypeScript, Tailwind CSS
-- **Game Server:** Go with gorilla/websocket
-- **Database:** Supabase (PostgreSQL + Auth + Realtime)
-- **Deployment:** Vercel (frontend), Fly.io (game server)
+- **Frontend:** Next.js 16, React 19, TypeScript, Zustand, Tailwind CSS 4
+- **Game Server:** Node.js, TypeScript, ws (WebSocket), jose (JWT)
+- **Database:** Supabase (PostgreSQL + Auth + RLS)
+- **Deployment:** Vercel (frontend), Railway (game server)
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- Go 1.21+
 - Supabase account (free tier works)
 
 ### 1. Set up Supabase
@@ -60,7 +59,8 @@ Find the JWT secret in Supabase Dashboard > Settings > API > JWT Secret.
 
 ```bash
 cd apps/game-server
-go run cmd/server/main.go
+npm install
+npm run dev
 ```
 
 ### 4. Start the Frontend
@@ -101,9 +101,9 @@ npm run lint    # Run linter
 
 ```bash
 cd apps/game-server
-go run cmd/server/main.go  # Run server
-go build ./...             # Build all packages
-go test ./...              # Run tests
+npm run dev      # Start with hot reload (tsx watch)
+npm run build    # Compile TypeScript to dist/
+npm start        # Run compiled server
 ```
 
 ### Database Changes
