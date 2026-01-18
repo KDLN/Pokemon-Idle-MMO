@@ -17,7 +17,13 @@ import type {
   LeaderboardTimeframe,
   CreateGuildPayload,
   JoinGuildPayload,
-  SearchGuildsPayload
+  SearchGuildsPayload,
+  GuildRole,
+  PromoteMemberPayload,
+  DemoteMemberPayload,
+  KickMemberPayload,
+  TransferLeadershipPayload,
+  DisbandGuildPayload
 } from './types.js'
 import {
   getPlayerByUserId,
@@ -507,6 +513,22 @@ export class GameHub {
           break
         case 'search_guilds':
           this.handleSearchGuilds(client, msg.payload as SearchGuildsPayload)
+          break
+        // Guild role management handlers
+        case 'promote_member':
+          this.handlePromoteMember(client, msg.payload as PromoteMemberPayload)
+          break
+        case 'demote_member':
+          this.handleDemoteMember(client, msg.payload as DemoteMemberPayload)
+          break
+        case 'kick_member':
+          this.handleKickMember(client, msg.payload as KickMemberPayload)
+          break
+        case 'transfer_leadership':
+          this.handleTransferLeadership(client, msg.payload as TransferLeadershipPayload)
+          break
+        case 'disband_guild':
+          this.handleDisbandGuild(client, msg.payload as DisbandGuildPayload)
           break
         default:
           console.log('Unknown message type:', msg.type)
@@ -2967,5 +2989,235 @@ export class GameHub {
       total,
       page: payload.page || 1
     })
+  }
+
+  // ============================================
+  // GUILD ROLE MANAGEMENT HANDLERS
+  // ============================================
+
+  private async handlePromoteMember(client: Client, payload: PromoteMemberPayload) {
+    if (!client.session) return
+
+    if (!client.session.guild) {
+      this.sendError(client, 'Not in a guild')
+      return
+    }
+
+    if (!payload.player_id) {
+      this.sendError(client, 'Player ID is required')
+      return
+    }
+
+    // Get target member info before promotion (for notification)
+    const targetMember = await getGuildMemberByPlayerId(payload.player_id)
+    if (!targetMember) {
+      this.sendError(client, 'Player not found in guild')
+      return
+    }
+
+    const result = await promoteMember(client.session.player.id, payload.player_id)
+
+    if (!result.success) {
+      this.send(client, 'guild_error', { error: result.error })
+      return
+    }
+
+    // Broadcast role change to all guild members
+    this.broadcastToGuild(client.session.guild.id, 'guild_role_changed', {
+      player_id: payload.player_id,
+      username: targetMember.username,
+      old_role: 'member' as GuildRole,
+      new_role: 'officer' as GuildRole
+    })
+
+    // Update the promoted player's session if online
+    this.updatePlayerGuildRole(payload.player_id, 'officer')
+  }
+
+  private async handleDemoteMember(client: Client, payload: DemoteMemberPayload) {
+    if (!client.session) return
+
+    if (!client.session.guild) {
+      this.sendError(client, 'Not in a guild')
+      return
+    }
+
+    if (!payload.player_id) {
+      this.sendError(client, 'Player ID is required')
+      return
+    }
+
+    // Get target member info before demotion (for notification)
+    const targetMember = await getGuildMemberByPlayerId(payload.player_id)
+    if (!targetMember) {
+      this.sendError(client, 'Player not found in guild')
+      return
+    }
+
+    const result = await demoteMember(client.session.player.id, payload.player_id)
+
+    if (!result.success) {
+      this.send(client, 'guild_error', { error: result.error })
+      return
+    }
+
+    // Broadcast role change to all guild members
+    this.broadcastToGuild(client.session.guild.id, 'guild_role_changed', {
+      player_id: payload.player_id,
+      username: targetMember.username,
+      old_role: 'officer' as GuildRole,
+      new_role: 'member' as GuildRole
+    })
+
+    // Update the demoted player's session if online
+    this.updatePlayerGuildRole(payload.player_id, 'member')
+  }
+
+  private async handleKickMember(client: Client, payload: KickMemberPayload) {
+    if (!client.session) return
+
+    if (!client.session.guild) {
+      this.sendError(client, 'Not in a guild')
+      return
+    }
+
+    if (!payload.player_id) {
+      this.sendError(client, 'Player ID is required')
+      return
+    }
+
+    // Get target member info before kick (for notification)
+    const targetMember = await getGuildMemberByPlayerId(payload.player_id)
+    if (!targetMember) {
+      this.sendError(client, 'Player not found in guild')
+      return
+    }
+
+    const guildId = client.session.guild.id
+    const kickerUsername = client.session.player.username
+
+    const result = await kickMember(client.session.player.id, payload.player_id)
+
+    if (!result.success) {
+      this.send(client, 'guild_error', { error: result.error })
+      return
+    }
+
+    // Broadcast kick to remaining guild members
+    this.broadcastToGuild(guildId, 'guild_member_kicked', {
+      player_id: payload.player_id,
+      username: targetMember.username,
+      kicked_by: kickerUsername
+    })
+
+    // Notify kicked player and clear their session guild
+    const kickedClient = this.getClientByPlayerId(payload.player_id)
+    if (kickedClient?.session) {
+      kickedClient.session.guild = undefined
+      this.send(kickedClient, 'guild_kicked', {
+        kicked_by: kickerUsername,
+        guild_name: client.session.guild.name
+      })
+    }
+  }
+
+  private async handleTransferLeadership(client: Client, payload: TransferLeadershipPayload) {
+    if (!client.session) return
+
+    if (!client.session.guild) {
+      this.sendError(client, 'Not in a guild')
+      return
+    }
+
+    if (!payload.player_id) {
+      this.sendError(client, 'Player ID is required')
+      return
+    }
+
+    // Get target member info
+    const targetMember = await getGuildMemberByPlayerId(payload.player_id)
+    if (!targetMember) {
+      this.sendError(client, 'Player not found in guild')
+      return
+    }
+
+    const result = await transferLeadership(client.session.player.id, payload.player_id)
+
+    if (!result.success) {
+      this.send(client, 'guild_error', { error: result.error })
+      return
+    }
+
+    // Update old leader's session (current client)
+    client.session.guild.role = 'officer'
+
+    // Update new leader's session if online
+    this.updatePlayerGuildRole(payload.player_id, 'leader')
+
+    // Broadcast leadership transfer to all guild members
+    // Send old leader role change
+    this.broadcastToGuild(client.session.guild.id, 'guild_role_changed', {
+      player_id: client.session.player.id,
+      username: client.session.player.username,
+      old_role: 'leader' as GuildRole,
+      new_role: 'officer' as GuildRole
+    })
+
+    // Send new leader role change
+    this.broadcastToGuild(client.session.guild.id, 'guild_role_changed', {
+      player_id: payload.player_id,
+      username: targetMember.username,
+      old_role: targetMember.role as GuildRole,
+      new_role: 'leader' as GuildRole
+    })
+  }
+
+  private async handleDisbandGuild(client: Client, payload: DisbandGuildPayload) {
+    if (!client.session) return
+
+    if (!client.session.guild) {
+      this.sendError(client, 'Not in a guild')
+      return
+    }
+
+    if (!payload.confirmation) {
+      this.sendError(client, 'Guild name confirmation is required')
+      return
+    }
+
+    const guildId = client.session.guild.id
+
+    // Collect all guild members before disbanding (for session cleanup)
+    const memberPlayerIds: string[] = []
+    for (const [, otherClient] of this.clients) {
+      if (otherClient.session?.guild?.id === guildId) {
+        memberPlayerIds.push(otherClient.session.player.id)
+      }
+    }
+
+    const result = await disbandGuild(client.session.player.id, payload.confirmation)
+
+    if (!result.success) {
+      this.send(client, 'guild_error', { error: result.error })
+      return
+    }
+
+    // Broadcast disband to all guild members and clear their sessions
+    const guildName = result.guild_name || client.session.guild.name
+    for (const playerId of memberPlayerIds) {
+      const memberClient = this.getClientByPlayerId(playerId)
+      if (memberClient?.session) {
+        memberClient.session.guild = undefined
+        this.send(memberClient, 'guild_disbanded', { guild_name: guildName })
+      }
+    }
+  }
+
+  // Helper: Update a player's guild role in their session
+  private updatePlayerGuildRole(playerId: string, newRole: GuildRole) {
+    const playerClient = this.getClientByPlayerId(playerId)
+    if (playerClient?.session?.guild) {
+      playerClient.session.guild.role = newRole
+    }
   }
 }
