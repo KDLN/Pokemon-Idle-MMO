@@ -11,6 +11,7 @@ import type { TimeOfDay } from '@/lib/time/timeOfDay'
 import type { TrainerCustomization } from '@/lib/sprites/trainerCustomization'
 import { DEFAULT_TRAINER_CUSTOMIZATION } from '@/lib/sprites/trainerCustomization'
 import type { EventCosmetics } from '@/components/game/world/SpriteTrainer'
+import type { Guild, GuildMember, GuildRole, GuildPreview } from '@pokemon-idle/shared'
 
 // Museum exhibit interface
 interface MuseumExhibit {
@@ -265,6 +266,24 @@ interface GameStore {
   setLeaderboardType: (type: LeaderboardType) => void
   setLeaderboardTimeframe: (timeframe: LeaderboardTimeframe) => void
 
+  // Guild state
+  guild: Guild | null
+  guildMembers: GuildMember[]
+  myGuildRole: GuildRole | null
+  guildList: GuildPreview[]
+  guildListTotal: number
+  guildError: string | null
+  setGuild: (guild: Guild | null) => void
+  setGuildMembers: (members: GuildMember[]) => void
+  setMyGuildRole: (role: GuildRole | null) => void
+  setGuildList: (guilds: GuildPreview[], total: number) => void
+  setGuildError: (error: string | null) => void
+  setGuildData: (data: { guild: Guild; members: GuildMember[]; myRole: GuildRole }) => void
+  clearGuildState: () => void
+  addGuildMember: (member: GuildMember) => void
+  removeGuildMember: (playerId: string) => void
+  updateGuildMemberRole: (playerId: string, newRole: GuildRole) => void
+
   // Reset store
   reset: () => void
 }
@@ -367,6 +386,13 @@ const initialState = {
   leaderboardPlayerRank: null as PlayerRank | null,
   leaderboardLoading: false,
   isLeaderboardOpen: false,
+  // Guild state
+  guild: null as Guild | null,
+  guildMembers: [] as GuildMember[],
+  myGuildRole: null as GuildRole | null,
+  guildList: [] as GuildPreview[],
+  guildListTotal: 0,
+  guildError: null as string | null,
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -888,6 +914,59 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setLeaderboardType: (type) => set({ leaderboardType: type }),
 
   setLeaderboardTimeframe: (timeframe) => set({ leaderboardTimeframe: timeframe }),
+
+  // Guild methods
+  setGuild: (guild) => set({ guild }),
+
+  setGuildMembers: (guildMembers) => set({ guildMembers }),
+
+  setMyGuildRole: (myGuildRole) => set({ myGuildRole }),
+
+  setGuildList: (guildList, guildListTotal) => set({ guildList, guildListTotal }),
+
+  setGuildError: (guildError) => set({ guildError }),
+
+  setGuildData: (data) => set({
+    guild: data.guild,
+    guildMembers: data.members,
+    myGuildRole: data.myRole,
+    guildError: null,
+  }),
+
+  clearGuildState: () => set({
+    guild: null,
+    guildMembers: [],
+    myGuildRole: null,
+    guildError: null,
+  }),
+
+  addGuildMember: (member) =>
+    set((state) => ({
+      guildMembers: [...state.guildMembers, member],
+      guild: state.guild
+        ? { ...state.guild, member_count: state.guild.member_count + 1 }
+        : null,
+    })),
+
+  removeGuildMember: (playerId) =>
+    set((state) => ({
+      guildMembers: state.guildMembers.filter((m) => m.player_id !== playerId),
+      guild: state.guild
+        ? { ...state.guild, member_count: state.guild.member_count - 1 }
+        : null,
+    })),
+
+  updateGuildMemberRole: (playerId, newRole) =>
+    set((state) => {
+      const currentPlayerId = state.player?.id
+      return {
+        guildMembers: state.guildMembers.map((m) =>
+          m.player_id === playerId ? { ...m, role: newRole } : m
+        ),
+        // Update my role if I was the one changed
+        myGuildRole: playerId === currentPlayerId ? newRole : state.myGuildRole,
+      }
+    }),
 
   reset: () => set(initialState),
 }))

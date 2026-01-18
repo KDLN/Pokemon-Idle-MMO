@@ -4,6 +4,20 @@ import type { GymLeader, GymBattleResult } from '@/components/game/GymBattlePane
 import type { ChatMessageData, ChatChannel, WhisperMessageData, BlockedPlayerData } from '@/types/chat'
 import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
 import type { IncomingTradeRequest, OutgoingTradeRequest, TradeOffer, TradeStatus, TradeHistoryEntry } from '@/types/trade'
+import type {
+  Guild,
+  GuildMember,
+  GuildRole,
+  GuildPreview,
+  GuildDataPayload,
+  GuildListPayload,
+  GuildMemberJoinedPayload,
+  GuildMemberLeftPayload,
+  GuildMemberKickedPayload,
+  GuildRoleChangedPayload,
+  GuildDisbandedPayload,
+  GuildErrorPayload,
+} from '@pokemon-idle/shared'
 
 type MessageHandler = (payload: unknown) => void
 
@@ -90,6 +104,19 @@ class GameSocket {
     this.handlers.set('player_unblocked', this.handlePlayerUnblocked)
     // Leaderboard handlers (Issues #51-54)
     this.handlers.set('leaderboard_data', this.handleLeaderboardData)
+    // Guild handlers
+    this.handlers.set('guild_data', this.handleGuildData)
+    this.handlers.set('guild_list', this.handleGuildList)
+    this.handlers.set('guild_member_joined', this.handleGuildMemberJoined)
+    this.handlers.set('guild_member_left', this.handleGuildMemberLeft)
+    this.handlers.set('guild_member_kicked', this.handleGuildMemberKicked)
+    this.handlers.set('guild_role_changed', this.handleGuildRoleChanged)
+    this.handlers.set('guild_disbanded', this.handleGuildDisbanded)
+    this.handlers.set('guild_kicked', this.handleGuildKicked)
+    this.handlers.set('guild_left', this.handleGuildLeft)
+    this.handlers.set('guild_created', this.handleGuildCreated)
+    this.handlers.set('guild_joined', this.handleGuildJoined)
+    this.handlers.set('guild_error', this.handleGuildError)
   }
 
   connect(token: string) {
@@ -1093,6 +1120,130 @@ class GameSocket {
   getLeaderboard(type: LeaderboardType, timeframe: LeaderboardTimeframe) {
     useGameStore.getState().setLeaderboardLoading(true)
     this.send('get_leaderboard', { type, timeframe })
+  }
+
+  // ============================================
+  // GUILD METHODS
+  // ============================================
+
+  // Request current guild data
+  getGuild() {
+    this.send('get_guild')
+  }
+
+  // Create a new guild
+  createGuild(name: string, tag: string, description?: string) {
+    this.send('create_guild', { name, tag, description })
+  }
+
+  // Join an open guild
+  joinGuild(guildId: string) {
+    this.send('join_guild', { guild_id: guildId })
+  }
+
+  // Leave current guild
+  leaveGuild() {
+    this.send('leave_guild')
+  }
+
+  // Search for guilds
+  searchGuilds(query?: string, page: number = 1, limit: number = 20) {
+    this.send('search_guilds', { query, page, limit })
+  }
+
+  // Promote a member (member -> officer)
+  promoteMember(playerId: string) {
+    this.send('promote_member', { player_id: playerId })
+  }
+
+  // Demote a member (officer -> member)
+  demoteMember(playerId: string) {
+    this.send('demote_member', { player_id: playerId })
+  }
+
+  // Kick a member from the guild
+  kickMember(playerId: string) {
+    this.send('kick_member', { player_id: playerId })
+  }
+
+  // Transfer leadership to another member
+  transferLeadership(playerId: string) {
+    this.send('transfer_leadership', { player_id: playerId })
+  }
+
+  // Disband the guild (requires confirmation matching guild name)
+  disbandGuild(confirmation: string) {
+    this.send('disband_guild', { confirmation })
+  }
+
+  // ============================================
+  // GUILD HANDLERS
+  // ============================================
+
+  private handleGuildData = (payload: unknown) => {
+    const data = payload as GuildDataPayload
+    useGameStore.getState().setGuildData({
+      guild: data.guild,
+      members: data.members,
+      myRole: data.my_role,
+    })
+  }
+
+  private handleGuildList = (payload: unknown) => {
+    const data = payload as GuildListPayload
+    useGameStore.getState().setGuildList(data.guilds, data.total)
+  }
+
+  private handleGuildMemberJoined = (payload: unknown) => {
+    const data = payload as GuildMemberJoinedPayload
+    useGameStore.getState().addGuildMember(data.member)
+  }
+
+  private handleGuildMemberLeft = (payload: unknown) => {
+    const data = payload as GuildMemberLeftPayload
+    useGameStore.getState().removeGuildMember(data.player_id)
+  }
+
+  private handleGuildMemberKicked = (payload: unknown) => {
+    const data = payload as GuildMemberKickedPayload
+    useGameStore.getState().removeGuildMember(data.player_id)
+  }
+
+  private handleGuildRoleChanged = (payload: unknown) => {
+    const data = payload as GuildRoleChangedPayload
+    useGameStore.getState().updateGuildMemberRole(data.player_id, data.new_role)
+  }
+
+  private handleGuildDisbanded = (payload: unknown) => {
+    const data = payload as GuildDisbandedPayload
+    const store = useGameStore.getState()
+    store.clearGuildState()
+    store.setGuildError(`Guild "${data.guild_name}" has been disbanded`)
+  }
+
+  private handleGuildKicked = () => {
+    const store = useGameStore.getState()
+    store.clearGuildState()
+    store.setGuildError('You have been kicked from the guild')
+  }
+
+  private handleGuildLeft = () => {
+    useGameStore.getState().clearGuildState()
+  }
+
+  private handleGuildCreated = (payload: unknown) => {
+    // After guild creation, request fresh guild data
+    this.getGuild()
+  }
+
+  private handleGuildJoined = (payload: unknown) => {
+    // After joining guild, request fresh guild data
+    this.getGuild()
+  }
+
+  private handleGuildError = (payload: unknown) => {
+    const data = payload as GuildErrorPayload
+    useGameStore.getState().setGuildError(data.error)
   }
 }
 
