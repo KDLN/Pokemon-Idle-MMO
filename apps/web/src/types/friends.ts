@@ -1,37 +1,17 @@
 // Friend system types for frontend
+// Re-exports shared types + frontend-only types
 
-export type FriendStatus = 'pending' | 'accepted' | 'blocked'
+// Re-export shared friend types
+export type {
+  FriendStatus,
+  Friend,
+  FriendRequest,
+  OutgoingFriendRequest,
+} from '@pokemon-idle/shared'
 
-export interface Friend {
-  friend_id: string
-  player_id: string
-  friend_player_id: string
-  status: FriendStatus
-  created_at: string
-  // Joined data for display
-  friend_username?: string
-  friend_last_online?: string
-  // Zone visibility (Issue #14)
-  zone_id?: number
-  zone_name?: string
-}
-
-export interface FriendRequest {
-  friend_id: string
-  from_player_id: string
-  from_username: string
-  created_at: string
-}
-
-export interface OutgoingFriendRequest {
-  friend_id: string
-  to_player_id: string
-  to_username: string
-  created_at: string
-}
-
+// Frontend-only aggregated friends data
 export interface FriendsData {
-  friends: Friend[]
-  incoming: FriendRequest[]
-  outgoing: OutgoingFriendRequest[]
+  friends: import('@pokemon-idle/shared').Friend[]
+  incoming: import('@pokemon-idle/shared').FriendRequest[]
+  outgoing: import('@pokemon-idle/shared').OutgoingFriendRequest[]
 }

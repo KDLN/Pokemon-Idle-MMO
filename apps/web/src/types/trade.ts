@@ -1,36 +1,17 @@
 // Trade system types for frontend
+// Re-exports shared types + frontend-only types
 
-export type TradeStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed'
+// Re-export shared trade types
+export type {
+  TradeStatus,
+  Trade,
+  TradeOfferPokemon,
+  TradeOffer,
+  TradeHistoryPokemon,
+} from '@pokemon-idle/shared'
 
-// Partial Pokemon data for trade offer display (matches backend TradeOfferPokemon)
-export interface TradeOfferPokemon {
-  id: string
-  species_id: number
-  nickname: string | null
-  level: number
-  is_shiny: boolean
-  species?: { name: string }
-}
-
-export interface TradeOffer {
-  offer_id: string
-  trade_id: string
-  pokemon_id: string
-  offered_by: string
-  created_at: string
-  pokemon?: TradeOfferPokemon
-}
-
-export interface Trade {
-  trade_id: string
-  sender_id: string
-  receiver_id: string
-  status: TradeStatus
-  created_at: string
-  updated_at: string
-  sender_username?: string
-  receiver_username?: string
-}
+// Frontend-specific request types (renamed for clarity)
+import type { TradeStatus, TradeOffer, TradeHistoryPokemon } from '@pokemon-idle/shared'
 
 // Incoming trade request (I'm the receiver)
 export interface IncomingTradeRequest {
@@ -68,16 +49,6 @@ export interface ActiveTradeSession {
 export interface TradesData {
   incoming: IncomingTradeRequest[]
   outgoing: OutgoingTradeRequest[]
-}
-
-// Trade history types
-export interface TradeHistoryPokemon {
-  pokemon_id: string
-  species_id: number
-  species_name: string
-  nickname: string | null
-  level: number
-  is_shiny: boolean
 }
 
 // Trade history entry (transformed to be relative to requesting player)
