@@ -78,6 +78,8 @@ class GameSocket {
     this.handlers.set('evolution', this.handleEvolution)
     this.handlers.set('evolution_cancelled', this.handleEvolutionCancelled)
     this.handlers.set('evolution_error', this.handleEvolutionError)
+    // Debug handler
+    this.handlers.set('debug_levelup_result', this.handleDebugLevelUp)
     // Whisper handlers (Issue #45)
     this.handlers.set('whisper_sent', this.handleWhisperSent)
     this.handlers.set('whisper_received', this.handleWhisperReceived)
@@ -102,8 +104,23 @@ class GameSocket {
 
     this.ws.onopen = () => {
       console.log('Connected to game server')
+      const wasReconnect = this.reconnectAttempts > 0
       this.reconnectAttempts = 0
       useGameStore.getState().setConnected(true)
+
+      // On reconnection, request fresh state to ensure UI is in sync
+      // The server sends initial state on connect, but we explicitly request it
+      // to handle any edge cases where the initial send might be missed
+      if (wasReconnect) {
+        console.log('Reconnected - requesting fresh state')
+        // Give the server a moment to process the connection
+        setTimeout(() => {
+          this.getState()
+          this.send('get_friends')
+          this.send('get_trades')
+          this.send('get_whisper_history')
+        }, 100)
+      }
     }
 
     this.ws.onmessage = (event) => {
@@ -867,6 +884,30 @@ class GameSocket {
     console.error('Evolution error:', error)
   }
 
+  // Debug level up handler
+  private handleDebugLevelUp = (payload: unknown) => {
+    const result = payload as {
+      pokemon_id: string
+      old_level: number
+      new_level: number
+      pending_evolutions: Array<{
+        pokemon_id: string
+        pokemon_name: string
+        current_species_id: number
+        evolution_species_id: number
+        evolution_species_name: string
+        trigger_level: number
+      }>
+    }
+    console.log('[Debug] Level up result:', result)
+    const store = useGameStore.getState()
+
+    // Add pending evolutions to the queue
+    if (result.pending_evolutions && result.pending_evolutions.length > 0) {
+      store.addPendingEvolutions(result.pending_evolutions)
+    }
+  }
+
   // ============================================
   // WHISPER METHODS (Issue #45)
   // ============================================
@@ -1029,3 +1070,8 @@ class GameSocket {
 
 // Singleton instance
 export const gameSocket = new GameSocket()
+
+// Expose for debugging in browser console (development only)
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  (window as unknown as { __gameSocket: GameSocket }).__gameSocket = gameSocket
+}
