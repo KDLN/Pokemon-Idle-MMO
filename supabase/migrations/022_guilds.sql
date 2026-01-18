@@ -106,3 +106,64 @@ CREATE INDEX idx_guild_members_player ON guild_members(player_id);
 
 -- Find members by role within a guild
 CREATE INDEX idx_guild_members_role ON guild_members(guild_id, role);
+
+-- ============================================
+-- ROW LEVEL SECURITY - GUILDS
+-- ============================================
+
+ALTER TABLE guilds ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can view guilds (for discovery/search)
+CREATE POLICY "Anyone can view guilds"
+  ON guilds FOR SELECT
+  USING (true);
+
+-- Only service role can insert (via create_guild function)
+CREATE POLICY "Service role can insert guilds"
+  ON guilds FOR INSERT
+  WITH CHECK (false);  -- Blocked at RLS, use function
+
+-- Leaders can update their guild settings
+CREATE POLICY "Leaders can update own guild"
+  ON guilds FOR UPDATE
+  USING (
+    leader_id IN (SELECT id FROM players WHERE user_id = auth.uid())
+  );
+
+-- No direct delete - use disband_guild function
+CREATE POLICY "No direct guild deletion"
+  ON guilds FOR DELETE
+  USING (false);
+
+-- ============================================
+-- ROW LEVEL SECURITY - GUILD MEMBERS
+-- ============================================
+
+ALTER TABLE guild_members ENABLE ROW LEVEL SECURITY;
+
+-- Members can view their guild's roster
+CREATE POLICY "Members can view guild roster"
+  ON guild_members FOR SELECT
+  USING (
+    guild_id IN (
+      SELECT guild_id FROM guild_members gm
+      JOIN players p ON p.id = gm.player_id
+      WHERE p.user_id = auth.uid()
+    )
+    OR
+    -- Also allow viewing public guild rosters
+    guild_id IN (SELECT id FROM guilds WHERE join_mode = 'open')
+  );
+
+-- No direct insert/update/delete - use functions
+CREATE POLICY "No direct member insert"
+  ON guild_members FOR INSERT
+  WITH CHECK (false);
+
+CREATE POLICY "No direct member update"
+  ON guild_members FOR UPDATE
+  USING (false);
+
+CREATE POLICY "No direct member delete"
+  ON guild_members FOR DELETE
+  USING (false);
