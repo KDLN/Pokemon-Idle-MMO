@@ -772,15 +772,15 @@ export function calculateEvolutionStats(
   targetSpecies: PokemonSpecies
 ): { max_hp: number; attack: number; defense: number; sp_attack: number; sp_defense: number; speed: number } {
   // Use the same formula as recalculateStats (via calculateHP/calculateStat)
-  // to ensure evolved Pokemon have consistent stats with caught-at-evolution Pokemon
+  // Include Pokemon's IVs to ensure evolved Pokemon have proper stats
   const level = pokemon.level
   return {
-    max_hp: calculateHP(targetSpecies.base_hp, level),
-    attack: calculateStat(targetSpecies.base_attack, level),
-    defense: calculateStat(targetSpecies.base_defense, level),
-    sp_attack: calculateStat(targetSpecies.base_sp_attack, level),
-    sp_defense: calculateStat(targetSpecies.base_sp_defense, level),
-    speed: calculateStat(targetSpecies.base_speed, level)
+    max_hp: calculateHP(targetSpecies.base_hp, level, pokemon.iv_hp),
+    attack: calculateStat(targetSpecies.base_attack, level, pokemon.iv_attack),
+    defense: calculateStat(targetSpecies.base_defense, level, pokemon.iv_defense),
+    sp_attack: calculateStat(targetSpecies.base_sp_attack, level, pokemon.iv_sp_attack),
+    sp_defense: calculateStat(targetSpecies.base_sp_defense, level, pokemon.iv_sp_defense),
+    speed: calculateStat(targetSpecies.base_speed, level, pokemon.iv_speed)
   }
 }
 
@@ -976,6 +976,9 @@ function calculateGymPokemonStats(pokemon: GymLeaderPokemon): {
 }
 
 // Simulate a single 1v1 matchup within a gym battle
+// Note: gymPokemon has type1/type2 as direct properties, not via species.
+// calculateGymPokemonStats handles null species by returning default stats.
+// When constructing PokemonSpecies for selectMove, we use gymPokemon's direct properties.
 function simulateGymMatchup(
   playerPokemon: Pokemon,
   playerSpecies: PokemonSpecies,

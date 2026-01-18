@@ -1434,18 +1434,28 @@ export async function getOutgoingTradeRequests(playerId: string): Promise<Outgoi
 
 // Get all active trade IDs for a player (for cleanup on disconnect)
 export async function getActiveTradeIds(playerId: string): Promise<string[]> {
-  const { data, error } = await supabase
-    .from('trades')
-    .select('trade_id')
-    .or(`sender_id.eq.${playerId},receiver_id.eq.${playerId}`)
-    .in('status', ['pending', 'accepted'])
+  // Use parallel queries to avoid SQL injection from string interpolation in .or()
+  const [{ data: asSender, error: senderError }, { data: asReceiver, error: receiverError }] = await Promise.all([
+    supabase
+      .from('trades')
+      .select('trade_id')
+      .eq('sender_id', playerId)
+      .in('status', ['pending', 'accepted']),
+    supabase
+      .from('trades')
+      .select('trade_id')
+      .eq('receiver_id', playerId)
+      .in('status', ['pending', 'accepted'])
+  ])
 
-  if (error) {
-    console.error('Failed to get active trade IDs:', error)
+  if (senderError || receiverError) {
+    console.error('Failed to get active trade IDs:', senderError || receiverError)
     return []
   }
 
-  return data?.map(row => row.trade_id) || []
+  // Combine results and deduplicate
+  const allTrades = [...(asSender || []), ...(asReceiver || [])]
+  return [...new Set(allTrades.map(row => row.trade_id))]
 }
 
 // Update trade status
@@ -1762,12 +1772,27 @@ export async function getTradeHistory(
   // We fetch more than limit when filtering to ensure we get enough results after filtering
   const fetchLimit = partnerUsername ? limit * 3 : limit
 
-  const { data, error } = await supabase
-    .from('trade_history')
-    .select('*')
-    .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`)
-    .order('completed_at', { ascending: false })
-    .limit(fetchLimit)
+  // Use parallel queries to avoid SQL injection from string interpolation in .or()
+  const [{ data: asPlayer1, error: error1 }, { data: asPlayer2, error: error2 }] = await Promise.all([
+    supabase
+      .from('trade_history')
+      .select('*')
+      .eq('player1_id', playerId)
+      .order('completed_at', { ascending: false })
+      .limit(fetchLimit),
+    supabase
+      .from('trade_history')
+      .select('*')
+      .eq('player2_id', playerId)
+      .order('completed_at', { ascending: false })
+      .limit(fetchLimit)
+  ])
+
+  const error = error1 || error2
+  // Combine and sort by completed_at descending
+  const data = [...(asPlayer1 || []), ...(asPlayer2 || [])]
+    .sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime())
+    .slice(0, fetchLimit)
 
   if (error) {
     console.error('Failed to get trade history:', error)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import type { LeaderboardEntry, LeaderboardType, LeaderboardTimeframe } from '@/types/game'
@@ -62,6 +62,8 @@ function LeaderboardRow({
   type: LeaderboardType
   isCurrentPlayer: boolean
 }) {
+  const [imageError, setImageError] = useState(false)
+
   return (
     <div
       className={`flex items-center gap-2 px-3 py-2 transition-colors ${
@@ -75,13 +77,18 @@ function LeaderboardRow({
       {/* Pokemon sprite for level leaderboard */}
       {type === 'level' && entry.pokemon_species_id && (
         <div className="w-8 h-8 relative flex-shrink-0">
-          <Image
-            src={getPokemonSpriteUrl(entry.pokemon_species_id)}
-            alt={entry.pokemon_name || 'Pokemon'}
-            fill
-            className="object-contain pixelated"
-            unoptimized
-          />
+          {imageError ? (
+            <div className="w-full h-full flex items-center justify-center text-[#606080] text-xs">?</div>
+          ) : (
+            <Image
+              src={getPokemonSpriteUrl(entry.pokemon_species_id)}
+              alt={entry.pokemon_name || 'Pokemon'}
+              fill
+              className="object-contain pixelated"
+              unoptimized
+              onError={() => setImageError(true)}
+            />
+          )}
         </div>
       )}
 

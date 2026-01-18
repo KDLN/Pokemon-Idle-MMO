@@ -264,6 +264,7 @@ class GameSocket {
 
   // Send a friend request by username with optional callback
   // Uses Map-based tracking keyed by lowercase username to prevent race conditions
+  // Includes 30-second timeout to prevent memory leaks if server never responds
   sendFriendRequest(username: string, callback?: FriendRequestCallback): boolean {
     if (!this.isConnected()) {
       callback?.({ success: false, error: 'Not connected to server' })
@@ -272,6 +273,14 @@ class GameSocket {
     const normalizedUsername = username.toLowerCase()
     if (callback) {
       this.pendingFriendRequests.set(normalizedUsername, callback)
+      // Timeout after 30 seconds to prevent memory leak
+      setTimeout(() => {
+        const pendingCallback = this.pendingFriendRequests.get(normalizedUsername)
+        if (pendingCallback === callback) {
+          this.pendingFriendRequests.delete(normalizedUsername)
+          callback({ success: false, error: 'Request timed out' })
+        }
+      }, 30000)
     }
     this.send('send_friend_request', { username })
     return true
@@ -462,11 +471,8 @@ class GameSocket {
       store.setPokedollars(store.pokedollars + result.money_earned)
     }
 
-    // Call the gym battle handler if it exists (for UI updates)
-    const handler = (window as unknown as { __gymBattleHandler?: (result: GymBattleResult) => void }).__gymBattleHandler
-    if (handler) {
-      handler(result)
-    }
+    // Store the result for the GymBattlePanel to consume
+    store.setPendingGymBattleResult(result)
   }
 
   private handleChatHistory = (payload: unknown) => {
