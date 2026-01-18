@@ -1,7 +1,7 @@
 # Project State: Pokemon Idle MMO - Guild Milestone
 
 **Last Updated:** 2026-01-18
-**Session:** Plan 01-01 Execution
+**Session:** Plan 01-02 Execution
 
 ## Project Reference
 
@@ -12,13 +12,13 @@
 ## Current Position
 
 **Phase:** 1 of 7 - Guild Foundation
-**Plan:** 1 of 4 complete
+**Plan:** 2 of 4 complete
 **Status:** In Progress
-**Last activity:** 2026-01-18 - Completed 01-01-PLAN.md (Guild Database Schema)
+**Last activity:** 2026-01-18 - Completed 01-02-PLAN.md (Shared Types for Guild System)
 
 **Progress:**
 ```
-Phase 1: [=         ] Guild Foundation (1/4 plans complete)
+Phase 1: [==        ] Guild Foundation (2/4 plans complete)
 Phase 2: [          ] Guild Invites (0/? plans)
 Phase 3: [          ] Guild Chat (0/? plans)
 Phase 4: [          ] Guild Bank (0/? plans)
@@ -33,8 +33,8 @@ Phase 7: [          ] Zone Content (0/? plans)
 
 | Metric | Value |
 |--------|-------|
-| Plans Completed | 1 |
-| Tasks Completed | 3 |
+| Plans Completed | 2 |
+| Tasks Completed | 5 |
 | Phases Completed | 0 |
 | Days Elapsed | 1 |
 
@@ -51,6 +51,8 @@ Phase 7: [          ] Zone Content (0/? plans)
 | Block direct mutations via RLS | Force use of SECURITY DEFINER functions for atomic operations and proper permission checks | 2026-01-18 |
 | Denormalized member_count | Avoid COUNT(*) queries on every join attempt | 2026-01-18 |
 | Partial unique index for leader | Database-level guarantee of single leader per guild | 2026-01-18 |
+| String types for UUIDs/timestamps | Consistent with existing codebase patterns | 2026-01-18 |
+| Separated Guild from GuildPreview | Full data for members, minimal data for search/discovery | 2026-01-18 |
 
 ### Technical Notes
 
@@ -59,20 +61,23 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Use broadcastToGuild() for targeted WebSocket messages (not global broadcast)
 - Database functions for atomic operations: create_guild, join_guild, leave_guild
 - Guild mutations via SECURITY DEFINER functions with FOR UPDATE row locking
+- Guild types in packages/shared/src/types/guild.ts importable from @pokemon-idle/shared
 
 ### Patterns Established
 
 - Guild mutations via atomic functions: `create_guild()`, `join_guild()`, `leave_guild()`
 - Player can only be in one guild (enforced by UNIQUE constraint on player_id)
 - 24hr cooldown tracked via `players.left_guild_at` column
+- Guild types follow social.ts and trade.ts patterns
+- WebSocket payloads: `{Action}Payload` for client->server, `{Event}Payload` for server->client
 
 ### TODOs
 
 - [x] Create Phase 1 plans
 - [x] Execute 01-01-PLAN.md (Guild Database Schema)
-- [ ] Execute 01-02-PLAN.md (Game Server Guild Integration)
-- [ ] Execute 01-03-PLAN.md (Frontend Guild UI)
-- [ ] Execute 01-04-PLAN.md (Role Management System)
+- [x] Execute 01-02-PLAN.md (Shared Types for Guild System)
+- [ ] Execute 01-03-PLAN.md (WebSocket Handlers)
+- [ ] Execute 01-04-PLAN.md (Frontend Guild UI)
 
 ### Blockers
 
@@ -82,21 +87,23 @@ None currently.
 
 ### Last Session Summary
 
-Completed Plan 01-01 (Guild Database Schema):
-- Created `supabase/migrations/022_guilds.sql` with guilds/guild_members tables
-- Added guild_role enum, RLS policies, and atomic functions
-- 3 tasks completed with atomic commits
+Completed Plan 01-02 (Shared Types for Guild System):
+- Created `packages/shared/src/types/guild.ts` with all guild type definitions
+- Added GuildRole, GuildJoinMode types and Guild/GuildMember/GuildPreview interfaces
+- Added 17 WebSocket message payload interfaces
+- Types exported from @pokemon-idle/shared
 
 ### Next Actions
 
-1. Execute 01-02-PLAN.md (Game Server Guild Integration)
-2. Add guild handlers to WebSocket server
-3. Cache guild info in PlayerSession
+1. Execute 01-03-PLAN.md (WebSocket Handlers)
+2. Add guild message handlers to game server
+3. Implement broadcastToGuild() for targeted messages
 
 ### Files Modified This Session
 
-- `supabase/migrations/022_guilds.sql` (created)
-- `.planning/phases/01-guild-foundation/01-01-SUMMARY.md` (created)
+- `packages/shared/src/types/guild.ts` (created)
+- `packages/shared/src/types/index.ts` (modified)
+- `.planning/phases/01-guild-foundation/01-02-SUMMARY.md` (created)
 - `.planning/STATE.md` (updated)
 
 ---
