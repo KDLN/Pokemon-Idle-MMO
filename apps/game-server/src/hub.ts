@@ -14,7 +14,10 @@ import type {
   WhisperMessage,
   BlockedPlayer,
   LeaderboardType,
-  LeaderboardTimeframe
+  LeaderboardTimeframe,
+  CreateGuildPayload,
+  JoinGuildPayload,
+  SearchGuildsPayload
 } from './types.js'
 import {
   getPlayerByUserId,
@@ -82,7 +85,20 @@ import {
   isPlayerBlocked,
   getLeaderboard,
   getPlayerRank,
-  updateWeeklyStats
+  updateWeeklyStats,
+  createGuild,
+  joinGuild,
+  leaveGuild,
+  getGuildById,
+  getGuildMembers,
+  getPlayerGuild,
+  searchGuilds,
+  promoteMember,
+  demoteMember,
+  kickMember,
+  transferLeadership,
+  disbandGuild,
+  getGuildMemberByPlayerId
 } from './db.js'
 import { processTick, simulateGymBattle, checkEvolutions, calculateEvolutionStats, applyEvolution, createEvolutionEvent, recalculateStats } from './game.js'
 
@@ -298,12 +314,13 @@ export class GameHub {
       throw new Error('Player not found')
     }
 
-    const [party, zone, pokeballs, great_balls, encounterTable] = await Promise.all([
+    const [party, zone, pokeballs, great_balls, encounterTable, guildInfo] = await Promise.all([
       getPlayerParty(player.id),
       getZone(player.current_zone_id),
       getPlayerPokeballs(player.id),
       getPlayerGreatBalls(player.id),
-      getEncounterTable(player.current_zone_id)
+      getEncounterTable(player.current_zone_id),
+      getPlayerGuild(player.id)
     ])
 
     if (!zone) {
@@ -335,7 +352,8 @@ export class GameHub {
       pokedollars: player.pokedollars,
       encounterCooldown: 0,
       pendingEvolutions: [],
-      suppressedEvolutions: new Set()
+      suppressedEvolutions: new Set(),
+      guild: guildInfo || undefined
     }
 
     // Update last_online immediately on connect so friends see us as online right away
@@ -471,6 +489,25 @@ export class GameHub {
         case 'get_leaderboard':
           this.handleGetLeaderboard(client, msg.payload as { type: LeaderboardType; timeframe: LeaderboardTimeframe })
           break
+        // Guild handlers
+        case 'create_guild':
+          this.handleCreateGuild(client, msg.payload as CreateGuildPayload)
+          break
+        case 'join_guild':
+          this.handleJoinGuild(client, msg.payload as JoinGuildPayload)
+          break
+        case 'leave_guild':
+          this.handleLeaveGuild(client)
+          break
+        case 'get_guild':
+          this.handleGetGuild(client)
+          break
+        case 'get_guild_members':
+          this.handleGetGuildMembers(client)
+          break
+        case 'search_guilds':
+          this.handleSearchGuilds(client, msg.payload as SearchGuildsPayload)
+          break
         default:
           console.log('Unknown message type:', msg.type)
       }
@@ -574,6 +611,15 @@ export class GameHub {
   private broadcast(type: string, payload: unknown) {
     for (const [, client] of this.clients) {
       this.send(client, type, payload)
+    }
+  }
+
+  // Broadcast message to all online members of a guild
+  private broadcastToGuild(guildId: string, type: string, payload: unknown) {
+    for (const [, client] of this.clients) {
+      if (client.session?.guild?.id === guildId) {
+        this.send(client, type, payload)
+      }
     }
   }
 
@@ -2691,6 +2737,235 @@ export class GameHub {
       timeframe,
       entries,
       playerRank
+    })
+  }
+
+  // ============================================
+  // GUILD HANDLERS
+  // ============================================
+
+  private async handleCreateGuild(client: Client, payload: CreateGuildPayload) {
+    if (!client.session) return
+
+    // Validate payload
+    if (!payload.name || !payload.tag) {
+      this.sendError(client, 'Name and tag are required')
+      return
+    }
+
+    // Validate name length (2-32 chars as per database constraint)
+    const trimmedName = payload.name.trim()
+    if (trimmedName.length < 2 || trimmedName.length > 32) {
+      this.sendError(client, 'Guild name must be 2-32 characters')
+      return
+    }
+
+    // Validate tag length (2-6 chars as per database constraint)
+    const trimmedTag = payload.tag.trim().toUpperCase()
+    if (trimmedTag.length < 2 || trimmedTag.length > 6) {
+      this.sendError(client, 'Guild tag must be 2-6 characters')
+      return
+    }
+
+    // Check not already in guild
+    if (client.session.guild) {
+      this.sendError(client, 'Already in a guild')
+      return
+    }
+
+    const result = await createGuild(
+      client.session.player.id,
+      trimmedName,
+      trimmedTag,
+      payload.description?.trim()
+    )
+
+    if (!result.success) {
+      this.send(client, 'guild_error', { error: result.error })
+      return
+    }
+
+    // Load full guild data
+    const guild = await getGuildById(result.guild_id!)
+    if (!guild) {
+      this.sendError(client, 'Failed to load created guild')
+      return
+    }
+
+    // Update session
+    client.session.guild = {
+      id: guild.id,
+      name: guild.name,
+      tag: guild.tag,
+      role: 'leader'
+    }
+
+    // Send guild data to creator
+    const members = await getGuildMembers(guild.id)
+    this.send(client, 'guild_data', {
+      guild,
+      members: members.map(m => ({
+        ...m,
+        is_online: this.isPlayerOnline(m.player_id)
+      })),
+      my_role: 'leader'
+    })
+  }
+
+  private async handleJoinGuild(client: Client, payload: JoinGuildPayload) {
+    if (!client.session) return
+
+    if (!payload.guild_id) {
+      this.sendError(client, 'Guild ID is required')
+      return
+    }
+
+    if (client.session.guild) {
+      this.sendError(client, 'Already in a guild')
+      return
+    }
+
+    const result = await joinGuild(client.session.player.id, payload.guild_id)
+
+    if (!result.success) {
+      this.send(client, 'guild_error', { error: result.error })
+      return
+    }
+
+    // Load guild data
+    const guild = await getGuildById(payload.guild_id)
+    if (!guild) {
+      this.sendError(client, 'Failed to load guild')
+      return
+    }
+
+    // Update session
+    client.session.guild = {
+      id: guild.id,
+      name: guild.name,
+      tag: guild.tag,
+      role: 'member'
+    }
+
+    // Notify existing guild members of new join
+    this.broadcastToGuild(guild.id, 'guild_member_joined', {
+      member: {
+        id: '', // Guild member ID will be set by DB, not critical for display
+        guild_id: guild.id,
+        player_id: client.session.player.id,
+        role: 'member',
+        joined_at: new Date().toISOString(),
+        username: client.session.player.username,
+        last_online: null,
+        is_online: true
+      }
+    })
+
+    // Send full guild data to joiner
+    const members = await getGuildMembers(guild.id)
+    this.send(client, 'guild_data', {
+      guild,
+      members: members.map(m => ({
+        ...m,
+        is_online: this.isPlayerOnline(m.player_id)
+      })),
+      my_role: 'member'
+    })
+  }
+
+  private async handleLeaveGuild(client: Client) {
+    if (!client.session) return
+
+    if (!client.session.guild) {
+      this.sendError(client, 'Not in a guild')
+      return
+    }
+
+    const guildId = client.session.guild.id
+    const guildName = client.session.guild.name
+    const username = client.session.player.username
+    const playerId = client.session.player.id
+
+    const result = await leaveGuild(playerId)
+
+    if (!result.success) {
+      this.send(client, 'guild_error', { error: result.error })
+      return
+    }
+
+    // Clear session guild
+    client.session.guild = undefined
+
+    if (result.guild_disbanded) {
+      // Notify the leaver that guild is disbanded (they were the only member)
+      this.send(client, 'guild_disbanded', { guild_name: guildName })
+    } else {
+      // Notify remaining members
+      this.broadcastToGuild(guildId, 'guild_member_left', {
+        player_id: playerId,
+        username: username
+      })
+
+      // Confirm to leaver
+      this.send(client, 'guild_left', { success: true })
+    }
+  }
+
+  private async handleGetGuild(client: Client) {
+    if (!client.session) return
+
+    if (!client.session.guild) {
+      this.send(client, 'guild_data', { guild: null, members: [], my_role: null })
+      return
+    }
+
+    const guild = await getGuildById(client.session.guild.id)
+    if (!guild) {
+      // Guild was deleted, clear session
+      client.session.guild = undefined
+      this.send(client, 'guild_data', { guild: null, members: [], my_role: null })
+      return
+    }
+
+    const members = await getGuildMembers(guild.id)
+    this.send(client, 'guild_data', {
+      guild,
+      members: members.map(m => ({
+        ...m,
+        is_online: this.isPlayerOnline(m.player_id)
+      })),
+      my_role: client.session.guild.role
+    })
+  }
+
+  private async handleGetGuildMembers(client: Client) {
+    if (!client.session?.guild) {
+      this.sendError(client, 'Not in a guild')
+      return
+    }
+
+    const members = await getGuildMembers(client.session.guild.id)
+    this.send(client, 'guild_members', {
+      members: members.map(m => ({
+        ...m,
+        is_online: this.isPlayerOnline(m.player_id)
+      }))
+    })
+  }
+
+  private async handleSearchGuilds(client: Client, payload: SearchGuildsPayload) {
+    if (!client.session) return
+
+    const { guilds, total } = await searchGuilds(
+      payload.query,
+      payload.page || 1,
+      payload.limit || 20
+    )
+
+    this.send(client, 'guild_list', {
+      guilds,
+      total,
+      page: payload.page || 1
     })
   }
 }
