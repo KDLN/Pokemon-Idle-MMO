@@ -1233,12 +1233,12 @@ export async function getPlayersInZone(
   zoneId: number,
   excludePlayerId?: string,
   minutesAgo: number = 2
-): Promise<{ id: string; username: string }[]> {
+): Promise<{ id: string; username: string; guild_id: string | null }[]> {
   const cutoff = new Date(Date.now() - minutesAgo * 60 * 1000).toISOString()
 
   let query = supabase
     .from('players')
-    .select('id, username')
+    .select('id, username, guild_id')
     .eq('current_zone_id', zoneId)
     .gte('last_online', cutoff)
 
