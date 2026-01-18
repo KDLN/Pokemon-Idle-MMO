@@ -11,7 +11,7 @@ import type { TimeOfDay } from '@/lib/time/timeOfDay'
 import type { TrainerCustomization } from '@/lib/sprites/trainerCustomization'
 import { DEFAULT_TRAINER_CUSTOMIZATION } from '@/lib/sprites/trainerCustomization'
 import type { EventCosmetics } from '@/components/game/world/SpriteTrainer'
-import type { Guild, GuildMember, GuildRole, GuildPreview } from '@pokemon-idle/shared'
+import type { Guild, GuildMember, GuildRole, GuildPreview, GuildInvite, GuildOutgoingInvite } from '@pokemon-idle/shared'
 
 // Museum exhibit interface
 interface MuseumExhibit {
@@ -284,6 +284,16 @@ interface GameStore {
   removeGuildMember: (playerId: string) => void
   updateGuildMemberRole: (playerId: string, newRole: GuildRole) => void
 
+  // Guild invite state
+  guildInvites: GuildInvite[]
+  guildOutgoingInvites: GuildOutgoingInvite[]
+  setGuildInvites: (invites: GuildInvite[]) => void
+  setGuildOutgoingInvites: (invites: GuildOutgoingInvite[]) => void
+  addGuildInvite: (invite: GuildInvite) => void
+  removeGuildInvite: (inviteId: string) => void
+  clearGuildInvites: () => void
+  removeGuildOutgoingInvite: (inviteId: string) => void
+
   // Reset store
   reset: () => void
 }
@@ -393,6 +403,9 @@ const initialState = {
   guildList: [] as GuildPreview[],
   guildListTotal: 0,
   guildError: null as string | null,
+  // Guild invite state
+  guildInvites: [] as GuildInvite[],
+  guildOutgoingInvites: [] as GuildOutgoingInvite[],
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -967,6 +980,28 @@ export const useGameStore = create<GameStore>((set, get) => ({
         myGuildRole: playerId === currentPlayerId ? newRole : state.myGuildRole,
       }
     }),
+
+  // Guild invite methods
+  setGuildInvites: (guildInvites) => set({ guildInvites }),
+
+  setGuildOutgoingInvites: (guildOutgoingInvites) => set({ guildOutgoingInvites }),
+
+  addGuildInvite: (invite) =>
+    set((state) => ({
+      guildInvites: [invite, ...state.guildInvites],
+    })),
+
+  removeGuildInvite: (inviteId) =>
+    set((state) => ({
+      guildInvites: state.guildInvites.filter((invite) => invite.id !== inviteId),
+    })),
+
+  clearGuildInvites: () => set({ guildInvites: [] }),
+
+  removeGuildOutgoingInvite: (inviteId) =>
+    set((state) => ({
+      guildOutgoingInvites: state.guildOutgoingInvites.filter((invite) => invite.id !== inviteId),
+    })),
 
   reset: () => set(initialState),
 }))

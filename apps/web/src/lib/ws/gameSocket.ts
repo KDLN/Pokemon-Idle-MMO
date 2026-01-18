@@ -17,6 +17,15 @@ import type {
   GuildRoleChangedPayload,
   GuildDisbandedPayload,
   GuildErrorPayload,
+  GuildInvite,
+  GuildOutgoingInvite,
+  GuildInvitesListPayload,
+  GuildOutgoingInvitesPayload,
+  GuildInviteReceivedPayload,
+  GuildInviteAcceptedPayload,
+  GuildInviteDeclinedPayload,
+  GuildInviteCancelledPayload,
+  GuildInviteSentPayload,
 } from '@pokemon-idle/shared'
 
 type MessageHandler = (payload: unknown) => void
@@ -117,6 +126,14 @@ class GameSocket {
     this.handlers.set('guild_created', this.handleGuildCreated)
     this.handlers.set('guild_joined', this.handleGuildJoined)
     this.handlers.set('guild_error', this.handleGuildError)
+    // Guild invite handlers
+    this.handlers.set('guild_invites_list', this.handleGuildInvitesList)
+    this.handlers.set('guild_outgoing_invites', this.handleGuildOutgoingInvites)
+    this.handlers.set('guild_invite_received', this.handleGuildInviteReceived)
+    this.handlers.set('guild_invite_sent', this.handleGuildInviteSent)
+    this.handlers.set('guild_invite_accepted', this.handleGuildInviteAccepted)
+    this.handlers.set('guild_invite_declined', this.handleGuildInviteDeclined)
+    this.handlers.set('guild_invite_cancelled', this.handleGuildInviteCancelled)
   }
 
   connect(token: string) {
@@ -1177,6 +1194,40 @@ class GameSocket {
   }
 
   // ============================================
+  // GUILD INVITE METHODS
+  // ============================================
+
+  // Send a guild invite to a player
+  sendGuildInvite(playerId: string) {
+    this.send('guild_invite_send', { player_id: playerId })
+  }
+
+  // Accept a guild invite
+  acceptGuildInvite(inviteId: string) {
+    this.send('guild_invite_accept', { invite_id: inviteId })
+  }
+
+  // Decline a guild invite
+  declineGuildInvite(inviteId: string) {
+    this.send('guild_invite_decline', { invite_id: inviteId })
+  }
+
+  // Cancel an outgoing guild invite (guild staff only)
+  cancelGuildInvite(inviteId: string) {
+    this.send('guild_invite_cancel', { invite_id: inviteId })
+  }
+
+  // Request list of pending guild invites (for current player)
+  getGuildInvites() {
+    this.send('get_guild_invites')
+  }
+
+  // Request list of outgoing guild invites (for guild staff)
+  getGuildOutgoingInvites() {
+    this.send('get_guild_outgoing_invites')
+  }
+
+  // ============================================
   // GUILD HANDLERS
   // ============================================
 
@@ -1244,6 +1295,63 @@ class GameSocket {
   private handleGuildError = (payload: unknown) => {
     const data = payload as GuildErrorPayload
     useGameStore.getState().setGuildError(data.error)
+  }
+
+  // ============================================
+  // GUILD INVITE HANDLERS
+  // ============================================
+
+  private handleGuildInvitesList = (payload: unknown) => {
+    const data = payload as GuildInvitesListPayload
+    useGameStore.getState().setGuildInvites(data.invites)
+  }
+
+  private handleGuildOutgoingInvites = (payload: unknown) => {
+    const data = payload as GuildOutgoingInvitesPayload
+    useGameStore.getState().setGuildOutgoingInvites(data.invites)
+  }
+
+  private handleGuildInviteReceived = (payload: unknown) => {
+    const data = payload as GuildInviteReceivedPayload
+    const invite: GuildInvite = {
+      id: data.invite_id,
+      guild_id: data.guild_id,
+      guild_name: data.guild_name,
+      guild_tag: data.guild_tag,
+      member_count: data.member_count,
+      max_members: data.max_members,
+      invited_by: data.invited_by_id,
+      invited_by_username: data.invited_by_username,
+      created_at: data.created_at,
+      expires_at: data.expires_at,
+    }
+    useGameStore.getState().addGuildInvite(invite)
+  }
+
+  private handleGuildInviteSent = (payload: unknown) => {
+    const data = payload as GuildInviteSentPayload
+    if (data.success) {
+      // Refresh outgoing invites to get the new one
+      this.getGuildOutgoingInvites()
+    }
+  }
+
+  private handleGuildInviteAccepted = (payload: unknown) => {
+    const data = payload as GuildInviteAcceptedPayload
+    // Clear all invites after joining a guild
+    useGameStore.getState().clearGuildInvites()
+    // Request fresh guild data
+    this.getGuild()
+  }
+
+  private handleGuildInviteDeclined = (payload: unknown) => {
+    const data = payload as GuildInviteDeclinedPayload
+    useGameStore.getState().removeGuildInvite(data.invite_id)
+  }
+
+  private handleGuildInviteCancelled = (payload: unknown) => {
+    const data = payload as GuildInviteCancelledPayload
+    useGameStore.getState().removeGuildOutgoingInvite(data.invite_id)
   }
 }
 
