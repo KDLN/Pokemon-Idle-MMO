@@ -20,7 +20,7 @@ Phases are ordered by dependency: foundation before features, simpler features b
 
 **Dependencies:** None (first phase)
 
-**Plans:** 5 plans ✓
+**Plans:** 5 plans
 
 **Status:** Complete (2026-01-18)
 
@@ -58,6 +58,14 @@ Plans:
 **Requirements:** INVITE-01, INVITE-02, INVITE-03, INVITE-04, INVITE-05
 
 **Dependencies:** Phase 1 (requires guilds and roles to exist)
+
+**Plans:** 4 plans
+
+Plans:
+- [ ] 02-01-PLAN.md - Database migration (guild_invites table, RLS, functions)
+- [ ] 02-02-PLAN.md - Shared types for invite system
+- [ ] 02-03-PLAN.md - Game server handlers (send, accept, decline, list invites)
+- [ ] 02-04-PLAN.md - Frontend UI (invite button, pending invites list, accept/decline)
 
 **Success Criteria:**
 - [ ] Leader or Officer can send invite to any player not currently in a guild
@@ -197,8 +205,8 @@ Plans:
 
 | Phase | Name | Requirements | Plans | Status |
 |-------|------|--------------|-------|--------|
-| 1 | Guild Foundation | 14 | 5 | ✓ Complete |
-| 2 | Guild Invites | 5 | 0 | Not Started |
+| 1 | Guild Foundation | 14 | 5 | Complete |
+| 2 | Guild Invites | 5 | 4 | Planned |
 | 3 | Guild Chat | 3 | 0 | Not Started |
 | 4 | Guild Bank | 18 | 0 | Not Started |
 | 5 | Guild Quests | 6 | 0 | Not Started |
