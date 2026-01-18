@@ -331,3 +331,259 @@ BEGIN
   RETURN json_build_object('success', true);
 END;
 $$;
+
+-- ================================
+-- Role Management Functions
+-- ================================
+
+-- Promote a member to officer (leader only)
+CREATE OR REPLACE FUNCTION promote_member(
+  p_actor_id UUID,
+  p_target_id UUID
+) RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_actor RECORD;
+  v_target RECORD;
+BEGIN
+  -- Lock actor's membership row and verify they're a leader
+  SELECT gm.*, g.id as guild_id INTO v_actor
+  FROM guild_members gm
+  JOIN guilds g ON g.id = gm.guild_id
+  WHERE gm.player_id = p_actor_id
+  FOR UPDATE OF gm;
+
+  IF v_actor IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'You are not in a guild');
+  END IF;
+
+  IF v_actor.role != 'leader' THEN
+    RETURN json_build_object('success', false, 'error', 'Only the leader can promote members');
+  END IF;
+
+  -- Lock target's membership row
+  SELECT * INTO v_target
+  FROM guild_members
+  WHERE player_id = p_target_id AND guild_id = v_actor.guild_id
+  FOR UPDATE;
+
+  IF v_target IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'Player is not in your guild');
+  END IF;
+
+  IF v_target.role = 'leader' THEN
+    RETURN json_build_object('success', false, 'error', 'Cannot promote the leader');
+  END IF;
+
+  IF v_target.role = 'officer' THEN
+    RETURN json_build_object('success', false, 'error', 'Player is already an officer');
+  END IF;
+
+  -- Promote to officer
+  UPDATE guild_members SET role = 'officer' WHERE player_id = p_target_id;
+
+  RETURN json_build_object('success', true);
+END;
+$$;
+
+-- Demote an officer to member (leader only)
+CREATE OR REPLACE FUNCTION demote_member(
+  p_actor_id UUID,
+  p_target_id UUID
+) RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_actor RECORD;
+  v_target RECORD;
+BEGIN
+  -- Lock actor's membership row and verify they're a leader
+  SELECT gm.*, g.id as guild_id INTO v_actor
+  FROM guild_members gm
+  JOIN guilds g ON g.id = gm.guild_id
+  WHERE gm.player_id = p_actor_id
+  FOR UPDATE OF gm;
+
+  IF v_actor IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'You are not in a guild');
+  END IF;
+
+  IF v_actor.role != 'leader' THEN
+    RETURN json_build_object('success', false, 'error', 'Only the leader can demote officers');
+  END IF;
+
+  -- Lock target's membership row
+  SELECT * INTO v_target
+  FROM guild_members
+  WHERE player_id = p_target_id AND guild_id = v_actor.guild_id
+  FOR UPDATE;
+
+  IF v_target IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'Player is not in your guild');
+  END IF;
+
+  IF v_target.role = 'leader' THEN
+    RETURN json_build_object('success', false, 'error', 'Cannot demote the leader');
+  END IF;
+
+  IF v_target.role = 'member' THEN
+    RETURN json_build_object('success', false, 'error', 'Player is already a member');
+  END IF;
+
+  -- Demote to member
+  UPDATE guild_members SET role = 'member' WHERE player_id = p_target_id;
+
+  RETURN json_build_object('success', true);
+END;
+$$;
+
+-- Kick a member from guild (leader can kick anyone, officer can kick members)
+CREATE OR REPLACE FUNCTION kick_member(
+  p_actor_id UUID,
+  p_target_id UUID
+) RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_actor RECORD;
+  v_target RECORD;
+BEGIN
+  -- Lock actor's membership row
+  SELECT gm.*, g.id as guild_id INTO v_actor
+  FROM guild_members gm
+  JOIN guilds g ON g.id = gm.guild_id
+  WHERE gm.player_id = p_actor_id
+  FOR UPDATE OF gm;
+
+  IF v_actor IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'You are not in a guild');
+  END IF;
+
+  IF v_actor.role = 'member' THEN
+    RETURN json_build_object('success', false, 'error', 'Members cannot kick other members');
+  END IF;
+
+  -- Lock target's membership row
+  SELECT * INTO v_target
+  FROM guild_members
+  WHERE player_id = p_target_id AND guild_id = v_actor.guild_id
+  FOR UPDATE;
+
+  IF v_target IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'Player is not in your guild');
+  END IF;
+
+  IF v_target.role = 'leader' THEN
+    RETURN json_build_object('success', false, 'error', 'Cannot kick the leader');
+  END IF;
+
+  -- Officers can only kick members, not other officers
+  IF v_actor.role = 'officer' AND v_target.role = 'officer' THEN
+    RETURN json_build_object('success', false, 'error', 'Officers cannot kick other officers');
+  END IF;
+
+  -- Remove member (triggers sync_player_guild_id which sets left_guild_at)
+  DELETE FROM guild_members WHERE player_id = p_target_id;
+
+  -- Update member count
+  UPDATE guilds SET member_count = member_count - 1 WHERE id = v_actor.guild_id;
+
+  RETURN json_build_object('success', true, 'guild_id', v_actor.guild_id);
+END;
+$$;
+
+-- Transfer leadership to another member (leader only)
+CREATE OR REPLACE FUNCTION transfer_leadership(
+  p_actor_id UUID,
+  p_target_id UUID
+) RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_actor RECORD;
+  v_target RECORD;
+BEGIN
+  -- Lock actor's membership row and verify they're a leader
+  SELECT gm.*, g.id as guild_id INTO v_actor
+  FROM guild_members gm
+  JOIN guilds g ON g.id = gm.guild_id
+  WHERE gm.player_id = p_actor_id
+  FOR UPDATE OF gm;
+
+  IF v_actor IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'You are not in a guild');
+  END IF;
+
+  IF v_actor.role != 'leader' THEN
+    RETURN json_build_object('success', false, 'error', 'Only the leader can transfer leadership');
+  END IF;
+
+  -- Lock target's membership row
+  SELECT * INTO v_target
+  FROM guild_members
+  WHERE player_id = p_target_id AND guild_id = v_actor.guild_id
+  FOR UPDATE;
+
+  IF v_target IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'Player is not in your guild');
+  END IF;
+
+  IF v_target.player_id = p_actor_id THEN
+    RETURN json_build_object('success', false, 'error', 'You are already the leader');
+  END IF;
+
+  -- Transfer: demote old leader to officer, promote new leader
+  UPDATE guild_members SET role = 'officer' WHERE player_id = p_actor_id;
+  UPDATE guild_members SET role = 'leader' WHERE player_id = p_target_id;
+
+  -- Update guilds.leader_id
+  UPDATE guilds SET leader_id = p_target_id WHERE id = v_actor.guild_id;
+
+  RETURN json_build_object('success', true);
+END;
+$$;
+
+-- Disband guild (leader only, requires guild name confirmation)
+CREATE OR REPLACE FUNCTION disband_guild(
+  p_actor_id UUID,
+  p_confirmation TEXT
+) RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_actor RECORD;
+  v_guild RECORD;
+BEGIN
+  -- Lock actor's membership row and get guild
+  SELECT gm.*, g.id as guild_id, g.name as guild_name INTO v_actor
+  FROM guild_members gm
+  JOIN guilds g ON g.id = gm.guild_id
+  WHERE gm.player_id = p_actor_id
+  FOR UPDATE OF gm;
+
+  IF v_actor IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'You are not in a guild');
+  END IF;
+
+  IF v_actor.role != 'leader' THEN
+    RETURN json_build_object('success', false, 'error', 'Only the leader can disband the guild');
+  END IF;
+
+  -- Verify confirmation matches guild name (case-insensitive)
+  IF LOWER(TRIM(p_confirmation)) != LOWER(v_actor.guild_name) THEN
+    RETURN json_build_object('success', false, 'error', 'Confirmation does not match guild name');
+  END IF;
+
+  -- Store guild name for response before deletion
+  -- Delete guild (cascades to guild_members, triggers sync_player_guild_id for all members)
+  DELETE FROM guilds WHERE id = v_actor.guild_id;
+
+  RETURN json_build_object('success', true, 'guild_name', v_actor.guild_name);
+END;
+$$;
