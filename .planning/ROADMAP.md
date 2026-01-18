@@ -90,20 +90,20 @@ Plans:
 
 **Plans:** 3 plans
 
-**Status:** Not Started
+**Status:** Complete (2026-01-18)
 
 Plans:
-- [ ] 03-01-PLAN.md - Database migration (guild_messages table, RLS)
-- [ ] 03-02-PLAN.md - Game server handlers (send message, get history, broadcast)
-- [ ] 03-03-PLAN.md - Frontend integration (enable guild channel, role badges, history loading)
+- [x] 03-01-PLAN.md - Database migration (guild_messages table, RLS)
+- [x] 03-02-PLAN.md - Game server handlers (send message, get history, broadcast)
+- [x] 03-03-PLAN.md - Frontend integration (enable guild channel, role badges, history loading)
 
 **Success Criteria:**
-- [ ] Guild has dedicated chat channel visible only to guild members
-- [ ] Non-members cannot see or access guild chat
-- [ ] Guild chat messages display player name, role badge (Leader/Officer/Member), and timestamp
-- [ ] Guild chat persists last 100 messages
-- [ ] Players joining guild can view existing message history
-- [ ] Messages appear in real-time for all online guild members
+- [x] Guild has dedicated chat channel visible only to guild members
+- [x] Non-members cannot see or access guild chat
+- [x] Guild chat messages display player name, role badge (Leader/Officer/Member), and timestamp
+- [x] Guild chat persists last 100 messages
+- [x] Players joining guild can view existing message history
+- [x] Messages appear in real-time for all online guild members
 
 ---
 
@@ -114,6 +114,17 @@ Plans:
 **Requirements:** BANK-01, BANK-02, BANK-03, BANK-04, BANK-05, BANK-06, BANK-07, BANK-08, BANK-09, BANK-10, BANK-11, BANK-12, BANK-13, BANK-14, BANK-15, LOG-01, LOG-02, LOG-03
 
 **Dependencies:** Phase 1 (requires guilds and roles)
+
+**Plans:** 5 plans
+
+**Status:** Not Started
+
+Plans:
+- [ ] 04-01-PLAN.md - Database schema (bank tables, permissions, limits, logs, SECURITY DEFINER functions)
+- [ ] 04-02-PLAN.md - Shared types for bank system
+- [ ] 04-03-PLAN.md - Game server handlers (deposit, withdraw, requests, logs, permissions)
+- [ ] 04-04-PLAN.md - Frontend UI: Bank modal, Currency tab, Items tab
+- [ ] 04-05-PLAN.md - Frontend UI: Pokemon tab, Logs tab, Requests tab
 
 **Success Criteria:**
 
@@ -217,14 +228,14 @@ Plans:
 |-------|------|--------------|-------|--------|
 | 1 | Guild Foundation | 14 | 5 | Complete |
 | 2 | Guild Invites | 5 | 3 | Complete |
-| 3 | Guild Chat | 3 | 3 | Not Started |
-| 4 | Guild Bank | 18 | 0 | Not Started |
+| 3 | Guild Chat | 3 | 3 | Complete |
+| 4 | Guild Bank | 18 | 5 | Not Started |
 | 5 | Guild Quests | 6 | 0 | Not Started |
 | 6 | Guild Shop & Statistics | 12 | 0 | Not Started |
 | 7 | Zone Content | 5 | 0 | Not Started |
 
 **Total:** 63 requirements mapped (55 v1 + 8 expanded success criteria)
-**Progress:** 19/55 requirements complete (35%)
+**Progress:** 22/55 requirements complete (40%)
 
 ---
 
