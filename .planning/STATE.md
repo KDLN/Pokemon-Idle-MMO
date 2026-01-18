@@ -1,25 +1,25 @@
 # Project State: Pokemon Idle MMO - Guild Milestone
 
 **Last Updated:** 2026-01-18
-**Session:** Plan 01-05 Execution
+**Session:** Phase 2 Execution
 
 ## Project Reference
 
 **Core Value:** Guilds give players a reason to come back daily and feel part of something bigger than their solo grind.
 
-**Current Focus:** Phase 1 - Guild Foundation (creating guilds, membership, roles, permissions)
+**Current Focus:** Phase 2 - Guild Invites (invite system, join modes)
 
 ## Current Position
 
-**Phase:** 1 of 7 - Guild Foundation
-**Plan:** 5 of 5 complete
-**Status:** Phase Complete
-**Last activity:** 2026-01-18 - Completed 01-05-PLAN.md (Frontend Guild UI)
+**Phase:** 2 of 7 - Guild Invites
+**Plan:** 2 of 4 complete
+**Status:** In Progress
+**Last activity:** 2026-01-18 - Completed 02-01-PLAN.md (Database Schema) and 02-02-PLAN.md (Shared Types)
 
 **Progress:**
 ```
-Phase 1: [==========] Guild Foundation (5/5 plans complete)
-Phase 2: [          ] Guild Invites (0/? plans)
+Phase 1: [==========] Guild Foundation (5/5 plans complete) ✓
+Phase 2: [=====     ] Guild Invites (2/4 plans complete)
 Phase 3: [          ] Guild Chat (0/? plans)
 Phase 4: [          ] Guild Bank (0/? plans)
 Phase 5: [          ] Guild Quests (0/? plans)
@@ -27,14 +27,14 @@ Phase 6: [          ] Guild Shop & Statistics (0/? plans)
 Phase 7: [          ] Zone Content (0/? plans)
 ```
 
-**Overall:** Phase 1 COMPLETE - Ready for Phase 2
+**Overall:** Phase 2 IN PROGRESS - Wave 1 COMPLETE (2/2), ready for Wave 2
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans Completed | 5 |
-| Tasks Completed | 14 |
+| Plans Completed | 7 |
+| Tasks Completed | 19 |
 | Phases Completed | 1 |
 | Days Elapsed | 1 |
 
@@ -58,6 +58,7 @@ Phase 7: [          ] Zone Content (0/? plans)
 | Role hierarchy: leader > officer > member | Standard guild hierarchy; officers assist leader with management | 2026-01-18 |
 | Guild component directory structure | apps/web/src/components/game/guild/ with index.ts barrel | 2026-01-18 |
 | Role-based UI button visibility | Permission checks computed per-member in MemberRow component | 2026-01-18 |
+| Separate GuildInvite vs GuildOutgoingInvite types | Incoming invites need guild info, outgoing need player info | 2026-01-18 |
 
 ### Technical Notes
 
@@ -84,6 +85,9 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Frontend guild state in Zustand with WebSocket message handlers in gameSocket.ts
 - Guild UI components organized in apps/web/src/components/game/guild/
 - Role-based button visibility computed per-member for maintainability
+- Guild invite lifecycle via atomic functions: `send_guild_invite()`, `accept_guild_invite()`, `decline_guild_invite()`, `cancel_guild_invite()`
+- Invite expiration via expires_at column filtered at query time (no cron needed)
+- Expired invites cleaned opportunistically during send/accept operations
 
 ### TODOs
 
@@ -93,7 +97,11 @@ Phase 7: [          ] Zone Content (0/? plans)
 - [x] Execute 01-03-PLAN.md (WebSocket Handlers)
 - [x] Execute 01-04-PLAN.md (Role Management API)
 - [x] Execute 01-05-PLAN.md (Frontend Guild UI)
-- [ ] Create Phase 2 plans (Guild Invites)
+- [x] Create Phase 2 plans (Guild Invites)
+- [x] Execute 02-01-PLAN.md (Database Schema for Guild Invites)
+- [x] Execute 02-02-PLAN.md (Shared Types for Guild Invites)
+- [ ] Execute 02-03-PLAN.md (Game Server Handlers)
+- [ ] Execute 02-04-PLAN.md (Frontend UI)
 
 ### Blockers
 
@@ -103,30 +111,29 @@ None currently.
 
 ### Last Session Summary
 
-Completed Plan 01-05 (Frontend Guild UI):
-- Added guild state to Zustand store (guild, members, role, search)
-- Added WebSocket message handlers for 10 guild message types
-- Created GuildPanel, CreateGuildModal, GuildList, GuildMembers components
-- Integrated GuildPanel into GameShell social sidebar
-- Role-based UI buttons with computed permissions per member
+Completed Phase 2 Planning (Guild Invites):
+- Created CONTEXT.md with requirements and success criteria
+- Researched implementation approach (02-RESEARCH.md)
+- Created 4 execution plans in 2 waves:
+  - Wave 1: 02-01 (Database Schema) + 02-02 (Shared Types) - parallel
+  - Wave 2: 02-03 (Game Server) + 02-04 (Frontend UI) - depends on wave 1
+- Key finding: join_mode already exists on guilds table from Phase 1
 
 ### Next Actions
 
-1. Create Phase 2 CONTEXT.md for Guild Invites
-2. Create Phase 2 plans
-3. Execute Phase 2 - Guild Invite System
+1. Execute Phase 2: `/gsd:execute-phase 2`
+2. Wave 1: Apply migration 023_guild_invites.sql + add invite types
+3. Wave 2: Add handlers + frontend components
+4. Human verification checkpoint in Plan 02-04
 
-### Files Modified This Session
+### Files Created This Session
 
-- `apps/web/src/stores/gameStore.ts` (modified - guild state and actions)
-- `apps/web/src/lib/ws/gameSocket.ts` (modified - guild message handlers)
-- `apps/web/src/components/game/guild/GuildPanel.tsx` (created)
-- `apps/web/src/components/game/guild/CreateGuildModal.tsx` (created)
-- `apps/web/src/components/game/guild/GuildList.tsx` (created)
-- `apps/web/src/components/game/guild/GuildMembers.tsx` (created)
-- `apps/web/src/components/game/guild/index.ts` (created)
-- `apps/web/src/components/game/GameShell.tsx` (modified - added GuildPanel)
-- `.planning/phases/01-guild-foundation/01-05-SUMMARY.md` (created)
+- `.planning/phases/02-guild-invites/CONTEXT.md` (created)
+- `.planning/phases/02-guild-invites/02-RESEARCH.md` (created)
+- `.planning/phases/02-guild-invites/02-01-PLAN.md` (created)
+- `.planning/phases/02-guild-invites/02-02-PLAN.md` (created)
+- `.planning/phases/02-guild-invites/02-03-PLAN.md` (created)
+- `.planning/phases/02-guild-invites/02-04-PLAN.md` (created)
 - `.planning/STATE.md` (updated)
 
 ---
