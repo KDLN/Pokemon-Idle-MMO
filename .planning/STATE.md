@@ -12,14 +12,14 @@
 ## Current Position
 
 **Phase:** 2 of 7 - Guild Invites
-**Plan:** 2 of 4 complete
+**Plan:** 3 of 4 complete
 **Status:** In Progress
-**Last activity:** 2026-01-18 - Completed 02-01-PLAN.md (Database Schema) and 02-02-PLAN.md (Shared Types)
+**Last activity:** 2026-01-18 - Completed 02-03-PLAN.md (Game Server Handlers)
 
 **Progress:**
 ```
-Phase 1: [==========] Guild Foundation (5/5 plans complete) ✓
-Phase 2: [=====     ] Guild Invites (2/4 plans complete)
+Phase 1: [==========] Guild Foundation (5/5 plans complete)
+Phase 2: [=======   ] Guild Invites (3/4 plans complete)
 Phase 3: [          ] Guild Chat (0/? plans)
 Phase 4: [          ] Guild Bank (0/? plans)
 Phase 5: [          ] Guild Quests (0/? plans)
@@ -27,14 +27,14 @@ Phase 6: [          ] Guild Shop & Statistics (0/? plans)
 Phase 7: [          ] Zone Content (0/? plans)
 ```
 
-**Overall:** Phase 2 IN PROGRESS - Wave 1 COMPLETE (2/2), ready for Wave 2
+**Overall:** Phase 2 IN PROGRESS - Wave 2 IN PROGRESS (1/2 complete)
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans Completed | 7 |
-| Tasks Completed | 19 |
+| Plans Completed | 8 |
+| Tasks Completed | 22 |
 | Phases Completed | 1 |
 | Days Elapsed | 1 |
 
@@ -59,6 +59,7 @@ Phase 7: [          ] Zone Content (0/? plans)
 | Guild component directory structure | apps/web/src/components/game/guild/ with index.ts barrel | 2026-01-18 |
 | Role-based UI button visibility | Permission checks computed per-member in MemberRow component | 2026-01-18 |
 | Separate GuildInvite vs GuildOutgoingInvite types | Incoming invites need guild info, outgoing need player info | 2026-01-18 |
+| getSupabase() for simple handler queries | Use getSupabase() for direct queries in handlers rather than adding new db.ts functions | 2026-01-18 |
 
 ### Technical Notes
 
@@ -71,6 +72,7 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Guild handlers follow fire-and-forget pattern (no await in switch)
 - Online status calculated via isPlayerOnline() in handler
 - Role management broadcasts guild_role_changed for real-time UI updates
+- Guild invite handlers use isPlayerBlocked() for block integration
 
 ### Patterns Established
 
@@ -88,6 +90,7 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Guild invite lifecycle via atomic functions: `send_guild_invite()`, `accept_guild_invite()`, `decline_guild_invite()`, `cancel_guild_invite()`
 - Invite expiration via expires_at column filtered at query time (no cron needed)
 - Expired invites cleaned opportunistically during send/accept operations
+- Guild invite handlers: sendGuildInvite, acceptGuildInvite, declineGuildInvite, cancelGuildInvite, getIncomingGuildInvites, getOutgoingGuildInvites
 
 ### TODOs
 
@@ -100,7 +103,7 @@ Phase 7: [          ] Zone Content (0/? plans)
 - [x] Create Phase 2 plans (Guild Invites)
 - [x] Execute 02-01-PLAN.md (Database Schema for Guild Invites)
 - [x] Execute 02-02-PLAN.md (Shared Types for Guild Invites)
-- [ ] Execute 02-03-PLAN.md (Game Server Handlers)
+- [x] Execute 02-03-PLAN.md (Game Server Handlers)
 - [ ] Execute 02-04-PLAN.md (Frontend UI)
 
 ### Blockers
@@ -111,29 +114,22 @@ None currently.
 
 ### Last Session Summary
 
-Completed Phase 2 Planning (Guild Invites):
-- Created CONTEXT.md with requirements and success criteria
-- Researched implementation approach (02-RESEARCH.md)
-- Created 4 execution plans in 2 waves:
-  - Wave 1: 02-01 (Database Schema) + 02-02 (Shared Types) - parallel
-  - Wave 2: 02-03 (Game Server) + 02-04 (Frontend UI) - depends on wave 1
-- Key finding: join_mode already exists on guilds table from Phase 1
+Completed 02-03-PLAN.md (Game Server Handlers for Guild Invites):
+- Added 6 database functions for invite operations in db.ts
+- Added 11 invite-related type re-exports in types.ts
+- Added 6 WebSocket handlers and 6 handler methods in hub.ts
+- Integrated isPlayerBlocked() check for block system
+- Session update and guild broadcast on invite accept
 
 ### Next Actions
 
-1. Execute Phase 2: `/gsd:execute-phase 2`
-2. Wave 1: Apply migration 023_guild_invites.sql + add invite types
-3. Wave 2: Add handlers + frontend components
-4. Human verification checkpoint in Plan 02-04
+1. Execute 02-04-PLAN.md (Frontend UI for Guild Invites)
+2. This is final plan in Phase 2
+3. Human verification checkpoint expected
 
 ### Files Created This Session
 
-- `.planning/phases/02-guild-invites/CONTEXT.md` (created)
-- `.planning/phases/02-guild-invites/02-RESEARCH.md` (created)
-- `.planning/phases/02-guild-invites/02-01-PLAN.md` (created)
-- `.planning/phases/02-guild-invites/02-02-PLAN.md` (created)
-- `.planning/phases/02-guild-invites/02-03-PLAN.md` (created)
-- `.planning/phases/02-guild-invites/02-04-PLAN.md` (created)
+- `.planning/phases/02-guild-invites/02-03-SUMMARY.md` (created)
 - `.planning/STATE.md` (updated)
 
 ---
