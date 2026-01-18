@@ -251,6 +251,8 @@ export interface PlayerSession {
   // Evolution state
   pendingEvolutions: PendingEvolution[]
   suppressedEvolutions: Set<string> // Pokemon IDs where evolution was cancelled (re-prompt on next level up)
+  // Trade state
+  activeTrade?: Trade
 }
 
 export interface WSMessage {
