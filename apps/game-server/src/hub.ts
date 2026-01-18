@@ -289,6 +289,7 @@ export class GameHub {
       await this.sendChatHistory(client)
       await this.sendFriendsData(client)
       await this.sendTradesData(client)
+      await this.sendGuildData(client)
       // Notify other players in the zone that this player joined
       if (client.session) {
         this.broadcastNearbyPlayersToZone(client.session.zone.id)
@@ -1265,6 +1266,33 @@ export class GameHub {
       pokedollars: client.session.pokedollars,
       box,
       inventory
+    })
+  }
+
+  private async sendGuildData(client: Client) {
+    if (!client.session) return
+
+    if (!client.session.guild) {
+      this.send(client, 'guild_data', { guild: null, members: [], my_role: null })
+      return
+    }
+
+    const guild = await getGuildById(client.session.guild.id)
+    if (!guild) {
+      // Guild was deleted, clear session
+      client.session.guild = undefined
+      this.send(client, 'guild_data', { guild: null, members: [], my_role: null })
+      return
+    }
+
+    const members = await getGuildMembers(guild.id)
+    this.send(client, 'guild_data', {
+      guild,
+      members: members.map(m => ({
+        ...m,
+        is_online: this.isPlayerOnline(m.player_id)
+      })),
+      my_role: client.session.guild.role
     })
   }
 

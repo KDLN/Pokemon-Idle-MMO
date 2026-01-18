@@ -165,6 +165,8 @@ class GameSocket {
           this.send('get_friends')
           this.send('get_trades')
           this.send('get_whisper_history')
+          this.getGuild()
+          this.getGuildInvites()
         }, 100)
       }
     }

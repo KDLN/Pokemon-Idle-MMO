@@ -5,7 +5,14 @@
       "Bash(findstr:*)",
       "Bash(powershell:*)",
       "Bash(npx tsc:*)",
-      "Bash(gh issue view:*)"
+      "Bash(gh issue view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nchore: add project config\n\nMode: yolo\nDepth: standard\nParallelization: enabled\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(npm run dev:*)",
+      "Bash(git commit:*)",
+      "mcp__plugin_supabase_supabase__execute_sql",
+      "Bash(npm run build:*)"
     ]
   }
 }
