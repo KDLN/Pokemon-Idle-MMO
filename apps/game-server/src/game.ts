@@ -16,7 +16,8 @@ import type {
   CatchSequence,
   GymBattleMatchup,
   Move,
-  BallType
+  BallType,
+  ActiveGuildBuffs
 } from './types.js'
 import type { GymLeader, GymLeaderPokemon } from './db.js'
 import { generateIVs, ivsToDbFormat } from './ivs.js'
@@ -528,7 +529,8 @@ const BALL_MODIFIERS: Record<BallType, number> = {
 export function attemptCatch(
   wild: WildPokemon,
   ballCount: number,
-  ballType: BallType
+  ballType: BallType,
+  catchRateMultiplier: number = 1.0
 ): { result: CatchResult; newBallCount: number } {
   if (ballCount <= 0) {
     return { result: { success: false, balls_used: 0, ball_type: ballType }, newBallCount: ballCount }
@@ -538,6 +540,9 @@ export function attemptCatch(
   const ballModifier = BALL_MODIFIERS[ballType]
 
   let catchChance = (baseCatchRate * ballModifier) / 255.0
+
+  // Apply guild buff catch rate multiplier
+  catchChance *= catchRateMultiplier
 
   // Level modifier
   const levelMod = Math.max(0.5, 1.0 - wild.level * 0.02)
@@ -827,7 +832,8 @@ export function processEncounter(
   encounterTable: EncounterTableEntry[],
   pokeballs: number,
   great_balls: number,
-  speciesMap: Map<number, PokemonSpecies>
+  speciesMap: Map<number, PokemonSpecies>,
+  catchRateMultiplier: number = 1.0
 ): { encounter: EncounterEvent | null; newPokeballs: number; newGreatBalls: number } {
   const species = rollEncounterSpecies(encounterTable)
   if (!species) {
@@ -853,11 +859,11 @@ export function processEncounter(
   // Prefer Great Balls over Poke Balls for better catch rate
   if (battleResult.outcome === 'win') {
     if (great_balls > 0) {
-      const { result, newBallCount } = attemptCatch(wild, great_balls, 'great_ball')
+      const { result, newBallCount } = attemptCatch(wild, great_balls, 'great_ball', catchRateMultiplier)
       encounter.catch_result = result
       newGreatBalls = newBallCount
     } else if (pokeballs > 0) {
-      const { result, newBallCount } = attemptCatch(wild, pokeballs, 'pokeball')
+      const { result, newBallCount } = attemptCatch(wild, pokeballs, 'pokeball', catchRateMultiplier)
       encounter.catch_result = result
       newPokeballs = newBallCount
     }
@@ -873,7 +879,8 @@ const ENCOUNTER_COOLDOWN_TICKS = 8
 // Process tick
 export function processTick(
   session: PlayerSession,
-  speciesMap: Map<number, PokemonSpecies>
+  speciesMap: Map<number, PokemonSpecies>,
+  guildBuffs?: ActiveGuildBuffs | null
 ): TickResult {
   session.tickNumber++
 
@@ -894,19 +901,26 @@ export function processTick(
     return result
   }
 
-  // Roll for encounter
-  if (!rollEncounter(session.zone.base_encounter_rate)) {
+  // Roll for encounter (apply encounter rate buff)
+  const encounterRate = guildBuffs?.encounter_rate
+    ? session.zone.base_encounter_rate * guildBuffs.encounter_rate.multiplier
+    : session.zone.base_encounter_rate
+  if (!rollEncounter(encounterRate)) {
     return result
   }
 
-  // Process encounter
+  // Calculate catch rate multiplier from buff
+  const catchRateMultiplier = guildBuffs?.catch_rate?.multiplier || 1.0
+
+  // Process encounter (pass catch rate multiplier)
   const { encounter, newPokeballs, newGreatBalls } = processEncounter(
     session.party,
     session.zone,
     session.encounterTable,
     session.pokeballs,
     session.great_balls,
-    speciesMap
+    speciesMap,
+    catchRateMultiplier
   )
 
   if (!encounter) {
@@ -925,6 +939,24 @@ export function processTick(
   // Apply XP and money if battle won
   if (encounter.battle_result === 'win') {
     result.xp_gained = distributeXP(session.party, encounter.wild_pokemon, encounter.battle_sequence)
+
+    // Apply XP buff to all gained XP
+    const xpMultiplier = guildBuffs?.xp_bonus?.multiplier || 1.0
+    if (xpMultiplier > 1.0 && result.xp_gained) {
+      for (const pokemonId of Object.keys(result.xp_gained)) {
+        result.xp_gained[pokemonId] = Math.floor(result.xp_gained[pokemonId] * xpMultiplier)
+      }
+      // Also update the actual Pokemon's XP in memory (since distributeXP already added it)
+      // We need to add the bonus XP that was multiplied
+      for (const pokemon of session.party) {
+        if (pokemon && result.xp_gained[pokemon.id]) {
+          const originalXP = Math.floor(result.xp_gained[pokemon.id] / xpMultiplier)
+          const bonusXP = result.xp_gained[pokemon.id] - originalXP
+          pokemon.xp += bonusXP
+        }
+      }
+    }
+
     result.level_ups = checkLevelUps(session.party, speciesMap)
 
     // Award money
