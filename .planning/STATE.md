@@ -12,9 +12,9 @@
 ## Current Position
 
 **Phase:** 5 of 7 - Guild Quests
-**Plan:** 2 of 6 complete (05-01 Database, 05-02 Shared Types)
+**Plan:** 3 of 6 complete (05-01 Database, 05-02 Shared Types, 05-03 Game Server Handlers)
 **Status:** In Progress
-**Last activity:** 2026-01-19 - Completed 05-01-PLAN.md (Database Schema for Guild Quests)
+**Last activity:** 2026-01-19 - Completed 05-03-PLAN.md (Game Server Handlers for Guild Quests)
 
 **Progress:**
 ```
@@ -22,19 +22,19 @@ Phase 1: [==========] Guild Foundation (5/5 plans complete)
 Phase 2: [==========] Guild Invites (3/3 plans complete)
 Phase 3: [==========] Guild Chat (3/3 plans complete)
 Phase 4: [==========] Guild Bank (5/5 plans complete)
-Phase 5: [===       ] Guild Quests (2/6 plans complete)
+Phase 5: [=====     ] Guild Quests (3/6 plans complete)
 Phase 6: [          ] Guild Shop & Statistics (0/? plans)
 Phase 7: [          ] Zone Content (0/? plans)
 ```
 
-**Overall:** Phase 5 IN PROGRESS - 05-01 and 05-02 complete, 05-03 (handlers) next
+**Overall:** Phase 5 IN PROGRESS - 05-01, 05-02, and 05-03 complete, 05-04 (Frontend UI) next
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans Completed | 18 |
-| Tasks Completed | 51 |
+| Plans Completed | 19 |
+| Tasks Completed | 54 |
 | Phases Completed | 4 |
 | Days Elapsed | 2 |
 
@@ -79,6 +79,9 @@ Phase 7: [          ] Zone Content (0/? plans)
 | Reroll costs: 500 daily, 2000 weekly | Prevent abuse while allowing flexibility | 2026-01-19 |
 | Individual bonuses: 10% of reward pool proportionally | Encourages participation, fair distribution | 2026-01-19 |
 | Difficulty scales with 7-day rolling activity average | Adaptive quests based on actual guild performance | 2026-01-19 |
+| Fire-and-forget for quest progress updates | No await in tick loop, prevent blocking | 2026-01-19 |
+| Pass Pokemon type1 for catch_type quests | Enables type-specific quest filtering | 2026-01-19 |
+| Every encounter is a battle | Simplifies battle quest tracking | 2026-01-19 |
 
 ### Technical Notes
 
@@ -110,6 +113,9 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Quest support types: QuestContribution (leaderboard), QuestRerollStatus, QuestResetTimes, GuildQuestsState
 - Quest client->server payloads: GetGuildQuestsPayload, GetQuestDetailsPayload, RerollQuestPayload, GetQuestHistoryPayload
 - Quest server->client payloads: progress, milestone, completed, rerolled, history, reset, error
+- Quest db.ts functions: updateGuildQuestProgress, recordGuildActivity, getGuildQuests, getQuestDetails, rerollQuest, getQuestHistory
+- Activity hooks in processTicks: catch (with type filter), battle, evolution
+- updateQuestProgress helper broadcasts progress/milestone/completed events
 
 ### Patterns Established
 
@@ -147,6 +153,10 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Advisory locks prevent race conditions: pg_advisory_xact_lock(hashtext(guild_id || 'daily'/'weekly'))
 - Quest rewards deposit to guild_bank_currency/guild_bank_items via existing bank tables
 - Activity tracking: record_guild_activity() for catches/battles/evolves, auto-cleanup after 30 days
+- Activity hooks placed after existing weekly stats tracking in processTicks
+- Quest progress broadcasts use fire-and-forget pattern via updateQuestProgress helper
+- Milestone detection at 25/50/75/100% via database function return
+- Completion broadcast fetches quest details for rewards and top contributors
 
 ### TODOs
 
@@ -173,7 +183,7 @@ Phase 7: [          ] Zone Content (0/? plans)
 - [x] Create Phase 5 plans (Guild Quests)
 - [x] Execute 05-01-PLAN.md (Database Schema for Guild Quests)
 - [x] Execute 05-02-PLAN.md (Shared Types for Guild Quests)
-- [ ] Execute 05-03-PLAN.md (Game Server Handlers)
+- [x] Execute 05-03-PLAN.md (Game Server Handlers)
 - [ ] Execute 05-04-PLAN.md (Frontend UI)
 - [ ] Execute 05-05-PLAN.md (Progress Tracking)
 - [ ] Execute 05-06-PLAN.md (Quest Reset Automation)
@@ -186,24 +196,25 @@ None currently.
 
 ### Last Session Summary
 
-Completed 05-01-PLAN.md (Database Schema for Guild Quests):
-- Created 5 tables: guild_quests, guild_quest_contributions, guild_quest_rerolls, guild_quest_history, guild_activity_stats
-- Created 2 enums: quest_type, quest_period
-- Created 14 SECURITY DEFINER functions for quest operations
-- Implemented lazy generation with advisory locks
-- Built reroll system with currency costs and limits
-- Integrated reward distribution with existing guild bank tables
+Completed 05-03-PLAN.md (Game Server Handlers for Guild Quests):
+- Added 6 quest database wrapper functions to db.ts
+- Added activity hooks in processTicks for catches, battles, and evolutions
+- Added updateQuestProgress helper for real-time broadcasts
+- Broadcasts progress, milestones (25/50/75/100%), and completions
+- Fire-and-forget pattern prevents tick loop blocking
 
 ### Next Actions
 
-1. Execute 05-03-PLAN.md (Game Server Handlers)
-2. Execute 05-04-PLAN.md (Frontend UI)
+1. Execute 05-04-PLAN.md (Frontend UI)
+2. Execute 05-05-PLAN.md (Progress Tracking)
 3. Continue Phase 5 execution
 
 ### Files Modified This Session
 
-- `supabase/migrations/027_guild_quests.sql` (created - 1370 lines)
-- `.planning/phases/05-guild-quests/05-01-SUMMARY.md` (created)
+- `apps/game-server/src/db.ts` (modified - added 6 quest functions)
+- `apps/game-server/src/hub.ts` (modified - added activity hooks and broadcast helper)
+- `apps/game-server/src/types.ts` (modified - exported quest types)
+- `.planning/phases/05-guild-quests/05-03-SUMMARY.md` (created)
 - `.planning/STATE.md` (updated)
 
 ---
