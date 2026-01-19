@@ -159,6 +159,23 @@ export type {
   GuildQuestHistoryPayload,
   GuildQuestsResetPayload,
   GuildQuestErrorPayload,
+  // Guild Shop & Statistics Types
+  GuildBuffType,
+  GuildBuff,
+  ActiveGuildBuffs,
+  GuildStatistics,
+  LeaderboardMetric,
+  GuildLeaderboardEntry,
+  GuildRankInfo,
+  // Guild Shop Client -> Server Payloads
+  PurchaseGuildBuffPayload,
+  GetGuildLeaderboardPayload,
+  // Guild Shop Server -> Client Payloads
+  GuildActiveBuffsPayload,
+  GuildBuffPurchasedPayload,
+  GuildStatisticsPayload,
+  GuildLeaderboardPayload,
+  GuildShopErrorPayload,
   // Common
   WSMessage,
   ShopItem,

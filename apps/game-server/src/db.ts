@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon, BlockedPlayer, WildPokemon, Guild, GuildMember, GuildPreview, PlayerGuildInfo, GuildInvite, GuildOutgoingInvite, GuildMessageEntry, GuildRole, GuildBank, GuildBankRequest, GuildBankLog, GuildQuestsState, GuildQuestDetailed, GuildQuestWithContribution, QuestRerollStatus, GuildQuestHistory } from './types.js'
+import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon, BlockedPlayer, WildPokemon, Guild, GuildMember, GuildPreview, PlayerGuildInfo, GuildInvite, GuildOutgoingInvite, GuildMessageEntry, GuildRole, GuildBank, GuildBankRequest, GuildBankLog, GuildQuestsState, GuildQuestDetailed, GuildQuestWithContribution, QuestRerollStatus, GuildQuestHistory, GuildBuff, ActiveGuildBuffs, GuildStatistics, GuildLeaderboardEntry, GuildRankInfo } from './types.js'
 import { calculateHP, calculateStat } from './game.js'
 
 let supabase: SupabaseClient
@@ -3482,6 +3482,113 @@ export async function getQuestHistory(
 
   if (error) {
     console.error('Error getting quest history:', error)
+    return null
+  }
+
+  return data
+}
+
+// ================================
+// Guild Shop & Statistics
+// ================================
+
+/**
+ * Purchase a guild buff
+ * Returns success status with buff details and remaining currency/points
+ */
+export async function purchaseGuildBuff(
+  playerId: string,
+  guildId: string,
+  buffType: string,
+  durationHours: number,
+  useGuildPoints: boolean
+): Promise<{ success: boolean; error?: string; buff?: GuildBuff; remaining_currency?: number; remaining_guild_points?: number }> {
+  const { data, error } = await supabase.rpc('purchase_guild_buff', {
+    p_player_id: playerId,
+    p_guild_id: guildId,
+    p_buff_type: buffType,
+    p_duration_hours: durationHours,
+    p_use_guild_points: useGuildPoints
+  })
+
+  if (error) {
+    console.error('[DB purchaseGuildBuff] Error:', error)
+    return { success: false, error: error.message }
+  }
+
+  return data
+}
+
+/**
+ * Get active guild buffs
+ * Returns keyed object for O(1) lookup by buff type
+ */
+export async function getActiveGuildBuffs(guildId: string): Promise<ActiveGuildBuffs | null> {
+  const { data, error } = await supabase.rpc('get_active_guild_buffs', {
+    p_guild_id: guildId
+  })
+
+  if (error) {
+    console.error('[DB getActiveGuildBuffs] Error:', error)
+    return null
+  }
+
+  return data
+}
+
+/**
+ * Get guild statistics
+ * Returns comprehensive statistics for a guild
+ */
+export async function getGuildStatistics(guildId: string): Promise<GuildStatistics | null> {
+  const { data, error } = await supabase.rpc('get_guild_statistics', {
+    p_guild_id: guildId
+  })
+
+  if (error) {
+    console.error('[DB getGuildStatistics] Error:', error)
+    return null
+  }
+
+  return data
+}
+
+/**
+ * Get guild leaderboard
+ * Returns top guilds by specified metric
+ */
+export async function getGuildLeaderboard(
+  metric: string,
+  limit: number = 50
+): Promise<GuildLeaderboardEntry[]> {
+  const { data, error } = await supabase.rpc('get_guild_leaderboard', {
+    p_metric: metric,
+    p_limit: Math.min(limit, 50)
+  })
+
+  if (error) {
+    console.error('[DB getGuildLeaderboard] Error:', error)
+    return []
+  }
+
+  return data || []
+}
+
+/**
+ * Get player's guild rank for a specific metric
+ * Returns the player's guild position in the leaderboard
+ */
+export async function getPlayerGuildRank(
+  playerId: string,
+  metric: string
+): Promise<GuildRankInfo | null> {
+  const { data, error } = await supabase.rpc('get_player_guild_rank', {
+    p_player_id: playerId,
+    p_metric: metric
+  })
+
+  if (error) {
+    console.error('[DB getPlayerGuildRank] Error:', error)
     return null
   }
 
