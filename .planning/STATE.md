@@ -1,237 +1,61 @@
-# Project State: Pokemon Idle MMO - Guild Milestone
+# Project State: Pokemon Idle MMO
 
 **Last Updated:** 2026-01-19
-**Session:** Phase 7 Execution
+**Session:** Milestone v1.0 Complete
 
 ## Project Reference
 
-**Core Value:** Guilds give players a reason to come back daily and feel part of something bigger than their solo grind.
+See: .planning/PROJECT.md (updated 2026-01-19)
 
-**Current Focus:** Phase 7 - Zone Content (In Progress)
+**Core value:** Guilds give players a reason to come back daily and feel part of something bigger than their solo grind.
+
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-**Phase:** 7 of 7 - Zone Content (In Progress)
-**Plan:** 1 of ? complete (07-01 Cerulean City Zone)
-**Status:** In Progress
-**Last activity:** 2026-01-19 - Completed 07-01-PLAN.md (Cerulean City Zone Content)
+**Phase:** v1.0 Complete — Ready for next milestone
+**Plan:** N/A
+**Status:** Milestone shipped
+**Last activity:** 2026-01-19 — v1.0 Guilds milestone complete
 
 **Progress:**
 ```
-Phase 1: [==========] Guild Foundation (5/5 plans complete)
-Phase 2: [==========] Guild Invites (3/3 plans complete)
-Phase 3: [==========] Guild Chat (3/3 plans complete)
-Phase 4: [==========] Guild Bank (5/5 plans complete)
-Phase 5: [==========] Guild Quests (6/6 plans complete)
-Phase 6: [==========] Guild Shop & Statistics (4/4 plans complete)
-Phase 7: [==        ] Zone Content (1/? plans complete)
-```
+v1.0 Guilds: SHIPPED (2026-01-19)
+├── Phase 1: Guild Foundation (5/5 plans)
+├── Phase 2: Guild Invites (3/3 plans)
+├── Phase 3: Guild Chat (3/3 plans)
+├── Phase 4: Guild Bank (5/5 plans)
+├── Phase 5: Guild Quests (6/6 plans)
+├── Phase 6: Guild Shop & Statistics (4/4 plans)
+└── Phase 7: Zone Content (1/1 plans)
 
-**Overall:** 27/? plans complete (guild milestone complete, zone content in progress)
+Total: 7 phases, 27 plans, 55 requirements
+```
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
 | Plans Completed | 27 |
-| Tasks Completed | 71 |
-| Phases Completed | 6 |
+| Phases Completed | 7 |
+| Requirements Shipped | 55 |
 | Days Elapsed | 2 |
+| Files Modified | 140 |
+| Lines of Code | 48,032 |
 
 ## Accumulated Context
 
-### Key Decisions
+### Key Decisions (v1.0)
 
-| Decision | Rationale | Date |
-|----------|-----------|------|
-| 7-phase structure | Follows dependency chain: foundation -> invites -> chat -> bank -> quests -> shop/stats, zones parallel | 2026-01-18 |
-| Allow all Pokemon in guild bank | Admin tagging system needs more planning; trust players for now | 2026-01-18 |
-| WoW-style role permissions | Familiar pattern (Leader > Officer > Member), prevents abuse, scales well | 2026-01-18 |
-| Dedicated guild_messages table | Better RLS isolation than using existing chat system with guild channel filter | 2026-01-18 |
-| Block direct mutations via RLS | Force use of SECURITY DEFINER functions for atomic operations and proper permission checks | 2026-01-18 |
-| Denormalized member_count | Avoid COUNT(*) queries on every join attempt | 2026-01-18 |
-| Partial unique index for leader | Database-level guarantee of single leader per guild | 2026-01-18 |
-| String types for UUIDs/timestamps | Consistent with existing codebase patterns | 2026-01-18 |
-| Separated Guild from GuildPreview | Full data for members, minimal data for search/discovery | 2026-01-18 |
-| Fire-and-forget async handlers | Consistent with existing game-server handler patterns (no await in switch cases) | 2026-01-18 |
-| Uppercase guild tag in handler | Ensure consistent display regardless of user input | 2026-01-18 |
-| Role hierarchy: leader > officer > member | Standard guild hierarchy; officers assist leader with management | 2026-01-18 |
-| Guild component directory structure | apps/web/src/components/game/guild/ with index.ts barrel | 2026-01-18 |
-| Role-based UI button visibility | Permission checks computed per-member in MemberRow component | 2026-01-18 |
-| Separate GuildInvite vs GuildOutgoingInvite types | Incoming invites need guild info, outgoing need player info | 2026-01-18 |
-| getSupabase() for simple handler queries | Use getSupabase() for direct queries in handlers rather than adding new db.ts functions | 2026-01-18 |
-| BST-based Pokemon points: <300=1, 300-399=2, 400-499=5, 500-579=10, 580+=25 | Balanced for Gen 1 range, legendary tier at 580 BST | 2026-01-18 |
-| Default officer limits: 10000 currency, 20 items, 20 pokemon points | Reasonable daily caps preventing abuse while allowing functionality | 2026-01-18 |
-| Members cannot withdraw by default | Forces request system use, maintains leader control | 2026-01-18 |
-| Slot expansion doubles each purchase | Provides gold sink, prevents trivial max-slot guilds | 2026-01-18 |
-| Max 500 Pokemon slots per guild | Prevents runaway storage, keeps queries performant | 2026-01-18 |
-| Flexible optional properties in bank detail types | Simpler than discriminated unions for varying action types | 2026-01-18 |
-| Members request withdrawals; officers/leaders withdraw directly | Maintains control while allowing member participation | 2026-01-18 |
-| Settings tab only visible to leaders | Restricts limit configuration to highest authority | 2026-01-18 |
-| Flex-based action panels in modal | Better than absolute positioning for scrollable content | 2026-01-18 |
-| Grid/List/Card view modes for Pokemon | Different use cases - quick overview vs detailed info | 2026-01-19 |
-| Rarity-based point colors | Visual distinction for value assessment (gray/green/blue/purple/yellow) | 2026-01-19 |
-| Quest types extend base interface progressively | GuildQuest -> GuildQuestWithContribution -> GuildQuestDetailed for flexible data | 2026-01-19 |
-| Milestone union type (25/50/75/100) | Type-safe percentage markers for notifications | 2026-01-19 |
-| Separate daily/weekly reroll pools | Flexible limits for different quest periods | 2026-01-19 |
-| Quest count scales with guild size: 3 + (members/10), max 6 daily | Scalable difficulty for different guild sizes | 2026-01-19 |
-| Weekly quests fixed at 3 per guild | Simpler than scaling, provides consistent weekly goals | 2026-01-19 |
-| Reroll costs: 500 daily, 2000 weekly | Prevent abuse while allowing flexibility | 2026-01-19 |
-| Individual bonuses: 10% of reward pool proportionally | Encourages participation, fair distribution | 2026-01-19 |
-| Difficulty scales with 7-day rolling activity average | Adaptive quests based on actual guild performance | 2026-01-19 |
-| Fire-and-forget for quest progress updates | No await in tick loop, prevent blocking | 2026-01-19 |
-| Pass Pokemon type1 for catch_type quests | Enables type-specific quest filtering | 2026-01-19 |
-| Every encounter is a battle | Simplifies battle quest tracking | 2026-01-19 |
-| Reroll restricted to leader/officer | Members cannot reroll quests via role check | 2026-01-19 |
-| History pagination max 50 per page | Prevents excessive data transfer | 2026-01-19 |
-| Custom event for quest completion confetti | Cross-component communication without prop drilling | 2026-01-19 |
-| Purple color for Quests button | Distinct from Bank (yellow) and Leave/Disband (red) | 2026-01-19 |
-| ActiveGuildBuffs uses keyed object | O(1) lookup by buff type, each type can only have one active buff | 2026-01-19 |
-| LeaderboardMetric = catches/pokedex/members | Three distinct ranking criteria matching statistics fields | 2026-01-19 |
-| 5-second buff cache TTL | Balances freshness with performance - buffs don't change frequently | 2026-01-19 |
-| Apply bonus XP to Pokemon in memory | Ensures Pokemon's in-memory state reflects total XP including buff bonus | 2026-01-19 |
-| System message on buff purchase | Makes buff activation visible to all guild members | 2026-01-19 |
-| Use myGuildRole from store for permission | Guild type lacks role property; use dedicated state | 2026-01-19 |
-| Misty requires Boulder Badge to challenge | Matches Gen 1 game progression | 2026-01-19 |
-| Routes 24-25 share identical encounter distribution | Consistent area theming | 2026-01-19 |
-| Abra at 10% encounter rate as rare Pokemon | Provides Psychic-type hunting target | 2026-01-19 |
+All decisions documented in PROJECT.md with outcomes marked ✓ Good.
 
 ### Technical Notes
 
-- Follow existing patterns from friends system, trade system, and chat system
-- Cache guild info in PlayerSession on connect/change (avoid N+1 queries)
-- Use broadcastToGuild() for targeted WebSocket messages (not global broadcast)
-- Database functions for atomic operations: create_guild, join_guild, leave_guild, promote_member, demote_member, kick_member, transfer_leadership, disband_guild
-- Guild mutations via SECURITY DEFINER functions with FOR UPDATE row locking
-- Guild types in packages/shared/src/types/guild.ts importable from @pokemon-idle/shared
-- Guild handlers follow fire-and-forget pattern (no await in switch)
-- Online status calculated via isPlayerOnline() in handler
-- Role management broadcasts guild_role_changed for real-time UI updates
-- Guild invite handlers use isPlayerBlocked() for block integration
-- Guild bank uses 10 tables: currency, items, pokemon, slots, permissions, limits, player_overrides, withdrawals, requests, logs
-- Daily withdrawal limits reset at midnight UTC via date_trunc('day', NOW() AT TIME ZONE 'UTC')
-- Pokemon point costs calculated by calculate_pokemon_point_cost() based on BST
-- Bank types: BankCategory, BankAction, BankRequestStatus type aliases
-- GuildBank interface aggregates all bank state for single-request fetch
-- 17 client->server and 13 server->client WebSocket payload types defined
-- 18 db.ts wrapper functions for bank RPC calls
-- 17 hub.ts handlers for bank WebSocket messages
-- Frontend guild bank: Zustand store with 10 actions, gameSocket with 13 handlers and 14 send methods
-- GuildBankModal: 6 tabs (Currency, Items, Pokemon, Logs, Requests, Settings)
-- BankPokemonTab: Grid/List/Card view modes, point cost display, slot expansion
-- BankLogsTab: Paginated with action/category/player filters
-- BankRequestsTab: Pending requests with fulfill/cancel actions
-- Quest types: QuestType ('catch_pokemon' | 'catch_type' | 'battle' | 'evolve'), QuestPeriod ('daily' | 'weekly')
-- Quest data types: GuildQuest, GuildQuestWithContribution, GuildQuestDetailed, GuildQuestHistory
-- Quest support types: QuestContribution (leaderboard), QuestRerollStatus, QuestResetTimes, GuildQuestsState
-- Quest client->server payloads: GetGuildQuestsPayload, GetQuestDetailsPayload, RerollQuestPayload, GetQuestHistoryPayload
-- Quest server->client payloads: progress, milestone, completed, rerolled, history, reset, error
-- Quest db.ts functions: updateGuildQuestProgress, recordGuildActivity, getGuildQuests, getQuestDetails, rerollQuest, getQuestHistory
-- Activity hooks in processTicks: catch (with type filter), battle, evolution
-- updateQuestProgress helper broadcasts progress/milestone/completed events
-- Frontend quest state: guildQuests, guildQuestDetails, guildQuestHistory in Zustand
-- 9 quest WebSocket handlers + 4 quest methods in gameSocket
-- Quest completion triggers guild-quest-completed CustomEvent for confetti
-- GuildQuestsModal: 2 tabs (Active Quests, History), daily/weekly sections
-- QuestCard: progress bar, expandable leaderboard, reroll button
-- QuestHistoryTab: paginated archive with completion status
-- Shop buff types: GuildBuffType (xp_bonus, catch_rate, encounter_rate)
-- Shop buff interfaces: GuildBuff, ActiveGuildBuffs (keyed), GuildBuffPurchase, GuildShopItem
-- Statistics types: GuildStatistics (7 fields), LeaderboardMetric, GuildLeaderboardEntry, GuildRankInfo
-- Shop client->server payloads: PurchaseGuildBuffPayload, GetActiveBuffsPayload, GetGuildStatisticsPayload, GetGuildLeaderboardPayload
-- Shop server->client payloads: GuildActiveBuffsPayload, GuildBuffPurchasedPayload, GuildBuffExpiredPayload, GuildStatisticsPayload, GuildLeaderboardPayload, GuildShopErrorPayload
-- Buff cache (guildBuffCache) with 5-second TTL for efficient tick processing
-- getGuildBuffsCached() for buff retrieval with caching
-- invalidateGuildBuffCache() called on buff purchase
-- processTick accepts optional guildBuffs parameter for buff application
-- Buff multipliers applied: encounter_rate to rollEncounter, catch_rate to attemptCatch, xp_bonus to distributeXP result
-- Shop db.ts functions: purchaseGuildBuff, getActiveGuildBuffs, getGuildStatistics, getGuildLeaderboard, getPlayerGuildRank
-- Shop hub.ts handlers: handlePurchaseGuildBuff, handleGetActiveBuffs, handleGetGuildStatistics, handleGetGuildLeaderboard
-
-### Patterns Established
-
-- Guild mutations via atomic functions: `create_guild()`, `join_guild()`, `leave_guild()`, `promote_member()`, `demote_member()`, `kick_member()`, `transfer_leadership()`, `disband_guild()`
-- Player can only be in one guild (enforced by UNIQUE constraint on player_id)
-- 24hr cooldown tracked via `players.left_guild_at` column
-- Guild types follow social.ts and trade.ts patterns
-- WebSocket payloads: `{Action}Payload` for client->server, `{Event}Payload` for server->client
-- Guild database functions in db.ts call RPC for mutations, direct queries for reads
-- broadcastToGuild() filters by session.guild.id for targeted messaging
-- Session guild role updated in real-time when role changes (updatePlayerGuildRole helper)
-- Frontend guild state in Zustand with WebSocket message handlers in gameSocket.ts
-- Guild UI components organized in apps/web/src/components/game/guild/
-- Role-based button visibility computed per-member for maintainability
-- Guild invite lifecycle via atomic functions: `send_guild_invite()`, `accept_guild_invite()`, `decline_guild_invite()`, `cancel_guild_invite()`
-- Invite expiration via expires_at column filtered at query time (no cron needed)
-- Expired invites cleaned opportunistically during send/accept operations
-- Guild invite handlers: sendGuildInvite, acceptGuildInvite, declineGuildInvite, cancelGuildInvite, getIncomingGuildInvites, getOutgoingGuildInvites
-- Bank mutations via SECURITY DEFINER functions with FOR UPDATE row locking
-- Bank queries return JSON formatted for frontend via get_guild_bank(), get_bank_logs(), get_bank_requests()
-- Permission checks via check_bank_permission() helper function
-- Request fulfillment calls underlying withdraw functions for atomicity
-- Bank category type alias: 'currency' | 'item' | 'pokemon'
-- Separate payload types for broadcasts vs responses in guild bank
-- Bank handlers: getGuildBank, depositCurrency, withdrawCurrency, depositItem, withdrawItem, depositPokemon, withdrawPokemon, expandPokemonSlots, createBankRequest, fulfillBankRequest, cancelBankRequest, getBankRequests, getBankLogs, setBankPermission, setBankLimit, setPlayerOverride, removePlayerOverride
-- Role-based tab visibility in modals (Settings for leaders, Requests for officers+)
-- Split-view layout for bank operations (bank contents | player inventory)
-- Inline editing for settings configuration tables
-- Quest contribution leaderboard: QuestContribution[] with rank field
-- Quest reset notification includes new_quests and reset_times
-- Quest history includes top_contributors for leaderboard display in archives
-- Guild quest tables: guild_quests, guild_quest_contributions, guild_quest_rerolls, guild_quest_history, guild_activity_stats
-- 14 SECURITY DEFINER functions for quest operations in 027_guild_quests.sql
-- Lazy quest generation: generate_daily_quests/generate_weekly_quests called from get_guild_quests
-- Advisory locks prevent race conditions: pg_advisory_xact_lock(hashtext(guild_id || 'daily'/'weekly'))
-- Quest rewards deposit to guild_bank_currency/guild_bank_items via existing bank tables
-- Activity tracking: record_guild_activity() for catches/battles/evolves, auto-cleanup after 30 days
-- Activity hooks placed after existing weekly stats tracking in processTicks
-- Quest progress broadcasts use fire-and-forget pattern via updateQuestProgress helper
-- Milestone detection at 25/50/75/100% via database function return
-- Completion broadcast fetches quest details for rewards and top contributors
-- Quest handlers: handleGetGuildQuests, handleGetQuestDetails, handleRerollQuest, handleGetQuestHistory
-- Quest case statements: get_guild_quests, get_quest_details, reroll_quest, get_quest_history
-- Reroll broadcasts guild_quest_rerolled with old_quest_id, new_quest, reroll status
-- Quest modal follows GuildBankModal pattern with tabs and animation
-- Quest details fetched lazily on leaderboard expand
-- Buff cache with TTL for efficient tick processing without DB calls per tick
-- Buff multiplier chaining: processTick -> processEncounter -> attemptCatch
-- System message broadcast on buff purchase for guild visibility
+See archived STATE.md context in `.planning/milestones/v1.0-ROADMAP.md` for detailed patterns and technical notes from the guild milestone.
 
 ### TODOs
 
-- [x] Create Phase 1 plans
-- [x] Execute 01-01-PLAN.md (Guild Database Schema)
-- [x] Execute 01-02-PLAN.md (Shared Types for Guild System)
-- [x] Execute 01-03-PLAN.md (WebSocket Handlers)
-- [x] Execute 01-04-PLAN.md (Role Management API)
-- [x] Execute 01-05-PLAN.md (Frontend Guild UI)
-- [x] Create Phase 2 plans (Guild Invites)
-- [x] Execute 02-01-PLAN.md (Database Schema for Guild Invites)
-- [x] Execute 02-02-PLAN.md (Shared Types for Guild Invites)
-- [x] Execute 02-03-PLAN.md (Game Server Handlers)
-- [x] Create Phase 3 plans (Guild Chat)
-- [x] Execute 03-01-PLAN.md (Database Schema)
-- [x] Execute 03-02-PLAN.md (Game Server Handlers)
-- [x] Execute 03-03-PLAN.md (Frontend Integration)
-- [x] Create Phase 4 plans (Guild Bank)
-- [x] Execute 04-01-PLAN.md (Database Schema for Guild Bank)
-- [x] Execute 04-02-PLAN.md (Shared Types for Guild Bank)
-- [x] Execute 04-03-PLAN.md (Game Server Handlers)
-- [x] Execute 04-04-PLAN.md (Frontend UI)
-- [x] Execute 04-05-PLAN.md (Complete Guild Bank Tabs)
-- [x] Create Phase 5 plans (Guild Quests)
-- [x] Execute 05-01-PLAN.md (Database Schema for Guild Quests)
-- [x] Execute 05-02-PLAN.md (Shared Types for Guild Quests)
-- [x] Execute 05-03-PLAN.md (Activity Hooks)
-- [x] Execute 05-04-PLAN.md (WebSocket Handlers)
-- [x] Execute 05-05-PLAN.md (Frontend State Management) - completed with 05-06
-- [x] Execute 05-06-PLAN.md (Guild Quests UI)
-- [x] Create Phase 6 plans (Guild Shop & Statistics)
-- [x] Execute 06-01-PLAN.md (Database Schema for Guild Shop & Statistics)
-- [x] Execute 06-02-PLAN.md (Shared Types for Guild Shop & Statistics)
-- [x] Execute 06-03-PLAN.md (WebSocket Handlers)
-- [x] Execute 06-04-PLAN.md (Frontend UI)
-- [x] Execute 07-01-PLAN.md (Cerulean City Zone Content)
+- [ ] Start next milestone with `/gsd:new-milestone`
 
 ### Blockers
 
@@ -241,27 +65,25 @@ None currently.
 
 ### Last Session Summary
 
-Completed 07-01-PLAN.md (Cerulean City Zone Content):
-- Created migration 030_cerulean_city.sql
-- Added Cerulean City (zone 12), Route 24 (zone 13), Route 25 (zone 14)
-- Added bidirectional zone connections from Route 4 through Route 25
-- Added Misty gym leader with Staryu Lv18 and Starmie Lv21 (requires Boulder Badge)
-- Added encounter tables for Routes 24-25 with Bellsprout, Oddish, Venonat, Slowpoke, Pidgey, Abra
-
-Phase 7 Plan 1 (Cerulean City Zone Content) is now COMPLETE.
+Completed v1.0 Guilds milestone:
+- All 7 phases executed successfully
+- 55 requirements satisfied
+- Milestone audit passed
+- Archives created in `.planning/milestones/`
+- Git tag v1.0 pending
 
 ### Next Actions
 
-1. Run migration 030_cerulean_city.sql on Supabase
-2. Consider additional zone content plans if needed
-3. UAT testing for zone navigation and encounters
+1. Run `/gsd:new-milestone` to start next milestone cycle
+2. Define v1.1 or v2.0 requirements through questioning
+3. Research and plan new roadmap
 
-### Files Modified This Session
+### Milestone Archives
 
-- `supabase/migrations/030_cerulean_city.sql` (created, 146 lines)
-- `.planning/phases/07-zone-content/07-01-SUMMARY.md` (created)
-- `.planning/STATE.md` (updated)
+- `.planning/milestones/v1.0-ROADMAP.md` — Full phase details
+- `.planning/milestones/v1.0-REQUIREMENTS.md` — All 55 requirements with traceability
+- `.planning/milestones/v1.0-MILESTONE-AUDIT.md` — Audit report
 
 ---
 
-*State updated: 2026-01-19*
+*State updated: 2026-01-19 after v1.0 milestone completion*
