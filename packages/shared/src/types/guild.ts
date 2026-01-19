@@ -844,3 +844,40 @@ export interface GuildShopItem {
   multiplier: number
   max_duration_hours: number
 }
+
+// ================================
+// Guild Statistics Types
+// ================================
+
+// Full statistics for a guild
+export interface GuildStatistics {
+  total_catches: number
+  unique_species: number
+  member_count: number
+  avg_level: number
+  days_active: number
+  created_at: string
+  guild_points: number
+}
+
+// Leaderboard metric options
+export type LeaderboardMetric = 'catches' | 'pokedex' | 'members'
+
+// Single leaderboard entry
+export interface GuildLeaderboardEntry {
+  rank: number
+  id: string
+  name: string
+  tag: string
+  value: number
+  leader_name: string
+}
+
+// Player's guild rank info
+export interface GuildRankInfo {
+  guild_id: string
+  guild_name: string
+  metric: LeaderboardMetric
+  rank: number
+  value: number
+}
