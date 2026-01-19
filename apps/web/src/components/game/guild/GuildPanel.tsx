@@ -9,6 +9,10 @@ import { GuildMembers } from './GuildMembers'
 import { GuildInviteList } from './GuildInviteList'
 import { GuildBankModal } from './GuildBankModal'
 import { GuildQuestsModal } from './GuildQuestsModal'
+import { GuildShopModal } from './GuildShopModal'
+import { GuildLeaderboardModal } from './GuildLeaderboardModal'
+import { ActiveBuffsDisplay } from './ActiveBuffsDisplay'
+import { GuildStatisticsSection } from './GuildStatisticsSection'
 
 export function GuildPanel() {
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -16,6 +20,8 @@ export function GuildPanel() {
   const [disbandConfirmation, setDisbandConfirmation] = useState('')
   const [showBankModal, setShowBankModal] = useState(false)
   const [showQuestsModal, setShowQuestsModal] = useState(false)
+  const [showShopModal, setShowShopModal] = useState(false)
+  const [showLeaderboardModal, setShowLeaderboardModal] = useState(false)
 
   const guild = useGameStore(state => state.guild)
   const myGuildRole = useGameStore(state => state.myGuildRole)
@@ -114,6 +120,18 @@ export function GuildPanel() {
           >
             Bank
           </button>
+          <button
+            onClick={() => setShowShopModal(true)}
+            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-500"
+          >
+            Shop
+          </button>
+          <button
+            onClick={() => setShowLeaderboardModal(true)}
+            className="px-3 py-1 bg-cyan-600 text-white text-sm rounded hover:bg-cyan-500"
+          >
+            Leaderboard
+          </button>
           {myGuildRole === 'leader' ? (
             <button
               onClick={() => setShowDisbandConfirm(true)}
@@ -138,6 +156,9 @@ export function GuildPanel() {
         </div>
       )}
 
+      {/* Active Buffs Display */}
+      <ActiveBuffsDisplay />
+
       {/* Your Role Badge */}
       <div className="mb-4">
         <span className="text-sm text-gray-400">Your Role: </span>
@@ -149,6 +170,9 @@ export function GuildPanel() {
           {myGuildRole?.charAt(0).toUpperCase()}{myGuildRole?.slice(1)}
         </span>
       </div>
+
+      {/* Guild Statistics */}
+      <GuildStatisticsSection />
 
       {/* Member List */}
       <GuildMembers />
@@ -202,6 +226,18 @@ export function GuildPanel() {
       <GuildQuestsModal
         isOpen={showQuestsModal}
         onClose={() => setShowQuestsModal(false)}
+      />
+
+      {/* Guild Shop Modal */}
+      <GuildShopModal
+        isOpen={showShopModal}
+        onClose={() => setShowShopModal(false)}
+      />
+
+      {/* Guild Leaderboard Modal */}
+      <GuildLeaderboardModal
+        isOpen={showLeaderboardModal}
+        onClose={() => setShowLeaderboardModal(false)}
       />
     </div>
   )

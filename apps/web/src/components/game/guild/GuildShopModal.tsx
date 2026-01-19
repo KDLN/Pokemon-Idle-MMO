@@ -43,12 +43,12 @@ const SHOP_ITEMS: Array<{
 
 export function GuildShopModal({ isOpen, onClose }: GuildShopModalProps) {
   const guild = useGameStore((state) => state.guild)
+  const myGuildRole = useGameStore((state) => state.myGuildRole)
   const guildActiveBuffs = useGameStore((state) => state.guildActiveBuffs)
   const guildBank = useGameStore((state) => state.guildBank)
   const guildStatistics = useGameStore((state) => state.guildStatistics)
 
-  const myRole = guild?.role
-  const canPurchase = myRole === 'leader' || myRole === 'officer'
+  const canPurchase = myGuildRole === 'leader' || myGuildRole === 'officer'
   const bankBalance = guildBank?.currency?.balance || 0
   const guildPoints = guildStatistics?.guild_points || 0
 
