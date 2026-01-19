@@ -7,11 +7,13 @@ import { CreateGuildModal } from './CreateGuildModal'
 import { GuildList } from './GuildList'
 import { GuildMembers } from './GuildMembers'
 import { GuildInviteList } from './GuildInviteList'
+import { GuildBankModal } from './GuildBankModal'
 
 export function GuildPanel() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showDisbandConfirm, setShowDisbandConfirm] = useState(false)
   const [disbandConfirmation, setDisbandConfirmation] = useState('')
+  const [showBankModal, setShowBankModal] = useState(false)
 
   const guild = useGameStore(state => state.guild)
   const myGuildRole = useGameStore(state => state.myGuildRole)
@@ -98,6 +100,12 @@ export function GuildPanel() {
           )}
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowBankModal(true)}
+            className="px-3 py-1 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-500"
+          >
+            Bank
+          </button>
           {myGuildRole === 'leader' ? (
             <button
               onClick={() => setShowDisbandConfirm(true)}
@@ -175,6 +183,12 @@ export function GuildPanel() {
           </div>
         </div>
       )}
+
+      {/* Guild Bank Modal */}
+      <GuildBankModal
+        isOpen={showBankModal}
+        onClose={() => setShowBankModal(false)}
+      />
     </div>
   )
 }
