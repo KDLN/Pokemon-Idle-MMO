@@ -602,3 +602,95 @@ export interface GuildBankSuccessPayload {
   success: true
   message?: string
 }
+
+// ================================
+// Guild Quest Types
+// ================================
+
+// Quest type enum matching database
+export type QuestType = 'catch_pokemon' | 'catch_type' | 'battle' | 'evolve'
+
+// Quest period
+export type QuestPeriod = 'daily' | 'weekly'
+
+// Individual quest data
+export interface GuildQuest {
+  id: string
+  guild_id: string
+  quest_type: QuestType
+  period: QuestPeriod
+  target_count: number
+  current_progress: number
+  reward_currency: number | null
+  reward_guild_points: number | null
+  reward_item_id: string | null
+  reward_item_quantity: number | null
+  type_filter: string | null  // e.g., 'water', 'fire' for catch_type
+  description: string
+  is_completed: boolean
+  completed_at: string | null
+  quest_date: string  // ISO date
+  created_at: string
+}
+
+// Quest with player's contribution
+export interface GuildQuestWithContribution extends GuildQuest {
+  my_contribution: number
+}
+
+// Contribution entry for leaderboard
+export interface QuestContribution {
+  player_id: string
+  username: string
+  contribution: number
+  rank: number
+}
+
+// Quest with full contribution leaderboard
+export interface GuildQuestDetailed extends GuildQuestWithContribution {
+  contributions: QuestContribution[]
+}
+
+// Reroll status
+export interface QuestRerollStatus {
+  daily_used: number
+  daily_max: number
+  weekly_used: number
+  weekly_max: number
+  daily_cost: number
+  weekly_cost: number
+}
+
+// Reset time info
+export interface QuestResetTimes {
+  daily: string   // Next daily reset timestamp
+  weekly: string  // Next weekly reset timestamp
+}
+
+// Full quest state returned by get_guild_quests
+export interface GuildQuestsState {
+  daily: GuildQuestWithContribution[]
+  weekly: GuildQuestWithContribution[]
+  reroll_status: QuestRerollStatus
+  reset_times: QuestResetTimes
+}
+
+// History entry (archived quest)
+export interface GuildQuestHistory {
+  id: string
+  guild_id: string
+  quest_type: QuestType
+  period: QuestPeriod
+  target_count: number
+  final_progress: number
+  was_completed: boolean
+  reward_currency: number | null
+  reward_guild_points: number | null
+  reward_item_id: string | null
+  reward_item_quantity: number | null
+  type_filter: string | null
+  description: string
+  quest_date: string
+  archived_at: string
+  top_contributors: QuestContribution[]
+}
