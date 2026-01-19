@@ -117,14 +117,14 @@ Plans:
 
 **Plans:** 5 plans
 
-**Status:** Not Started
+**Status:** Complete (2026-01-18)
 
 Plans:
-- [ ] 04-01-PLAN.md - Database schema (bank tables, permissions, limits, logs, SECURITY DEFINER functions)
-- [ ] 04-02-PLAN.md - Shared types for bank system
-- [ ] 04-03-PLAN.md - Game server handlers (deposit, withdraw, requests, logs, permissions)
-- [ ] 04-04-PLAN.md - Frontend UI: Bank modal, Currency tab, Items tab
-- [ ] 04-05-PLAN.md - Frontend UI: Pokemon tab, Logs tab, Requests tab
+- [x] 04-01-PLAN.md - Database schema (bank tables, permissions, limits, logs, SECURITY DEFINER functions)
+- [x] 04-02-PLAN.md - Shared types for bank system
+- [x] 04-03-PLAN.md - Game server handlers (deposit, withdraw, requests, logs, permissions)
+- [x] 04-04-PLAN.md - Frontend UI: Bank modal, Currency tab, Items tab
+- [x] 04-05-PLAN.md - Frontend UI: Pokemon tab, Logs tab, Requests tab
 
 **Success Criteria:**
 
@@ -229,13 +229,13 @@ Plans:
 | 1 | Guild Foundation | 14 | 5 | Complete |
 | 2 | Guild Invites | 5 | 3 | Complete |
 | 3 | Guild Chat | 3 | 3 | Complete |
-| 4 | Guild Bank | 18 | 5 | Not Started |
+| 4 | Guild Bank | 18 | 5 | Complete |
 | 5 | Guild Quests | 6 | 0 | Not Started |
 | 6 | Guild Shop & Statistics | 12 | 0 | Not Started |
 | 7 | Zone Content | 5 | 0 | Not Started |
 
 **Total:** 63 requirements mapped (55 v1 + 8 expanded success criteria)
-**Progress:** 22/55 requirements complete (40%)
+**Progress:** 40/55 requirements complete (73%)
 
 ---
 
