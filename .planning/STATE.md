@@ -12,9 +12,9 @@
 ## Current Position
 
 **Phase:** 5 of 7 - Guild Quests
-**Plan:** 3 of 6 complete (05-01 Database, 05-02 Shared Types, 05-03 Game Server Handlers)
+**Plan:** 4 of 6 complete (05-01 Database, 05-02 Shared Types, 05-03 Activity Hooks, 05-04 WebSocket Handlers)
 **Status:** In Progress
-**Last activity:** 2026-01-19 - Completed 05-03-PLAN.md (Game Server Handlers for Guild Quests)
+**Last activity:** 2026-01-19 - Completed 05-04-PLAN.md (Quest WebSocket Handlers)
 
 **Progress:**
 ```
@@ -22,19 +22,19 @@ Phase 1: [==========] Guild Foundation (5/5 plans complete)
 Phase 2: [==========] Guild Invites (3/3 plans complete)
 Phase 3: [==========] Guild Chat (3/3 plans complete)
 Phase 4: [==========] Guild Bank (5/5 plans complete)
-Phase 5: [=====     ] Guild Quests (3/6 plans complete)
+Phase 5: [=======   ] Guild Quests (4/6 plans complete)
 Phase 6: [          ] Guild Shop & Statistics (0/? plans)
 Phase 7: [          ] Zone Content (0/? plans)
 ```
 
-**Overall:** Phase 5 IN PROGRESS - 05-01, 05-02, and 05-03 complete, 05-04 (Frontend UI) next
+**Overall:** Phase 5 IN PROGRESS - 05-01 through 05-04 complete, 05-05 (Frontend State Management) next
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans Completed | 19 |
-| Tasks Completed | 54 |
+| Plans Completed | 20 |
+| Tasks Completed | 57 |
 | Phases Completed | 4 |
 | Days Elapsed | 2 |
 
@@ -82,6 +82,8 @@ Phase 7: [          ] Zone Content (0/? plans)
 | Fire-and-forget for quest progress updates | No await in tick loop, prevent blocking | 2026-01-19 |
 | Pass Pokemon type1 for catch_type quests | Enables type-specific quest filtering | 2026-01-19 |
 | Every encounter is a battle | Simplifies battle quest tracking | 2026-01-19 |
+| Reroll restricted to leader/officer | Members cannot reroll quests via role check | 2026-01-19 |
+| History pagination max 50 per page | Prevents excessive data transfer | 2026-01-19 |
 
 ### Technical Notes
 
@@ -157,6 +159,9 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Quest progress broadcasts use fire-and-forget pattern via updateQuestProgress helper
 - Milestone detection at 25/50/75/100% via database function return
 - Completion broadcast fetches quest details for rewards and top contributors
+- Quest handlers: handleGetGuildQuests, handleGetQuestDetails, handleRerollQuest, handleGetQuestHistory
+- Quest case statements: get_guild_quests, get_quest_details, reroll_quest, get_quest_history
+- Reroll broadcasts guild_quest_rerolled with old_quest_id, new_quest, reroll status
 
 ### TODOs
 
@@ -183,9 +188,9 @@ Phase 7: [          ] Zone Content (0/? plans)
 - [x] Create Phase 5 plans (Guild Quests)
 - [x] Execute 05-01-PLAN.md (Database Schema for Guild Quests)
 - [x] Execute 05-02-PLAN.md (Shared Types for Guild Quests)
-- [x] Execute 05-03-PLAN.md (Game Server Handlers)
-- [ ] Execute 05-04-PLAN.md (Frontend UI)
-- [ ] Execute 05-05-PLAN.md (Progress Tracking)
+- [x] Execute 05-03-PLAN.md (Activity Hooks)
+- [x] Execute 05-04-PLAN.md (WebSocket Handlers)
+- [ ] Execute 05-05-PLAN.md (Frontend State Management)
 - [ ] Execute 05-06-PLAN.md (Quest Reset Automation)
 
 ### Blockers
@@ -196,25 +201,22 @@ None currently.
 
 ### Last Session Summary
 
-Completed 05-03-PLAN.md (Game Server Handlers for Guild Quests):
-- Added 6 quest database wrapper functions to db.ts
-- Added activity hooks in processTicks for catches, battles, and evolutions
-- Added updateQuestProgress helper for real-time broadcasts
-- Broadcasts progress, milestones (25/50/75/100%), and completions
-- Fire-and-forget pattern prevents tick loop blocking
+Completed 05-04-PLAN.md (Quest WebSocket Handlers):
+- Verified all 4 quest handlers exist (get_guild_quests, get_quest_details, reroll_quest, get_quest_history)
+- Verified all 4 case statements in message switch
+- Confirmed permission check for reroll (leader/officer only)
+- Confirmed broadcast to guild on reroll
+- Work was actually completed during 05-03 execution but documented separately
 
 ### Next Actions
 
-1. Execute 05-04-PLAN.md (Frontend UI)
-2. Execute 05-05-PLAN.md (Progress Tracking)
+1. Execute 05-05-PLAN.md (Frontend State Management)
+2. Execute 05-06-PLAN.md (Quest Reset Automation)
 3. Continue Phase 5 execution
 
 ### Files Modified This Session
 
-- `apps/game-server/src/db.ts` (modified - added 6 quest functions)
-- `apps/game-server/src/hub.ts` (modified - added activity hooks and broadcast helper)
-- `apps/game-server/src/types.ts` (modified - exported quest types)
-- `.planning/phases/05-guild-quests/05-03-SUMMARY.md` (created)
+- `.planning/phases/05-guild-quests/05-04-SUMMARY.md` (created)
 - `.planning/STATE.md` (updated)
 
 ---
