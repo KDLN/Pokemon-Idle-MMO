@@ -54,6 +54,13 @@ import type {
   GuildQuestHistoryPayload,
   GuildQuestsResetPayload,
   GuildQuestErrorPayload,
+  GuildActiveBuffsPayload,
+  GuildBuffPurchasedPayload,
+  GuildBuffExpiredPayload,
+  GuildStatisticsPayload,
+  GuildLeaderboardPayload,
+  GuildShopErrorPayload,
+  LeaderboardMetric as GuildLeaderboardMetric,
 } from '@pokemon-idle/shared'
 
 type MessageHandler = (payload: unknown) => void
@@ -190,6 +197,13 @@ class GameSocket {
     this.handlers.set('guild_quest_history', this.handleGuildQuestHistory)
     this.handlers.set('guild_quests_reset', this.handleGuildQuestsReset)
     this.handlers.set('guild_quest_error', this.handleGuildQuestError)
+    // Guild shop/statistics handlers
+    this.handlers.set('guild_active_buffs', this.handleGuildActiveBuffs)
+    this.handlers.set('guild_buff_purchased', this.handleGuildBuffPurchased)
+    this.handlers.set('guild_buff_expired', this.handleGuildBuffExpired)
+    this.handlers.set('guild_statistics', this.handleGuildStatistics)
+    this.handlers.set('guild_leaderboard', this.handleGuildLeaderboard)
+    this.handlers.set('guild_shop_error', this.handleGuildShopError)
   }
 
   connect(token: string) {
@@ -1765,6 +1779,86 @@ class GameSocket {
       page: options.page ?? 1,
       limit: options.limit ?? 20
     })
+  }
+
+  // ============================================
+  // Guild Shop/Statistics Handlers
+  // ============================================
+
+  private handleGuildActiveBuffs = (payload: unknown) => {
+    const data = payload as GuildActiveBuffsPayload
+    useGameStore.getState().setGuildActiveBuffs(data.buffs)
+  }
+
+  private handleGuildBuffPurchased = (payload: unknown) => {
+    const data = payload as GuildBuffPurchasedPayload
+    useGameStore.getState().updateGuildBuff(data.buff)
+    // Add system message to guild chat
+    const buffName = data.buff.buff_type.replace(/_/g, ' ')
+    useGameStore.getState().addChatMessage({
+      id: `buff-purchased-${data.buff.id}`,
+      playerId: 'system',
+      playerName: 'System',
+      channel: 'guild',
+      content: `${data.purchased_by_username} activated ${buffName} buff!`,
+      createdAt: new Date(),
+      isSystem: true
+    })
+  }
+
+  private handleGuildBuffExpired = (payload: unknown) => {
+    const data = payload as GuildBuffExpiredPayload
+    useGameStore.getState().clearExpiredBuff(data.buff_type)
+    // Add system message to guild chat
+    const buffName = data.buff_type.replace(/_/g, ' ')
+    useGameStore.getState().addChatMessage({
+      id: `buff-expired-${data.buff_type}-${Date.now()}`,
+      playerId: 'system',
+      playerName: 'System',
+      channel: 'guild',
+      content: `The ${buffName} buff has expired.`,
+      createdAt: new Date(),
+      isSystem: true
+    })
+  }
+
+  private handleGuildStatistics = (payload: unknown) => {
+    const data = payload as GuildStatisticsPayload
+    useGameStore.getState().setGuildStatistics(data.statistics)
+  }
+
+  private handleGuildLeaderboard = (payload: unknown) => {
+    const data = payload as GuildLeaderboardPayload
+    useGameStore.getState().setGuildLeaderboard({
+      metric: data.metric,
+      entries: data.entries,
+      myGuildRank: data.my_guild_rank
+    })
+  }
+
+  private handleGuildShopError = (payload: unknown) => {
+    const data = payload as GuildShopErrorPayload
+    console.error('Guild shop error:', data.error)
+  }
+
+  // ============================================
+  // Guild Shop/Statistics Methods
+  // ============================================
+
+  sendPurchaseGuildBuff(buffType: string, durationHours: number, useGuildPoints: boolean = false) {
+    this.send('purchase_guild_buff', { buff_type: buffType, duration_hours: durationHours, use_guild_points: useGuildPoints })
+  }
+
+  sendGetActiveBuffs() {
+    this.send('get_active_buffs', {})
+  }
+
+  sendGetGuildStatistics() {
+    this.send('get_guild_statistics', {})
+  }
+
+  sendGetGuildLeaderboard(metric: string, limit: number = 50) {
+    this.send('get_guild_leaderboard', { metric, limit })
   }
 }
 
