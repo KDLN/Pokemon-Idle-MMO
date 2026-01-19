@@ -451,11 +451,17 @@ class GameSocket {
 
       // Queue XP/level-ups/evolutions to be applied AFTER the battle animation completes
       // This prevents the XP bar and stats from updating before the player sees the battle
+      const xpGained = result.xp_gained || null
       store.setPendingEncounterRewards({
-        xpGained: result.xp_gained || null,
+        xpGained,
+        xpApplied: !!xpGained,
         levelUps: result.level_ups || null,
         pendingEvolutions: result.pending_evolutions || null,
       })
+
+      if (xpGained) {
+        store.applyXPGains(xpGained)
+      }
     } else {
       // No encounter - apply XP/level-ups/evolutions immediately (shouldn't happen, but handle it)
       if (result.xp_gained) {

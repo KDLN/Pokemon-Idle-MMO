@@ -85,6 +85,7 @@ interface WorldViewState {
 // Pending encounter rewards - applied after battle animation completes
 interface PendingEncounterRewards {
   xpGained: Record<string, number> | null
+  xpApplied: boolean
   levelUps: LevelUpEvent[] | null
   pendingEvolutions: PendingEvolution[] | null
 }
@@ -576,9 +577,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return { currentEncounter: null }
     }
 
-    // Apply XP gains to party
+    // Apply XP gains to party (safeguard against double application)
     let newParty = state.party
-    if (rewards.xpGained) {
+    if (rewards.xpGained && !rewards.xpApplied) {
       newParty = newParty.map((p) => {
         if (p && rewards.xpGained && rewards.xpGained[p.id]) {
           return { ...p, xp: p.xp + rewards.xpGained[p.id] }
