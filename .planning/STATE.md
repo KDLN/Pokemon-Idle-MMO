@@ -1,6 +1,6 @@
 # Project State: Pokemon Idle MMO - Guild Milestone
 
-**Last Updated:** 2026-01-18
+**Last Updated:** 2026-01-19
 **Session:** Phase 4 Execution
 
 ## Project Reference
@@ -12,31 +12,31 @@
 ## Current Position
 
 **Phase:** 4 of 7 - Guild Bank
-**Plan:** 1 of 4 complete
+**Plan:** 2 of 4 complete
 **Status:** In Progress
-**Last activity:** 2026-01-18 - Completed 04-01-PLAN.md (Database Schema)
+**Last activity:** 2026-01-19 - Completed 04-02-PLAN.md (Shared Types for Guild Bank)
 
 **Progress:**
 ```
 Phase 1: [==========] Guild Foundation (5/5 plans complete)
 Phase 2: [=======   ] Guild Invites (3/4 plans complete)
 Phase 3: [          ] Guild Chat (0/? plans)
-Phase 4: [==        ] Guild Bank (1/4 plans complete)
+Phase 4: [=====     ] Guild Bank (2/4 plans complete)
 Phase 5: [          ] Guild Quests (0/? plans)
 Phase 6: [          ] Guild Shop & Statistics (0/? plans)
 Phase 7: [          ] Zone Content (0/? plans)
 ```
 
-**Overall:** Phase 4 IN PROGRESS - Plan 1/4 complete
+**Overall:** Phase 4 IN PROGRESS - Plan 2/4 complete
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans Completed | 9 |
-| Tasks Completed | 26 |
+| Plans Completed | 10 |
+| Tasks Completed | 28 |
 | Phases Completed | 1 |
-| Days Elapsed | 1 |
+| Days Elapsed | 2 |
 
 ## Accumulated Context
 
@@ -65,6 +65,7 @@ Phase 7: [          ] Zone Content (0/? plans)
 | Members cannot withdraw by default | Forces request system use, maintains leader control | 2026-01-18 |
 | Slot expansion doubles each purchase | Provides gold sink, prevents trivial max-slot guilds | 2026-01-18 |
 | Max 500 Pokemon slots per guild | Prevents runaway storage, keeps queries performant | 2026-01-18 |
+| Flexible optional properties in bank detail types | Simpler than discriminated unions for varying action types | 2026-01-19 |
 
 ### Technical Notes
 
@@ -81,6 +82,9 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Guild bank uses 10 tables: currency, items, pokemon, slots, permissions, limits, player_overrides, withdrawals, requests, logs
 - Daily withdrawal limits reset at midnight UTC via date_trunc('day', NOW() AT TIME ZONE 'UTC')
 - Pokemon point costs calculated by calculate_pokemon_point_cost() based on BST
+- Bank types: BankCategory, BankAction, BankRequestStatus type aliases
+- GuildBank interface aggregates all bank state for single-request fetch
+- 17 client->server and 13 server->client WebSocket payload types defined
 
 ### Patterns Established
 
@@ -103,6 +107,8 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Bank queries return JSON formatted for frontend via get_guild_bank(), get_bank_logs(), get_bank_requests()
 - Permission checks via check_bank_permission() helper function
 - Request fulfillment calls underlying withdraw functions for atomicity
+- Bank category type alias: 'currency' | 'item' | 'pokemon'
+- Separate payload types for broadcasts vs responses in guild bank
 
 ### TODOs
 
@@ -118,7 +124,7 @@ Phase 7: [          ] Zone Content (0/? plans)
 - [x] Execute 02-03-PLAN.md (Game Server Handlers)
 - [ ] Execute 02-04-PLAN.md (Frontend UI)
 - [x] Execute 04-01-PLAN.md (Database Schema for Guild Bank)
-- [ ] Execute 04-02-PLAN.md (Shared Types for Guild Bank)
+- [x] Execute 04-02-PLAN.md (Shared Types for Guild Bank)
 - [ ] Execute 04-03-PLAN.md (Game Server Handlers)
 - [ ] Execute 04-04-PLAN.md (Frontend UI)
 
@@ -130,26 +136,25 @@ None currently.
 
 ### Last Session Summary
 
-Completed 04-01-PLAN.md (Database Schema for Guild Bank):
-- Created 2008-line migration file with complete guild bank schema
-- Added 10 tables for storage, permissions, limits, tracking, requests, logs
-- Added 14 SECURITY DEFINER mutation functions with FOR UPDATE locking
-- Added 8 query/configuration functions for bank state and permissions
-- Added 40 RLS policies blocking direct mutations
-- Established BST-based Pokemon point cost system
+Completed 04-02-PLAN.md (Shared Types for Guild Bank):
+- Added 3 type aliases (BankCategory, BankAction, BankRequestStatus)
+- Added 14 data model interfaces matching database schema
+- Added 17 client->server WebSocket payload types
+- Added 13 server->client WebSocket payload types
+- All types compile and are importable from @pokemon-idle/shared
 
 ### Next Actions
 
-1. Execute 04-02-PLAN.md (Shared Types for Guild Bank)
-2. Continue through 04-03 and 04-04
+1. Execute 04-03-PLAN.md (Game Server Handlers)
+2. Execute 04-04-PLAN.md (Frontend UI)
 3. Phase 4 complete after 04-04
 
 ### Files Created This Session
 
-- `supabase/migrations/026_guild_bank.sql` (created)
-- `.planning/phases/04-guild-bank/04-01-SUMMARY.md` (created)
+- `packages/shared/src/types/guild.ts` (modified - 358 lines added)
+- `.planning/phases/04-guild-bank/04-02-SUMMARY.md` (created)
 - `.planning/STATE.md` (updated)
 
 ---
 
-*State updated: 2026-01-18*
+*State updated: 2026-01-19*
