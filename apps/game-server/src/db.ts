@@ -52,6 +52,24 @@ export async function getPlayerParty(playerId: string): Promise<(Pokemon | null)
     return [null, null, null, null, null, null]
   }
 
+  if (data && data.length > 0) {
+    const xpFixes = data.filter((pokemon) => pokemon.xp < xpForLevel(pokemon.level))
+    if (xpFixes.length > 0) {
+      await Promise.all(
+        xpFixes.map((pokemon) =>
+          supabase
+            .from('pokemon')
+            .update({ xp: xpForLevel(pokemon.level) })
+            .eq('id', pokemon.id)
+            .eq('owner_id', playerId)
+        )
+      )
+      for (const pokemon of xpFixes) {
+        pokemon.xp = xpForLevel(pokemon.level)
+      }
+    }
+  }
+
   // Convert to 6-slot array
   const party: (Pokemon | null)[] = [null, null, null, null, null, null]
   for (const pokemon of data || []) {
@@ -407,6 +425,23 @@ export async function getPlayerBox(playerId: string): Promise<Pokemon[]> {
     .order('caught_at', { ascending: false })
 
   if (error) return []
+  if (data && data.length > 0) {
+    const xpFixes = data.filter((pokemon) => pokemon.xp < xpForLevel(pokemon.level))
+    if (xpFixes.length > 0) {
+      await Promise.all(
+        xpFixes.map((pokemon) =>
+          supabase
+            .from('pokemon')
+            .update({ xp: xpForLevel(pokemon.level) })
+            .eq('id', pokemon.id)
+            .eq('owner_id', playerId)
+        )
+      )
+      for (const pokemon of xpFixes) {
+        pokemon.xp = xpForLevel(pokemon.level)
+      }
+    }
+  }
   return data || []
 }
 
