@@ -37,6 +37,9 @@ import type {
   GuildRankInfo,
 } from '@pokemon-idle/shared'
 
+// Guild bank view mode preference
+type GuildBankViewMode = 'grid' | 'list' | 'card'
+
 // Museum exhibit interface
 interface MuseumExhibit {
   id: string
@@ -368,6 +371,10 @@ interface GameStore {
   setGuildStatistics: (statistics: GuildStatistics | null) => void
   setGuildLeaderboard: (leaderboard: { metric: LeaderboardMetric; entries: GuildLeaderboardEntry[]; myGuildRank: GuildRankInfo | null } | null) => void
 
+  // Guild bank view preference
+  guildBankViewMode: GuildBankViewMode
+  setGuildBankViewMode: (mode: GuildBankViewMode) => void
+
   // Player action modal state (global clickable usernames)
   selectedPlayer: { id: string; username: string; guild_id?: string | null; is_online?: boolean; is_friend?: boolean } | null
   openPlayerModal: (player: { id: string; username: string; guild_id?: string | null; is_online?: boolean; is_friend?: boolean }) => void
@@ -499,6 +506,8 @@ const initialState = {
   guildActiveBuffs: null as ActiveGuildBuffs | null,
   guildStatistics: null as GuildStatistics | null,
   guildLeaderboard: null as { metric: LeaderboardMetric; entries: GuildLeaderboardEntry[]; myGuildRank: GuildRankInfo | null } | null,
+  // Guild bank view preference (persisted)
+  guildBankViewMode: 'grid' as GuildBankViewMode,
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -1283,6 +1292,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setGuildStatistics: (statistics) => set({ guildStatistics: statistics }),
 
   setGuildLeaderboard: (leaderboard) => set({ guildLeaderboard: leaderboard }),
+
+  // Guild bank view preference
+  setGuildBankViewMode: (mode) => set({ guildBankViewMode: mode }),
 
   // Player action modal
   selectedPlayer: null,
