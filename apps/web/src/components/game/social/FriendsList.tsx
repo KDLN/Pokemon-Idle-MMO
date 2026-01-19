@@ -92,7 +92,7 @@ export function FriendsList({ friends }: FriendsListProps) {
                 <div className="flex items-center gap-2">
                   <ClickableUsername
                     playerId={friend.friend_id}
-                    username={friend.friend_username}
+                    username={friend.friend_username || 'Unknown'}
                     isOnline={online}
                     isFriend={true}
                     className="text-white text-sm font-medium truncate"

@@ -13,6 +13,8 @@ export interface ChatMessageData {
   content: string
   createdAt: Date
   isSystem?: boolean
+  // Guild chat only - player's role for badge display
+  playerRole?: import('@pokemon-idle/shared').GuildRole
 }
 
 // Whisper message data (camelCase adapter)

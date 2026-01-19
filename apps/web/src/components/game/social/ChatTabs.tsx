@@ -1,6 +1,7 @@
 'use client'
 
 import type { ChatChannel } from '@/types/chat'
+import { useGameStore } from '@/stores/gameStore'
 
 interface ChatTabsProps {
   activeChannel: ChatChannel
@@ -8,7 +9,7 @@ interface ChatTabsProps {
   unreadCounts: Record<ChatChannel, number>
 }
 
-const CHANNELS: { id: ChatChannel; label: string; icon: string; color?: string }[] = [
+const ALL_CHANNELS: { id: ChatChannel; label: string; icon: string; color?: string }[] = [
   { id: 'global', label: 'Global', icon: '🌐' },
   { id: 'trade', label: 'Trade', icon: '💰' },
   { id: 'guild', label: 'Guild', icon: '⚔️' },
@@ -17,9 +18,15 @@ const CHANNELS: { id: ChatChannel; label: string; icon: string; color?: string }
 ]
 
 export function ChatTabs({ activeChannel, onChannelChange, unreadCounts }: ChatTabsProps) {
+  const guild = useGameStore((state) => state.guild)
+
+  // Filter out guild channel if player is not in a guild
+  const channels = ALL_CHANNELS.filter((channel) =>
+    channel.id !== 'guild' || guild !== null
+  )
   return (
     <div className="flex border-b border-[#2a2a4a]">
-      {CHANNELS.map((channel) => {
+      {channels.map((channel) => {
         const isActive = activeChannel === channel.id
         const unreadCount = unreadCounts[channel.id] || 0
 

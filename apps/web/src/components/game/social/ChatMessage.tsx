@@ -1,11 +1,25 @@
 'use client'
 
 import type { ChatChannel, ChatMessageData } from '@/types/chat'
+import type { GuildRole } from '@pokemon-idle/shared'
 import { ClickableUsername } from '../ClickableUsername'
 
 interface ChatMessageProps {
   message: ChatMessageData
   isOwnMessage?: boolean
+}
+
+function getRoleBadge(role: GuildRole): { label: string; color: string } {
+  switch (role) {
+    case 'leader':
+      return { label: 'L', color: 'bg-yellow-500 text-black' }
+    case 'officer':
+      return { label: 'O', color: 'bg-blue-500 text-white' }
+    case 'member':
+      return { label: 'M', color: 'bg-gray-500 text-white' }
+    default:
+      return { label: '', color: '' }
+  }
 }
 
 function formatTime(date: Date): string {
@@ -35,6 +49,7 @@ function getChannelColor(channel: ChatChannel): string {
 
 export function ChatMessage({ message, isOwnMessage }: ChatMessageProps) {
   const isWhisper = message.channel === 'whisper'
+  const isGuildChat = message.channel === 'guild' && message.playerRole
 
   if (message.isSystem) {
     return (
@@ -44,6 +59,9 @@ export function ChatMessage({ message, isOwnMessage }: ChatMessageProps) {
       </div>
     )
   }
+
+  // Get role badge for guild chat messages
+  const roleBadge = isGuildChat && message.playerRole ? getRoleBadge(message.playerRole) : null
 
   return (
     <div
@@ -56,6 +74,15 @@ export function ChatMessage({ message, isOwnMessage }: ChatMessageProps) {
       <div className="flex items-baseline gap-2 mb-0.5">
         <span className="text-[10px] text-[#606080]">{formatTime(message.createdAt)}</span>
         {isWhisper && <span className="text-[10px] text-purple-400">[Whisper]</span>}
+        {/* Guild role badge */}
+        {roleBadge && (
+          <span
+            className={`inline-flex items-center justify-center w-4 h-4 text-[9px] font-bold rounded ${roleBadge.color}`}
+            title={message.playerRole}
+          >
+            {roleBadge.label}
+          </span>
+        )}
         <ClickableUsername
           playerId={message.playerId}
           username={message.playerName}
