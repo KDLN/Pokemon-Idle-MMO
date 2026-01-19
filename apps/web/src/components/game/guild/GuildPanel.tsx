@@ -8,12 +8,14 @@ import { GuildList } from './GuildList'
 import { GuildMembers } from './GuildMembers'
 import { GuildInviteList } from './GuildInviteList'
 import { GuildBankModal } from './GuildBankModal'
+import { GuildQuestsModal } from './GuildQuestsModal'
 
 export function GuildPanel() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showDisbandConfirm, setShowDisbandConfirm] = useState(false)
   const [disbandConfirmation, setDisbandConfirmation] = useState('')
   const [showBankModal, setShowBankModal] = useState(false)
+  const [showQuestsModal, setShowQuestsModal] = useState(false)
 
   const guild = useGameStore(state => state.guild)
   const myGuildRole = useGameStore(state => state.myGuildRole)
@@ -100,6 +102,12 @@ export function GuildPanel() {
           )}
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowQuestsModal(true)}
+            className="px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-500"
+          >
+            Quests
+          </button>
           <button
             onClick={() => setShowBankModal(true)}
             className="px-3 py-1 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-500"
@@ -188,6 +196,12 @@ export function GuildPanel() {
       <GuildBankModal
         isOpen={showBankModal}
         onClose={() => setShowBankModal(false)}
+      />
+
+      {/* Guild Quests Modal */}
+      <GuildQuestsModal
+        isOpen={showQuestsModal}
+        onClose={() => setShowQuestsModal(false)}
       />
     </div>
   )
