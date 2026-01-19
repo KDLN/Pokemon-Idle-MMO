@@ -26,6 +26,25 @@ import type {
   GuildInviteDeclinedPayload,
   GuildInviteCancelledPayload,
   GuildInviteSentPayload,
+  GuildMessageEntry,
+  GuildChatHistoryPayload,
+  GuildChatMessagePayload,
+  GuildBank,
+  GuildBankDataPayload,
+  GuildBankCurrencyUpdatedPayload,
+  GuildBankItemUpdatedPayload,
+  GuildBankPokemonAddedPayload,
+  GuildBankPokemonRemovedPayload,
+  GuildBankSlotsExpandedPayload,
+  GuildBankLogsPayload,
+  GuildBankRequestsPayload,
+  GuildBankRequestCreatedPayload,
+  GuildBankRequestFulfilledPayload,
+  GuildBankMyLimitsPayload,
+  GuildBankErrorPayload,
+  GuildBankSuccessPayload,
+  GuildBankRequest,
+  BankCategory,
 } from '@pokemon-idle/shared'
 
 type MessageHandler = (payload: unknown) => void
@@ -135,6 +154,23 @@ class GameSocket {
     this.handlers.set('guild_invite_declined', this.handleGuildInviteDeclined)
     this.handlers.set('guild_invite_cancelled', this.handleGuildInviteCancelled)
     this.handlers.set('guild_invite_error', this.handleGuildInviteError)
+    // Guild chat handlers
+    this.handlers.set('guild_chat_history', this.handleGuildChatHistory)
+    this.handlers.set('guild_chat_message', this.handleGuildChatMessage)
+    // Guild bank handlers
+    this.handlers.set('guild_bank_data', this.handleGuildBankData)
+    this.handlers.set('guild_bank_currency_updated', this.handleGuildBankCurrencyUpdated)
+    this.handlers.set('guild_bank_item_updated', this.handleGuildBankItemUpdated)
+    this.handlers.set('guild_bank_pokemon_added', this.handleGuildBankPokemonAdded)
+    this.handlers.set('guild_bank_pokemon_removed', this.handleGuildBankPokemonRemoved)
+    this.handlers.set('guild_bank_slots_expanded', this.handleGuildBankSlotsExpanded)
+    this.handlers.set('guild_bank_logs', this.handleGuildBankLogs)
+    this.handlers.set('guild_bank_requests', this.handleGuildBankRequests)
+    this.handlers.set('guild_bank_request_created', this.handleGuildBankRequestCreated)
+    this.handlers.set('guild_bank_request_fulfilled', this.handleGuildBankRequestFulfilled)
+    this.handlers.set('guild_bank_my_limits', this.handleGuildBankMyLimits)
+    this.handlers.set('guild_bank_error', this.handleGuildBankError)
+    this.handlers.set('guild_bank_success', this.handleGuildBankSuccess)
   }
 
   connect(token: string) {
@@ -1381,6 +1417,189 @@ class GameSocket {
       createdAt: new Date(),
       isSystem: true
     })
+  }
+
+  // ============================================
+  // Guild Chat Handlers
+  // ============================================
+
+  private handleGuildChatHistory = (payload: unknown) => {
+    const data = payload as GuildChatHistoryPayload
+    // Convert guild messages to chat messages with role info
+    const chatMessages = data.messages.map((msg: GuildMessageEntry) => ({
+      id: msg.id,
+      playerId: msg.player_id,
+      playerName: msg.player_username,
+      channel: 'guild' as ChatChannel,
+      content: msg.content,
+      createdAt: new Date(msg.created_at),
+      playerRole: msg.player_role,
+    }))
+    // Set all guild channel messages at once
+    useGameStore.getState().setGuildChatHistory(chatMessages)
+  }
+
+  private handleGuildChatMessage = (payload: unknown) => {
+    const data = payload as GuildChatMessagePayload
+    const msg = data.message
+    // Convert guild message to chat message with role info
+    useGameStore.getState().addChatMessage({
+      id: msg.id,
+      playerId: msg.player_id,
+      playerName: msg.player_username,
+      channel: 'guild' as ChatChannel,
+      content: msg.content,
+      createdAt: new Date(msg.created_at),
+      playerRole: msg.player_role,
+    })
+  }
+
+  // ============================================
+  // Guild Bank Handlers
+  // ============================================
+
+  private handleGuildBankData = (payload: unknown) => {
+    const data = payload as GuildBankDataPayload
+    useGameStore.getState().setGuildBank(data.bank)
+  }
+
+  private handleGuildBankCurrencyUpdated = (payload: unknown) => {
+    const data = payload as GuildBankCurrencyUpdatedPayload
+    useGameStore.getState().updateGuildBankCurrency(data.balance)
+  }
+
+  private handleGuildBankItemUpdated = (payload: unknown) => {
+    // Refetch bank for accurate data
+    this.getGuildBank()
+  }
+
+  private handleGuildBankPokemonAdded = (payload: unknown) => {
+    // Refetch bank for full pokemon data
+    this.getGuildBank()
+  }
+
+  private handleGuildBankPokemonRemoved = (payload: unknown) => {
+    const data = payload as GuildBankPokemonRemovedPayload
+    useGameStore.getState().removeGuildBankPokemon(data.pokemon_id)
+  }
+
+  private handleGuildBankSlotsExpanded = (payload: unknown) => {
+    // Refetch bank for updated slot counts
+    this.getGuildBank()
+  }
+
+  private handleGuildBankLogs = (payload: unknown) => {
+    const data = payload as GuildBankLogsPayload
+    useGameStore.getState().setGuildBankLogs(data.logs, data.total)
+  }
+
+  private handleGuildBankRequests = (payload: unknown) => {
+    const data = payload as GuildBankRequestsPayload
+    useGameStore.getState().setGuildBankRequests(data.requests)
+  }
+
+  private handleGuildBankRequestCreated = (payload: unknown) => {
+    const data = payload as GuildBankRequestCreatedPayload
+    useGameStore.getState().addGuildBankRequest(data.request)
+  }
+
+  private handleGuildBankRequestFulfilled = (payload: unknown) => {
+    const data = payload as GuildBankRequestFulfilledPayload
+    useGameStore.getState().removeGuildBankRequest(data.request_id)
+  }
+
+  private handleGuildBankMyLimits = (payload: unknown) => {
+    const data = payload as GuildBankMyLimitsPayload
+    useGameStore.getState().setMyBankLimits(data)
+  }
+
+  private handleGuildBankError = (payload: unknown) => {
+    const data = payload as GuildBankErrorPayload
+    console.error('Guild bank error:', data.error)
+  }
+
+  private handleGuildBankSuccess = (payload: unknown) => {
+    const data = payload as GuildBankSuccessPayload
+    console.log('Guild bank success:', data.message)
+  }
+
+  // ============================================
+  // Guild Bank Methods
+  // ============================================
+
+  getGuildBank() {
+    this.send('get_guild_bank', {})
+  }
+
+  depositCurrency(amount: number) {
+    this.send('deposit_currency', { amount })
+  }
+
+  withdrawCurrency(amount: number) {
+    this.send('withdraw_currency', { amount })
+  }
+
+  depositItem(itemId: string, quantity: number) {
+    this.send('deposit_item', { item_id: itemId, quantity })
+  }
+
+  withdrawItem(itemId: string, quantity: number) {
+    this.send('withdraw_item', { item_id: itemId, quantity })
+  }
+
+  depositPokemon(pokemonId: string) {
+    this.send('deposit_pokemon', { pokemon_id: pokemonId })
+  }
+
+  withdrawPokemon(pokemonId: string) {
+    this.send('withdraw_pokemon', { pokemon_id: pokemonId })
+  }
+
+  expandPokemonSlots() {
+    this.send('expand_pokemon_slots', {})
+  }
+
+  createBankRequest(requestType: string, details: Record<string, unknown>, note?: string) {
+    this.send('create_bank_request', { request_type: requestType, details, note })
+  }
+
+  fulfillBankRequest(requestId: string) {
+    this.send('fulfill_bank_request', { request_id: requestId })
+  }
+
+  cancelBankRequest(requestId: string) {
+    this.send('cancel_bank_request', { request_id: requestId })
+  }
+
+  getBankRequests(includeExpired: boolean = false) {
+    this.send('get_bank_requests', { include_expired: includeExpired })
+  }
+
+  getBankLogs(options: { page?: number; limit?: number; filterPlayer?: string; filterAction?: string; filterCategory?: string } = {}) {
+    this.send('get_bank_logs', {
+      page: options.page,
+      limit: options.limit,
+      filter_player: options.filterPlayer,
+      filter_action: options.filterAction,
+      filter_category: options.filterCategory
+    })
+  }
+
+  // Permission configuration (leader only)
+  setBankPermission(category: string, role: string, canDeposit: boolean, canWithdraw: boolean) {
+    this.send('set_bank_permission', { category, role, can_deposit: canDeposit, can_withdraw: canWithdraw })
+  }
+
+  setBankLimit(role: string, category: string, dailyLimit: number, pokemonPointsLimit?: number) {
+    this.send('set_bank_limit', { role, category, daily_limit: dailyLimit, pokemon_points_limit: pokemonPointsLimit })
+  }
+
+  setPlayerOverride(playerId: string, category: string, customLimit: number) {
+    this.send('set_player_override', { player_id: playerId, category, custom_limit: customLimit })
+  }
+
+  removePlayerOverride(playerId: string, category: string) {
+    this.send('remove_player_override', { player_id: playerId, category })
   }
 }
 

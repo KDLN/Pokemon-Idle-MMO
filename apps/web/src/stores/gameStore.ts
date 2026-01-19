@@ -11,7 +11,7 @@ import type { TimeOfDay } from '@/lib/time/timeOfDay'
 import type { TrainerCustomization } from '@/lib/sprites/trainerCustomization'
 import { DEFAULT_TRAINER_CUSTOMIZATION } from '@/lib/sprites/trainerCustomization'
 import type { EventCosmetics } from '@/components/game/world/SpriteTrainer'
-import type { Guild, GuildMember, GuildRole, GuildPreview, GuildInvite, GuildOutgoingInvite } from '@pokemon-idle/shared'
+import type { Guild, GuildMember, GuildRole, GuildPreview, GuildInvite, GuildOutgoingInvite, GuildBank, GuildBankItem, GuildBankPokemon, GuildBankLog, GuildBankRequest } from '@pokemon-idle/shared'
 
 // Museum exhibit interface
 interface MuseumExhibit {
@@ -158,6 +158,7 @@ interface GameStore {
   addChatMessage: (message: ChatMessageData) => void
   markChannelRead: (channel: ChatChannel) => void
   setChatMessages: (messages: Record<ChatChannel, ChatMessageData[]>) => void
+  setGuildChatHistory: (messages: ChatMessageData[]) => void
 
   // World log
   worldLog: LogEntry[]
@@ -294,6 +295,24 @@ interface GameStore {
   clearGuildInvites: () => void
   removeGuildOutgoingInvite: (inviteId: string) => void
 
+  // Guild bank state
+  guildBank: GuildBank | null
+  guildBankLogs: GuildBankLog[]
+  guildBankLogsTotal: number
+  guildBankRequests: GuildBankRequest[]
+  myBankLimits: { currency: number; items: number; pokemon_points: number } | null
+  setGuildBank: (bank: GuildBank | null) => void
+  updateGuildBankCurrency: (balance: number) => void
+  updateGuildBankItem: (item: GuildBankItem) => void
+  addGuildBankPokemon: (pokemon: GuildBankPokemon) => void
+  removeGuildBankPokemon: (pokemonId: string) => void
+  setGuildBankLogs: (logs: GuildBankLog[], total: number) => void
+  setGuildBankRequests: (requests: GuildBankRequest[]) => void
+  addGuildBankRequest: (request: GuildBankRequest) => void
+  removeGuildBankRequest: (requestId: string) => void
+  setMyBankLimits: (limits: { currency: number; items: number; pokemon_points: number }) => void
+  clearGuildBank: () => void
+
   // Player action modal state (global clickable usernames)
   selectedPlayer: { id: string; username: string; guild_id?: string | null; is_online?: boolean; is_friend?: boolean } | null
   openPlayerModal: (player: { id: string; username: string; guild_id?: string | null; is_online?: boolean; is_friend?: boolean }) => void
@@ -411,6 +430,12 @@ const initialState = {
   // Guild invite state
   guildInvites: [] as GuildInvite[],
   guildOutgoingInvites: [] as GuildOutgoingInvite[],
+  // Guild bank state
+  guildBank: null as GuildBank | null,
+  guildBankLogs: [] as GuildBankLog[],
+  guildBankLogsTotal: 0,
+  guildBankRequests: [] as GuildBankRequest[],
+  myBankLimits: null as { currency: number; items: number; pokemon_points: number } | null,
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -708,6 +733,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
     }),
 
+  // Set guild chat history (replaces existing guild messages)
+  setGuildChatHistory: (messages) =>
+    set((state) => ({
+      chat: {
+        ...state.chat,
+        messages: {
+          ...state.chat.messages,
+          guild: messages,
+        },
+      },
+    })),
+
   // World log methods
   addLogEntry: (entry) =>
     set((state) => ({
@@ -951,12 +988,26 @@ export const useGameStore = create<GameStore>((set, get) => ({
     guildError: null,
   }),
 
-  clearGuildState: () => set({
+  clearGuildState: () => set((state) => ({
     guild: null,
     guildMembers: [],
     myGuildRole: null,
     guildError: null,
-  }),
+    // Clear guild chat messages when leaving guild
+    chat: {
+      ...state.chat,
+      messages: {
+        ...state.chat.messages,
+        guild: [],
+      },
+    },
+    // Clear guild bank state when leaving guild
+    guildBank: null,
+    guildBankLogs: [],
+    guildBankLogsTotal: 0,
+    guildBankRequests: [],
+    myBankLimits: null,
+  })),
 
   addGuildMember: (member) =>
     set((state) => ({
@@ -1007,6 +1058,82 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set((state) => ({
       guildOutgoingInvites: state.guildOutgoingInvites.filter((invite) => invite.id !== inviteId),
     })),
+
+  // Guild bank methods
+  setGuildBank: (guildBank) => set({ guildBank }),
+
+  updateGuildBankCurrency: (balance) => set((state) => ({
+    guildBank: state.guildBank ? {
+      ...state.guildBank,
+      currency: { ...state.guildBank.currency, balance }
+    } : null
+  })),
+
+  updateGuildBankItem: (item) => set((state) => {
+    if (!state.guildBank) return state
+    const items = [...state.guildBank.items]
+    const idx = items.findIndex(i => i.item_id === item.item_id)
+    if (idx >= 0) {
+      if (item.quantity <= 0) {
+        items.splice(idx, 1)
+      } else {
+        items[idx] = item
+      }
+    } else if (item.quantity > 0) {
+      items.push(item)
+    }
+    return { guildBank: { ...state.guildBank, items } }
+  }),
+
+  addGuildBankPokemon: (pokemon) => set((state) => {
+    if (!state.guildBank) return state
+    return {
+      guildBank: {
+        ...state.guildBank,
+        pokemon: [...state.guildBank.pokemon, pokemon],
+        pokemon_slots: {
+          ...state.guildBank.pokemon_slots,
+          used: state.guildBank.pokemon_slots.used + 1
+        }
+      }
+    }
+  }),
+
+  removeGuildBankPokemon: (pokemonId) => set((state) => {
+    if (!state.guildBank) return state
+    return {
+      guildBank: {
+        ...state.guildBank,
+        pokemon: state.guildBank.pokemon.filter(p => p.pokemon_id !== pokemonId),
+        pokemon_slots: {
+          ...state.guildBank.pokemon_slots,
+          used: Math.max(0, state.guildBank.pokemon_slots.used - 1)
+        }
+      }
+    }
+  }),
+
+  setGuildBankLogs: (guildBankLogs, guildBankLogsTotal) => set({ guildBankLogs, guildBankLogsTotal }),
+
+  setGuildBankRequests: (guildBankRequests) => set({ guildBankRequests }),
+
+  addGuildBankRequest: (request) => set((state) => ({
+    guildBankRequests: [request, ...state.guildBankRequests]
+  })),
+
+  removeGuildBankRequest: (requestId) => set((state) => ({
+    guildBankRequests: state.guildBankRequests.filter(r => r.id !== requestId)
+  })),
+
+  setMyBankLimits: (myBankLimits) => set({ myBankLimits }),
+
+  clearGuildBank: () => set({
+    guildBank: null,
+    guildBankLogs: [],
+    guildBankLogsTotal: 0,
+    guildBankRequests: [],
+    myBankLimits: null
+  }),
 
   // Player action modal
   selectedPlayer: null,
