@@ -694,3 +694,104 @@ export interface GuildQuestHistory {
   archived_at: string
   top_contributors: QuestContribution[]
 }
+
+// ================================
+// Guild Quest WebSocket Payloads
+// ================================
+
+// Client -> Server payloads
+
+// Get all active quests (triggers lazy generation)
+export interface GetGuildQuestsPayload {
+  // Empty - requests full quest state
+}
+
+// Get quest details with full contribution leaderboard
+export interface GetQuestDetailsPayload {
+  quest_id: string
+}
+
+// Reroll a quest
+export interface RerollQuestPayload {
+  quest_id: string
+}
+
+// Get quest history
+export interface GetQuestHistoryPayload {
+  page?: number
+  limit?: number
+}
+
+// Server -> Client payloads
+
+// Full quest state response
+export interface GuildQuestsDataPayload {
+  quests: GuildQuestsState
+}
+
+// Quest details response (with full leaderboard)
+export interface GuildQuestDetailsPayload {
+  quest: GuildQuestDetailed
+}
+
+// Quest progress update broadcast
+export interface GuildQuestProgressPayload {
+  quest_id: string
+  current_progress: number
+  target_count: number
+  is_completed: boolean
+  contributor_id: string
+  contributor_username: string
+  contribution_amount: number
+}
+
+// Quest milestone reached broadcast (25%, 50%, 75%, 100%)
+export interface GuildQuestMilestonePayload {
+  quest_id: string
+  quest_description: string
+  period: QuestPeriod
+  milestone: 25 | 50 | 75 | 100
+  current_progress: number
+  target_count: number
+}
+
+// Quest completed broadcast (100% milestone with rewards)
+export interface GuildQuestCompletedPayload {
+  quest_id: string
+  quest_description: string
+  period: QuestPeriod
+  reward_currency: number | null
+  reward_guild_points: number | null
+  reward_item_id: string | null
+  reward_item_quantity: number | null
+  top_contributors: QuestContribution[]
+}
+
+// Quest rerolled broadcast
+export interface GuildQuestRerolledPayload {
+  old_quest_id: string
+  new_quest: GuildQuestWithContribution
+  rerolled_by: string
+  rerolled_by_username: string
+  new_reroll_status: QuestRerollStatus
+}
+
+// Quest history response
+export interface GuildQuestHistoryPayload {
+  history: GuildQuestHistory[]
+  total: number
+  page: number
+}
+
+// Quests reset notification (new day/week)
+export interface GuildQuestsResetPayload {
+  period: QuestPeriod
+  new_quests: GuildQuestWithContribution[]
+  reset_times: QuestResetTimes
+}
+
+// Error response
+export interface GuildQuestErrorPayload {
+  error: string
+  code?: string
+}
