@@ -28,6 +28,13 @@ import type {
   GuildQuestHistory,
   GuildQuestWithContribution,
   QuestRerollStatus,
+  ActiveGuildBuffs,
+  GuildBuff,
+  GuildBuffType,
+  GuildStatistics,
+  LeaderboardMetric,
+  GuildLeaderboardEntry,
+  GuildRankInfo,
 } from '@pokemon-idle/shared'
 
 // Museum exhibit interface
@@ -346,6 +353,20 @@ interface GameStore {
   replaceQuest: (oldQuestId: string, newQuest: GuildQuestWithContribution, newRerollStatus: QuestRerollStatus) => void
   clearGuildQuests: () => void
 
+  // Guild shop/statistics state
+  guildActiveBuffs: ActiveGuildBuffs | null
+  guildStatistics: GuildStatistics | null
+  guildLeaderboard: {
+    metric: LeaderboardMetric
+    entries: GuildLeaderboardEntry[]
+    myGuildRank: GuildRankInfo | null
+  } | null
+  setGuildActiveBuffs: (buffs: ActiveGuildBuffs | null) => void
+  updateGuildBuff: (buff: GuildBuff) => void
+  clearExpiredBuff: (buffType: GuildBuffType) => void
+  setGuildStatistics: (statistics: GuildStatistics | null) => void
+  setGuildLeaderboard: (leaderboard: { metric: LeaderboardMetric; entries: GuildLeaderboardEntry[]; myGuildRank: GuildRankInfo | null } | null) => void
+
   // Player action modal state (global clickable usernames)
   selectedPlayer: { id: string; username: string; guild_id?: string | null; is_online?: boolean; is_friend?: boolean } | null
   openPlayerModal: (player: { id: string; username: string; guild_id?: string | null; is_online?: boolean; is_friend?: boolean }) => void
@@ -473,6 +494,10 @@ const initialState = {
   guildQuests: null as GuildQuestsState | null,
   guildQuestDetails: null as GuildQuestDetailed | null,
   guildQuestHistory: null as { history: GuildQuestHistory[]; total: number; page: number } | null,
+  // Guild shop/statistics state
+  guildActiveBuffs: null as ActiveGuildBuffs | null,
+  guildStatistics: null as GuildStatistics | null,
+  guildLeaderboard: null as { metric: LeaderboardMetric; entries: GuildLeaderboardEntry[]; myGuildRank: GuildRankInfo | null } | null,
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -1238,6 +1263,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
     guildQuestDetails: null,
     guildQuestHistory: null
   }),
+
+  // Guild shop/statistics methods
+  setGuildActiveBuffs: (buffs) => set({ guildActiveBuffs: buffs }),
+
+  updateGuildBuff: (buff) => set((state) => ({
+    guildActiveBuffs: state.guildActiveBuffs
+      ? { ...state.guildActiveBuffs, [buff.buff_type]: buff }
+      : { xp_bonus: null, catch_rate: null, encounter_rate: null, [buff.buff_type]: buff }
+  })),
+
+  clearExpiredBuff: (buffType) => set((state) => ({
+    guildActiveBuffs: state.guildActiveBuffs
+      ? { ...state.guildActiveBuffs, [buffType]: null }
+      : null
+  })),
+
+  setGuildStatistics: (statistics) => set({ guildStatistics: statistics }),
+
+  setGuildLeaderboard: (leaderboard) => set({ guildLeaderboard: leaderboard }),
 
   // Player action modal
   selectedPlayer: null,
