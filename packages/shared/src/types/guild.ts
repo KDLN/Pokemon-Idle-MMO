@@ -244,3 +244,170 @@ export interface GuildMemberJoinedViaInvitePayload {
   invited_by_id: string
   invited_by_username: string
 }
+
+// ================================
+// Guild Chat Types
+// ================================
+
+// Guild chat message entry
+export interface GuildMessageEntry {
+  id: string
+  guild_id: string
+  player_id: string
+  player_username: string
+  player_role: GuildRole
+  content: string
+  created_at: string
+}
+
+// Server -> Client payloads for guild chat
+export interface GuildChatHistoryPayload {
+  messages: GuildMessageEntry[]
+}
+
+export interface GuildChatMessagePayload {
+  message: GuildMessageEntry
+}
+
+// ================================
+// Guild Bank Types
+// ================================
+
+// Bank category for deposits/withdrawals
+export type BankCategory = 'currency' | 'item' | 'pokemon'
+
+// Bank action types for logs
+export type BankAction = 'deposit' | 'withdraw' | 'request_created' | 'request_fulfilled' | 'request_expired' | 'request_cancelled'
+
+// Request status
+export type BankRequestStatus = 'pending' | 'fulfilled' | 'expired' | 'cancelled'
+
+// Guild bank overview (returned by get_guild_bank)
+export interface GuildBank {
+  currency: {
+    balance: number
+    max_capacity: number
+  }
+  items: GuildBankItem[]
+  pokemon: GuildBankPokemon[]
+  pokemon_slots: {
+    used: number
+    max: number
+    base: number
+    purchased: number
+    next_expansion_price: number
+  }
+  permissions: GuildBankPermission[]
+  limits: GuildBankLimit[]
+  my_limits: {
+    currency: number  // -1 = unlimited
+    items: number
+    pokemon_points: number
+  }
+}
+
+// Single item in guild bank
+export interface GuildBankItem {
+  item_id: string
+  quantity: number
+  deposited_by: string | null  // player_id
+  deposited_by_username: string | null
+  last_updated: string
+}
+
+// Single Pokemon in guild bank
+export interface GuildBankPokemon {
+  id: string  // bank entry id
+  pokemon_id: string
+  slot: number
+  species_id: number
+  species_name: string
+  nickname: string | null
+  level: number
+  is_shiny: boolean
+  point_cost: number  // calculated from BST
+  deposited_by: string | null
+  deposited_by_username: string | null
+  deposited_at: string
+}
+
+// Permission configuration entry
+export interface GuildBankPermission {
+  category: BankCategory
+  role: GuildRole
+  can_deposit: boolean
+  can_withdraw: boolean
+}
+
+// Daily limit configuration entry
+export interface GuildBankLimit {
+  role: GuildRole
+  category: BankCategory
+  daily_limit: number  // -1 = unlimited, 0 = no permission
+  pokemon_points_limit: number
+}
+
+// Player-specific limit override
+export interface GuildBankPlayerOverride {
+  player_id: string
+  username: string
+  category: BankCategory
+  custom_limit: number
+  set_by: string | null
+  set_by_username: string | null
+}
+
+// Transaction log entry
+export interface GuildBankLog {
+  id: string
+  player_id: string
+  player_username: string
+  action: BankAction
+  category: BankCategory
+  details: GuildBankLogDetails
+  balance_after: number | null  // Only for currency
+  created_at: string
+}
+
+// Log details vary by action type
+export interface GuildBankLogDetails {
+  amount?: number  // Currency amount
+  item_id?: string
+  item_name?: string
+  quantity?: number
+  pokemon_id?: string
+  pokemon_species_id?: number
+  pokemon_name?: string
+  pokemon_level?: number
+  pokemon_points?: number
+  request_id?: string
+  requester_id?: string
+  requester_username?: string
+}
+
+// Request in the queue
+export interface GuildBankRequest {
+  id: string
+  player_id: string
+  player_username: string
+  request_type: BankCategory
+  item_details: GuildBankRequestDetails
+  status: BankRequestStatus
+  note: string | null
+  created_at: string
+  expires_at: string
+  fulfilled_by: string | null
+  fulfilled_by_username: string | null
+  fulfilled_at: string | null
+}
+
+// Request details vary by type
+export interface GuildBankRequestDetails {
+  amount?: number  // For currency
+  item_id?: string
+  item_name?: string
+  quantity?: number  // For items
+  pokemon_id?: string
+  pokemon_name?: string
+  pokemon_level?: number
+}
