@@ -944,3 +944,427 @@ BEGIN
   END IF;
 END;
 $$;
+
+-- ============================================
+-- ARCHIVE AND HISTORY FUNCTIONS
+-- ============================================
+
+-- Archive expired quests to history
+CREATE OR REPLACE FUNCTION archive_expired_quests()
+RETURNS INT
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_today DATE;
+  v_week_start DATE;
+  v_quest RECORD;
+  v_archived_count INT := 0;
+  v_top_contributors JSONB;
+BEGIN
+  v_today := (NOW() AT TIME ZONE 'UTC')::DATE;
+  v_week_start := date_trunc('week', NOW() AT TIME ZONE 'UTC')::DATE;
+
+  -- Find and archive expired quests (past their reset time and not yet archived)
+  FOR v_quest IN
+    SELECT gq.* FROM guild_quests gq
+    WHERE (
+      (gq.period = 'daily' AND gq.quest_date < v_today)
+      OR (gq.period = 'weekly' AND gq.quest_date < v_week_start)
+    )
+    FOR UPDATE
+  LOOP
+    -- Get top 3 contributors for this quest
+    SELECT jsonb_agg(contrib) INTO v_top_contributors
+    FROM (
+      SELECT
+        c.player_id,
+        p.username,
+        c.contribution
+      FROM guild_quest_contributions c
+      JOIN players p ON p.id = c.player_id
+      WHERE c.quest_id = v_quest.id AND c.contribution > 0
+      ORDER BY c.contribution DESC
+      LIMIT 3
+    ) contrib;
+
+    -- Insert into history
+    INSERT INTO guild_quest_history (
+      guild_id, quest_type, period, target_count, final_progress,
+      was_completed, reward_currency, reward_guild_points,
+      reward_item_id, reward_item_quantity, type_filter,
+      description, quest_date, top_contributors
+    ) VALUES (
+      v_quest.guild_id, v_quest.quest_type, v_quest.period, v_quest.target_count,
+      v_quest.current_progress, v_quest.is_completed, v_quest.reward_currency,
+      v_quest.reward_guild_points, v_quest.reward_item_id, v_quest.reward_item_quantity,
+      v_quest.type_filter, v_quest.description, v_quest.quest_date, v_top_contributors
+    );
+
+    -- Delete original quest (cascades to contributions)
+    DELETE FROM guild_quests WHERE id = v_quest.id;
+
+    v_archived_count := v_archived_count + 1;
+  END LOOP;
+
+  RETURN v_archived_count;
+END;
+$$;
+
+-- Get quest history with pagination
+CREATE OR REPLACE FUNCTION get_quest_history(
+  p_guild_id UUID,
+  p_player_id UUID,
+  p_page INT DEFAULT 1,
+  p_limit INT DEFAULT 20
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_member RECORD;
+  v_history JSON;
+  v_total INT;
+  v_offset INT;
+BEGIN
+  -- Verify player is guild member
+  SELECT * INTO v_member
+  FROM guild_members
+  WHERE guild_id = p_guild_id AND player_id = p_player_id;
+
+  IF v_member IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'Not a guild member');
+  END IF;
+
+  v_offset := (p_page - 1) * p_limit;
+
+  -- Count total history records
+  SELECT COUNT(*) INTO v_total
+  FROM guild_quest_history
+  WHERE guild_id = p_guild_id;
+
+  -- Get paginated history
+  SELECT json_agg(history_row) INTO v_history
+  FROM (
+    SELECT
+      id,
+      quest_type::TEXT,
+      period::TEXT,
+      target_count,
+      final_progress,
+      was_completed,
+      reward_currency,
+      reward_guild_points,
+      reward_item_id,
+      reward_item_quantity,
+      type_filter,
+      description,
+      quest_date,
+      archived_at,
+      top_contributors
+    FROM guild_quest_history
+    WHERE guild_id = p_guild_id
+    ORDER BY archived_at DESC
+    LIMIT p_limit
+    OFFSET v_offset
+  ) history_row;
+
+  RETURN json_build_object(
+    'success', true,
+    'history', COALESCE(v_history, '[]'::JSON),
+    'total', v_total,
+    'page', p_page
+  );
+END;
+$$;
+
+-- ============================================
+-- REROLL FUNCTIONS
+-- ============================================
+
+-- Get reroll status for a guild
+CREATE OR REPLACE FUNCTION get_reroll_status(p_guild_id UUID, p_player_id UUID)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_member RECORD;
+  v_today DATE;
+  v_week_start DATE;
+  v_daily_used INT;
+  v_weekly_used INT;
+  v_guild_currency BIGINT;
+BEGIN
+  -- Verify player is guild member
+  SELECT * INTO v_member
+  FROM guild_members
+  WHERE guild_id = p_guild_id AND player_id = p_player_id;
+
+  IF v_member IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'Not a guild member');
+  END IF;
+
+  v_today := (NOW() AT TIME ZONE 'UTC')::DATE;
+  v_week_start := date_trunc('week', NOW() AT TIME ZONE 'UTC')::DATE;
+
+  -- Get current reroll usage
+  SELECT COALESCE(rerolls_used, 0) INTO v_daily_used
+  FROM guild_quest_rerolls
+  WHERE guild_id = p_guild_id AND period = 'daily' AND reset_date = v_today;
+
+  SELECT COALESCE(rerolls_used, 0) INTO v_weekly_used
+  FROM guild_quest_rerolls
+  WHERE guild_id = p_guild_id AND period = 'weekly' AND reset_date = v_week_start;
+
+  -- Get guild bank balance for affordability check
+  SELECT balance INTO v_guild_currency
+  FROM guild_bank_currency
+  WHERE guild_id = p_guild_id;
+
+  RETURN json_build_object(
+    'success', true,
+    'daily_used', COALESCE(v_daily_used, 0),
+    'daily_max', 2,
+    'weekly_used', COALESCE(v_weekly_used, 0),
+    'weekly_max', 1,
+    'daily_cost', 500,
+    'weekly_cost', 2000,
+    'guild_currency', COALESCE(v_guild_currency, 0),
+    'can_reroll_daily', (COALESCE(v_daily_used, 0) < 2 AND COALESCE(v_guild_currency, 0) >= 500),
+    'can_reroll_weekly', (COALESCE(v_weekly_used, 0) < 1 AND COALESCE(v_guild_currency, 0) >= 2000)
+  );
+END;
+$$;
+
+-- Reroll a quest (leader/officer only)
+CREATE OR REPLACE FUNCTION reroll_quest(
+  p_guild_id UUID,
+  p_player_id UUID,
+  p_quest_id UUID
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_member RECORD;
+  v_quest RECORD;
+  v_reroll_cost INT;
+  v_max_rerolls INT;
+  v_current_rerolls INT;
+  v_reset_date DATE;
+  v_bank RECORD;
+  v_activity RECORD;
+  v_quest_types quest_type[];
+  v_type_filters VARCHAR[];
+  v_new_quest_type quest_type;
+  v_new_type_filter VARCHAR;
+  v_target INT;
+  v_reward RECORD;
+  v_description TEXT;
+  v_new_quest_id UUID;
+BEGIN
+  -- Verify player is leader or officer
+  SELECT * INTO v_member
+  FROM guild_members
+  WHERE guild_id = p_guild_id AND player_id = p_player_id;
+
+  IF v_member IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'Not a guild member');
+  END IF;
+
+  IF v_member.role NOT IN ('leader', 'officer') THEN
+    RETURN json_build_object('success', false, 'error', 'Only leaders and officers can reroll quests');
+  END IF;
+
+  -- Get quest details
+  SELECT * INTO v_quest
+  FROM guild_quests
+  WHERE id = p_quest_id AND guild_id = p_guild_id
+  FOR UPDATE;
+
+  IF v_quest IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'Quest not found');
+  END IF;
+
+  IF v_quest.is_completed THEN
+    RETURN json_build_object('success', false, 'error', 'Cannot reroll completed quest');
+  END IF;
+
+  -- Determine costs and limits based on period
+  IF v_quest.period = 'daily' THEN
+    v_reroll_cost := 500;
+    v_max_rerolls := 2;
+    v_reset_date := (NOW() AT TIME ZONE 'UTC')::DATE;
+  ELSE
+    v_reroll_cost := 2000;
+    v_max_rerolls := 1;
+    v_reset_date := date_trunc('week', NOW() AT TIME ZONE 'UTC')::DATE;
+  END IF;
+
+  -- Check reroll limit
+  SELECT COALESCE(rerolls_used, 0) INTO v_current_rerolls
+  FROM guild_quest_rerolls
+  WHERE guild_id = p_guild_id AND period = v_quest.period AND reset_date = v_reset_date;
+
+  IF COALESCE(v_current_rerolls, 0) >= v_max_rerolls THEN
+    RETURN json_build_object('success', false, 'error', 'No rerolls remaining for this period');
+  END IF;
+
+  -- Check guild bank has enough currency
+  SELECT * INTO v_bank
+  FROM guild_bank_currency
+  WHERE guild_id = p_guild_id
+  FOR UPDATE;
+
+  IF v_bank.balance < v_reroll_cost THEN
+    RETURN json_build_object('success', false, 'error', 'Insufficient guild bank funds', 'required', v_reroll_cost, 'available', v_bank.balance);
+  END IF;
+
+  -- Deduct currency from guild bank
+  UPDATE guild_bank_currency
+  SET balance = balance - v_reroll_cost
+  WHERE guild_id = p_guild_id;
+
+  -- Log the reroll expense
+  INSERT INTO guild_bank_logs (guild_id, player_id, action, category, details, balance_after)
+  VALUES (
+    p_guild_id,
+    p_player_id,
+    'withdraw',
+    'currency',
+    jsonb_build_object(
+      'type', 'quest_reroll',
+      'quest_id', p_quest_id,
+      'quest_description', v_quest.description,
+      'cost', v_reroll_cost
+    ),
+    v_bank.balance - v_reroll_cost
+  );
+
+  -- Increment reroll count
+  INSERT INTO guild_quest_rerolls (guild_id, period, rerolls_used, reset_date)
+  VALUES (p_guild_id, v_quest.period, 1, v_reset_date)
+  ON CONFLICT (guild_id, period, reset_date) DO UPDATE SET
+    rerolls_used = guild_quest_rerolls.rerolls_used + 1;
+
+  -- Get activity for target calculation
+  SELECT * INTO v_activity FROM get_guild_average_activity(p_guild_id);
+
+  -- Available quest types (excluding the current one)
+  v_quest_types := ARRAY['catch_pokemon', 'catch_type', 'battle', 'evolve']::quest_type[];
+  v_type_filters := ARRAY['fire', 'water', 'grass', 'electric', 'normal', 'flying', 'bug', 'poison'];
+
+  -- Pick a different quest type
+  LOOP
+    v_new_quest_type := v_quest_types[1 + floor(random() * 4)::INT];
+    EXIT WHEN v_new_quest_type != v_quest.quest_type;
+  END LOOP;
+
+  -- For catch_type, pick a random type filter
+  IF v_new_quest_type = 'catch_type' THEN
+    v_new_type_filter := v_type_filters[1 + floor(random() * array_length(v_type_filters, 1))::INT];
+  ELSE
+    v_new_type_filter := NULL;
+  END IF;
+
+  -- Calculate target
+  CASE v_new_quest_type
+    WHEN 'catch_pokemon' THEN
+      v_target := calculate_quest_target(v_new_quest_type, v_quest.period, v_activity.avg_catches);
+    WHEN 'catch_type' THEN
+      v_target := calculate_quest_target(v_new_quest_type, v_quest.period, v_activity.avg_catches / 4);
+    WHEN 'battle' THEN
+      v_target := calculate_quest_target(v_new_quest_type, v_quest.period, v_activity.avg_battles);
+    WHEN 'evolve' THEN
+      v_target := calculate_quest_target(v_new_quest_type, v_quest.period, v_activity.avg_evolves);
+  END CASE;
+
+  -- Calculate rewards
+  SELECT * INTO v_reward FROM calculate_quest_reward(v_new_quest_type, v_quest.period, v_target);
+
+  -- Generate description
+  v_description := generate_quest_description(v_new_quest_type, v_target, v_new_type_filter);
+
+  -- Delete old quest (cascades to contributions)
+  DELETE FROM guild_quests WHERE id = p_quest_id;
+
+  -- Insert new quest
+  INSERT INTO guild_quests (
+    guild_id, quest_type, period, target_count, reward_currency,
+    reward_guild_points, reward_item_id, reward_item_quantity,
+    type_filter, description, quest_date
+  ) VALUES (
+    p_guild_id, v_new_quest_type, v_quest.period, v_target, v_reward.reward_currency,
+    v_reward.reward_guild_points, v_reward.reward_item_id, v_reward.reward_item_quantity,
+    v_new_type_filter, v_description, v_quest.quest_date
+  )
+  RETURNING id INTO v_new_quest_id;
+
+  -- Return new quest details
+  RETURN json_build_object(
+    'success', true,
+    'new_quest', json_build_object(
+      'id', v_new_quest_id,
+      'quest_type', v_new_quest_type::TEXT,
+      'period', v_quest.period::TEXT,
+      'target_count', v_target,
+      'current_progress', 0,
+      'reward_currency', v_reward.reward_currency,
+      'reward_guild_points', v_reward.reward_guild_points,
+      'reward_item_id', v_reward.reward_item_id,
+      'reward_item_quantity', v_reward.reward_item_quantity,
+      'type_filter', v_new_type_filter,
+      'description', v_description,
+      'is_completed', false
+    ),
+    'rerolls_remaining', CASE
+      WHEN v_quest.period = 'daily' THEN 2 - COALESCE(v_current_rerolls, 0) - 1
+      ELSE 1 - COALESCE(v_current_rerolls, 0) - 1
+    END,
+    'cost_paid', v_reroll_cost
+  );
+END;
+$$;
+
+-- ============================================
+-- ACTIVITY TRACKING FUNCTION
+-- ============================================
+
+-- Record guild activity (called by game server)
+CREATE OR REPLACE FUNCTION record_guild_activity(
+  p_guild_id UUID,
+  p_activity_type VARCHAR,
+  p_amount INT DEFAULT 1
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_today DATE;
+BEGIN
+  v_today := (NOW() AT TIME ZONE 'UTC')::DATE;
+
+  -- Upsert activity stats for today
+  INSERT INTO guild_activity_stats (guild_id, stat_date, total_catches, total_battles, total_evolves)
+  VALUES (
+    p_guild_id,
+    v_today,
+    CASE WHEN p_activity_type = 'catch' THEN p_amount ELSE 0 END,
+    CASE WHEN p_activity_type = 'battle' THEN p_amount ELSE 0 END,
+    CASE WHEN p_activity_type = 'evolve' THEN p_amount ELSE 0 END
+  )
+  ON CONFLICT (guild_id, stat_date) DO UPDATE SET
+    total_catches = guild_activity_stats.total_catches + CASE WHEN p_activity_type = 'catch' THEN p_amount ELSE 0 END,
+    total_battles = guild_activity_stats.total_battles + CASE WHEN p_activity_type = 'battle' THEN p_amount ELSE 0 END,
+    total_evolves = guild_activity_stats.total_evolves + CASE WHEN p_activity_type = 'evolve' THEN p_amount ELSE 0 END;
+
+  -- Clean up old activity stats (older than 30 days)
+  DELETE FROM guild_activity_stats
+  WHERE guild_id = p_guild_id
+    AND stat_date < (CURRENT_DATE - INTERVAL '30 days');
+END;
+$$;
