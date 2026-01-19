@@ -510,7 +510,9 @@ const initialState = {
   guildBankViewMode: 'grid' as GuildBankViewMode,
 }
 
-export const useGameStore = create<GameStore>((set, get) => ({
+export const useGameStore = create<GameStore>()(
+  persist(
+    (set, get) => ({
   ...initialState,
 
   setPlayer: (player) => set({ player }),
@@ -1302,4 +1304,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   closePlayerModal: () => set({ selectedPlayer: null }),
 
   reset: () => set(initialState),
-}))
+    }),
+    {
+      name: 'pokemon-idle-ui-prefs',
+      partialize: (state) => ({
+        guildBankViewMode: state.guildBankViewMode,
+      }),
+    }
+  )
+)
