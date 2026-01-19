@@ -30,10 +30,11 @@ This milestone transforms the functional MVP into a polished product through sys
   1. User clicks "Show contributors" on any guild quest and sees contributor list without error
   2. User toggles between grid/list view in Guild Bank and display switches correctly
   3. View preference persists across page navigation
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 08-01: TBD
+- [ ] 08-01-PLAN.md — Fix missing get_quest_details SQL function for contributor display
+- [ ] 08-02-PLAN.md — Fix Guild Bank view toggle and add persistence via Zustand
 
 ### Phase 9: Design System
 **Goal**: Formalize existing design tokens and establish component patterns for consistent visual work
@@ -145,7 +146,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 8. Bug Fixes | v1.1 | 0/? | Not started | - |
+| 8. Bug Fixes | v1.1 | 0/2 | Planned | - |
 | 9. Design System | v1.1 | 0/? | Not started | - |
 | 10. Layout & Responsiveness | v1.1 | 0/? | Not started | - |
 | 11. UI Polish | v1.1 | 0/? | Not started | - |
