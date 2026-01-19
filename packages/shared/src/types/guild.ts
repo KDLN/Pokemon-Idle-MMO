@@ -881,3 +881,71 @@ export interface GuildRankInfo {
   rank: number
   value: number
 }
+
+// ================================
+// Guild Shop WebSocket Payloads
+// ================================
+
+// Client -> Server payloads
+
+// Purchase a buff
+export interface PurchaseGuildBuffPayload {
+  buff_type: GuildBuffType
+  duration_hours: number  // 1-24
+  use_guild_points?: boolean  // Default false (use currency)
+}
+
+// Get active buffs
+export interface GetActiveBuffsPayload {
+  // Empty - requests current active buffs
+}
+
+// Get guild statistics
+export interface GetGuildStatisticsPayload {
+  // Empty - requests guild statistics
+}
+
+// Get leaderboard
+export interface GetGuildLeaderboardPayload {
+  metric: LeaderboardMetric
+  limit?: number  // Default 50, max 50
+}
+
+// Server -> Client payloads
+
+// Active buffs response
+export interface GuildActiveBuffsPayload {
+  buffs: ActiveGuildBuffs
+}
+
+// Buff purchased broadcast
+export interface GuildBuffPurchasedPayload {
+  buff: GuildBuff
+  remaining_currency: number
+  remaining_guild_points: number
+  purchased_by: string
+  purchased_by_username: string
+}
+
+// Buff expired notification
+export interface GuildBuffExpiredPayload {
+  buff_type: GuildBuffType
+}
+
+// Statistics response
+export interface GuildStatisticsPayload {
+  statistics: GuildStatistics
+}
+
+// Leaderboard response
+export interface GuildLeaderboardPayload {
+  metric: LeaderboardMetric
+  entries: GuildLeaderboardEntry[]
+  my_guild_rank: GuildRankInfo | null
+}
+
+// Shop error response
+export interface GuildShopErrorPayload {
+  error: string
+  code?: string
+}
