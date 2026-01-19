@@ -27,7 +27,23 @@ import type {
   SendGuildInvitePayload,
   AcceptGuildInvitePayload,
   DeclineGuildInvitePayload,
-  CancelGuildInvitePayload
+  CancelGuildInvitePayload,
+  // Guild Bank Payloads
+  DepositCurrencyPayload,
+  WithdrawCurrencyPayload,
+  DepositItemPayload,
+  WithdrawItemPayload,
+  DepositPokemonPayload,
+  WithdrawPokemonPayload,
+  CreateBankRequestPayload,
+  FulfillBankRequestPayload,
+  CancelBankRequestPayload,
+  GetBankLogsPayload,
+  GetBankRequestsPayload,
+  SetBankPermissionPayload,
+  SetBankLimitPayload,
+  SetPlayerOverridePayload,
+  RemovePlayerOverridePayload
 } from './types.js'
 import {
   getPlayerByUserId,
@@ -115,7 +131,27 @@ import {
   cancelGuildInvite,
   getIncomingGuildInvites,
   getOutgoingGuildInvites,
-  getSupabase
+  getSupabase,
+  getGuildChatHistory,
+  saveGuildMessage,
+  // Guild Bank
+  getGuildBank,
+  depositCurrencyToBank,
+  withdrawCurrencyFromBank,
+  depositItemToBank,
+  withdrawItemFromBank,
+  depositPokemonToBank,
+  withdrawPokemonFromBank,
+  expandBankPokemonSlots,
+  createBankRequest,
+  fulfillBankRequest,
+  cancelBankRequest,
+  getBankRequests,
+  getBankLogs,
+  setBankPermission,
+  setBankLimit,
+  setPlayerBankOverride,
+  removePlayerBankOverride
 } from './db.js'
 import { processTick, simulateGymBattle, checkEvolutions, calculateEvolutionStats, applyEvolution, createEvolutionEvent, recalculateStats } from './game.js'
 
@@ -561,6 +597,58 @@ export class GameHub {
         case 'get_guild_outgoing_invites':
           this.handleGetOutgoingGuildInvites(client)
           break
+        // Guild Bank handlers
+        case 'get_guild_bank':
+          this.handleGetGuildBank(client)
+          break
+        case 'deposit_currency':
+          this.handleDepositCurrency(client, msg.payload as DepositCurrencyPayload)
+          break
+        case 'withdraw_currency':
+          this.handleWithdrawCurrency(client, msg.payload as WithdrawCurrencyPayload)
+          break
+        case 'deposit_item':
+          this.handleDepositItem(client, msg.payload as DepositItemPayload)
+          break
+        case 'withdraw_item':
+          this.handleWithdrawItem(client, msg.payload as WithdrawItemPayload)
+          break
+        case 'deposit_pokemon':
+          this.handleDepositPokemon(client, msg.payload as DepositPokemonPayload)
+          break
+        case 'withdraw_pokemon':
+          this.handleWithdrawPokemon(client, msg.payload as WithdrawPokemonPayload)
+          break
+        case 'expand_pokemon_slots':
+          this.handleExpandPokemonSlots(client)
+          break
+        case 'create_bank_request':
+          this.handleCreateBankRequest(client, msg.payload as CreateBankRequestPayload)
+          break
+        case 'fulfill_bank_request':
+          this.handleFulfillBankRequest(client, msg.payload as FulfillBankRequestPayload)
+          break
+        case 'cancel_bank_request':
+          this.handleCancelBankRequest(client, msg.payload as CancelBankRequestPayload)
+          break
+        case 'get_bank_requests':
+          this.handleGetBankRequests(client, msg.payload as GetBankRequestsPayload)
+          break
+        case 'get_bank_logs':
+          this.handleGetBankLogs(client, msg.payload as GetBankLogsPayload)
+          break
+        case 'set_bank_permission':
+          this.handleSetBankPermission(client, msg.payload as SetBankPermissionPayload)
+          break
+        case 'set_bank_limit':
+          this.handleSetBankLimit(client, msg.payload as SetBankLimitPayload)
+          break
+        case 'set_player_override':
+          this.handleSetPlayerOverride(client, msg.payload as SetPlayerOverridePayload)
+          break
+        case 'remove_player_override':
+          this.handleRemovePlayerOverride(client, msg.payload as RemovePlayerOverridePayload)
+          break
         default:
           console.log('Unknown message type:', msg.type)
       }
@@ -646,6 +734,14 @@ export class GameHub {
     }
 
     const safeContent = trimmedContent.slice(0, MAX_CHAT_LENGTH)
+
+    // Guild channel requires special handling - private to guild members only
+    if (channel === 'guild') {
+      await this.handleGuildChatMessage(client, safeContent)
+      return
+    }
+
+    // Regular channels (global, trade)
     const message = await saveChatMessage(client.session.player.id, channel, safeContent)
 
     if (!message) {
@@ -659,6 +755,34 @@ export class GameHub {
     }
 
     this.broadcast('chat_message', payloadToSend)
+  }
+
+  private async handleGuildChatMessage(client: Client, content: string) {
+    if (!client.session) return
+
+    // Verify player is in a guild
+    const guild = client.session.guild
+    if (!guild) {
+      this.sendError(client, 'You must be in a guild to use guild chat')
+      return
+    }
+
+    // Save message to guild_messages table
+    const message = await saveGuildMessage(
+      guild.id,
+      client.session.player.id,
+      client.session.player.username,
+      guild.role,
+      content
+    )
+
+    if (!message) {
+      this.sendError(client, 'Unable to send guild message')
+      return
+    }
+
+    // Broadcast to guild members only
+    this.broadcastToGuild(guild.id, 'guild_chat_message', { message })
   }
 
   private broadcast(type: string, payload: unknown) {
@@ -1294,6 +1418,16 @@ export class GameHub {
       })),
       my_role: client.session.guild.role
     })
+
+    // Also send guild chat history
+    await this.sendGuildChatHistory(client)
+  }
+
+  private async sendGuildChatHistory(client: Client) {
+    if (!client.session?.guild) return
+
+    const messages = await getGuildChatHistory(client.session.guild.id, 100)
+    this.send(client, 'guild_chat_history', { messages })
   }
 
   private send(client: Client, type: string, payload: unknown) {
@@ -3504,5 +3638,442 @@ export class GameHub {
 
     const invites = await getOutgoingGuildInvites(client.session.guild.id)
     this.send(client, 'guild_outgoing_invites', { invites })
+  }
+
+  // ================================
+  // Guild Bank Handlers
+  // ================================
+
+  private async handleGetGuildBank(client: Client) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const bank = await getGuildBank(client.session.player.id, client.session.guild.id)
+    if (!bank) {
+      this.send(client, 'guild_bank_error', { error: 'Failed to load bank' })
+      return
+    }
+
+    this.send(client, 'guild_bank_data', { bank })
+  }
+
+  private async handleDepositCurrency(client: Client, payload: DepositCurrencyPayload) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const result = await depositCurrencyToBank(
+      client.session.player.id,
+      client.session.guild.id,
+      payload.amount
+    )
+
+    if (!result.success) {
+      this.send(client, 'guild_bank_error', { error: result.error || 'Deposit failed' })
+      return
+    }
+
+    // Broadcast to guild
+    this.broadcastToGuild(client.session.guild.id, 'guild_bank_currency_updated', {
+      balance: result.new_balance,
+      max_capacity: null,
+      player_id: client.session.player.id,
+      player_username: client.session.player.username,
+      amount: payload.amount,
+      action: 'deposit'
+    })
+  }
+
+  private async handleWithdrawCurrency(client: Client, payload: WithdrawCurrencyPayload) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const result = await withdrawCurrencyFromBank(
+      client.session.player.id,
+      client.session.guild.id,
+      payload.amount
+    )
+
+    if (!result.success) {
+      this.send(client, 'guild_bank_error', { error: result.error || 'Withdraw failed' })
+      return
+    }
+
+    // Send remaining limit to requester
+    this.send(client, 'guild_bank_my_limits', {
+      currency: result.remaining_limit ?? -1,
+      items: -1,
+      pokemon_points: -1
+    })
+
+    // Broadcast to guild
+    this.broadcastToGuild(client.session.guild.id, 'guild_bank_currency_updated', {
+      balance: result.new_balance,
+      max_capacity: null,
+      player_id: client.session.player.id,
+      player_username: client.session.player.username,
+      amount: payload.amount,
+      action: 'withdraw'
+    })
+  }
+
+  private async handleDepositItem(client: Client, payload: DepositItemPayload) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const result = await depositItemToBank(
+      client.session.player.id,
+      client.session.guild.id,
+      payload.item_id,
+      payload.quantity
+    )
+
+    if (!result.success) {
+      this.send(client, 'guild_bank_error', { error: result.error || 'Deposit failed' })
+      return
+    }
+
+    // Broadcast item update
+    this.broadcastToGuild(client.session.guild.id, 'guild_bank_item_updated', {
+      item: { item_id: payload.item_id, quantity: result.bank_quantity },
+      player_id: client.session.player.id,
+      player_username: client.session.player.username,
+      quantity_changed: payload.quantity,
+      action: 'deposit'
+    })
+  }
+
+  private async handleWithdrawItem(client: Client, payload: WithdrawItemPayload) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const result = await withdrawItemFromBank(
+      client.session.player.id,
+      client.session.guild.id,
+      payload.item_id,
+      payload.quantity
+    )
+
+    if (!result.success) {
+      this.send(client, 'guild_bank_error', { error: result.error || 'Withdraw failed' })
+      return
+    }
+
+    // Send remaining limit
+    this.send(client, 'guild_bank_my_limits', {
+      currency: -1,
+      items: result.remaining_limit ?? -1,
+      pokemon_points: -1
+    })
+
+    // Broadcast (UI should refetch for current quantity)
+    this.broadcastToGuild(client.session.guild.id, 'guild_bank_item_updated', {
+      item: { item_id: payload.item_id, quantity: -1 },
+      player_id: client.session.player.id,
+      player_username: client.session.player.username,
+      quantity_changed: payload.quantity,
+      action: 'withdraw'
+    })
+  }
+
+  private async handleDepositPokemon(client: Client, payload: DepositPokemonPayload) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const result = await depositPokemonToBank(
+      client.session.player.id,
+      client.session.guild.id,
+      payload.pokemon_id
+    )
+
+    if (!result.success) {
+      this.send(client, 'guild_bank_error', { error: result.error || 'Deposit failed' })
+      return
+    }
+
+    // Broadcast pokemon added (UI should refetch bank for full details)
+    this.broadcastToGuild(client.session.guild.id, 'guild_bank_pokemon_added', {
+      pokemon: { pokemon_id: payload.pokemon_id, slot: result.slot },
+      player_id: client.session.player.id,
+      player_username: client.session.player.username
+    })
+  }
+
+  private async handleWithdrawPokemon(client: Client, payload: WithdrawPokemonPayload) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const result = await withdrawPokemonFromBank(
+      client.session.player.id,
+      client.session.guild.id,
+      payload.pokemon_id
+    )
+
+    if (!result.success) {
+      this.send(client, 'guild_bank_error', { error: result.error || 'Withdraw failed' })
+      return
+    }
+
+    // Send remaining points
+    this.send(client, 'guild_bank_my_limits', {
+      currency: -1,
+      items: -1,
+      pokemon_points: result.remaining_points ?? -1
+    })
+
+    // Broadcast pokemon removed
+    this.broadcastToGuild(client.session.guild.id, 'guild_bank_pokemon_removed', {
+      pokemon_id: payload.pokemon_id,
+      slot: -1,
+      player_id: client.session.player.id,
+      player_username: client.session.player.username
+    })
+  }
+
+  private async handleExpandPokemonSlots(client: Client) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const result = await expandBankPokemonSlots(
+      client.session.player.id,
+      client.session.guild.id
+    )
+
+    if (!result.success) {
+      this.send(client, 'guild_bank_error', { error: result.error || 'Expansion failed' })
+      return
+    }
+
+    // Broadcast expansion
+    this.broadcastToGuild(client.session.guild.id, 'guild_bank_slots_expanded', {
+      new_total: result.new_total_slots,
+      next_price: result.next_price,
+      expanded_by: client.session.player.id,
+      expanded_by_username: client.session.player.username
+    })
+  }
+
+  private async handleCreateBankRequest(client: Client, payload: CreateBankRequestPayload) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const result = await createBankRequest(
+      client.session.player.id,
+      client.session.guild.id,
+      payload.request_type,
+      payload.details as Record<string, unknown>,
+      payload.note
+    )
+
+    if (!result.success) {
+      this.send(client, 'guild_bank_error', { error: result.error || 'Request failed' })
+      return
+    }
+
+    this.send(client, 'guild_bank_success', { success: true, message: 'Request created' })
+
+    // Notify officers/leaders (broadcast to guild, UI filters by role)
+    this.broadcastToGuild(client.session.guild.id, 'guild_bank_request_created', {
+      request: {
+        id: result.request_id,
+        player_id: client.session.player.id,
+        player_username: client.session.player.username,
+        request_type: payload.request_type,
+        item_details: payload.details,
+        status: 'pending',
+        note: payload.note || null,
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      }
+    })
+  }
+
+  private async handleFulfillBankRequest(client: Client, payload: FulfillBankRequestPayload) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const result = await fulfillBankRequest(
+      client.session.player.id,
+      client.session.guild.id,
+      payload.request_id
+    )
+
+    if (!result.success) {
+      this.send(client, 'guild_bank_error', { error: result.error || 'Fulfill failed' })
+      return
+    }
+
+    // Broadcast fulfillment
+    this.broadcastToGuild(client.session.guild.id, 'guild_bank_request_fulfilled', {
+      request_id: payload.request_id,
+      fulfilled_by: client.session.player.id,
+      fulfilled_by_username: client.session.player.username
+    })
+  }
+
+  private async handleCancelBankRequest(client: Client, payload: CancelBankRequestPayload) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const result = await cancelBankRequest(
+      client.session.player.id,
+      payload.request_id
+    )
+
+    if (!result.success) {
+      this.send(client, 'guild_bank_error', { error: result.error || 'Cancel failed' })
+      return
+    }
+
+    this.send(client, 'guild_bank_success', { success: true, message: 'Request cancelled' })
+  }
+
+  private async handleGetBankRequests(client: Client, payload: GetBankRequestsPayload) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const requests = await getBankRequests(
+      client.session.guild.id,
+      payload?.include_expired || false
+    )
+
+    this.send(client, 'guild_bank_requests', { requests })
+  }
+
+  private async handleGetBankLogs(client: Client, payload: GetBankLogsPayload) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const result = await getBankLogs(
+      client.session.player.id,
+      client.session.guild.id,
+      {
+        page: payload?.page,
+        limit: payload?.limit,
+        filterPlayer: payload?.filter_player,
+        filterAction: payload?.filter_action,
+        filterCategory: payload?.filter_category
+      }
+    )
+
+    this.send(client, 'guild_bank_logs', {
+      logs: result.logs,
+      total: result.total,
+      page: payload?.page || 1
+    })
+  }
+
+  private async handleSetBankPermission(client: Client, payload: SetBankPermissionPayload) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const result = await setBankPermission(
+      client.session.player.id,
+      client.session.guild.id,
+      payload.category,
+      payload.role,
+      payload.can_deposit,
+      payload.can_withdraw
+    )
+
+    if (!result.success) {
+      this.send(client, 'guild_bank_error', { error: result.error || 'Permission update failed' })
+      return
+    }
+
+    this.send(client, 'guild_bank_success', { success: true, message: 'Permission updated' })
+  }
+
+  private async handleSetBankLimit(client: Client, payload: SetBankLimitPayload) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const result = await setBankLimit(
+      client.session.player.id,
+      client.session.guild.id,
+      payload.role,
+      payload.category,
+      payload.daily_limit,
+      payload.pokemon_points_limit
+    )
+
+    if (!result.success) {
+      this.send(client, 'guild_bank_error', { error: result.error || 'Limit update failed' })
+      return
+    }
+
+    this.send(client, 'guild_bank_success', { success: true, message: 'Limit updated' })
+  }
+
+  private async handleSetPlayerOverride(client: Client, payload: SetPlayerOverridePayload) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const result = await setPlayerBankOverride(
+      client.session.player.id,
+      client.session.guild.id,
+      payload.player_id,
+      payload.category,
+      payload.custom_limit
+    )
+
+    if (!result.success) {
+      this.send(client, 'guild_bank_error', { error: result.error || 'Override update failed' })
+      return
+    }
+
+    this.send(client, 'guild_bank_success', { success: true, message: 'Override set' })
+  }
+
+  private async handleRemovePlayerOverride(client: Client, payload: RemovePlayerOverridePayload) {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_bank_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const result = await removePlayerBankOverride(
+      client.session.player.id,
+      client.session.guild.id,
+      payload.player_id,
+      payload.category
+    )
+
+    if (!result.success) {
+      this.send(client, 'guild_bank_error', { error: result.error || 'Override removal failed' })
+      return
+    }
+
+    this.send(client, 'guild_bank_success', { success: true, message: 'Override removed' })
   }
 }
