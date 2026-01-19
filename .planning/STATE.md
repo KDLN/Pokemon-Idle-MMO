@@ -1,40 +1,40 @@
 # Project State: Pokemon Idle MMO - Guild Milestone
 
 **Last Updated:** 2026-01-18
-**Session:** Phase 2 Execution
+**Session:** Phase 4 Execution
 
 ## Project Reference
 
 **Core Value:** Guilds give players a reason to come back daily and feel part of something bigger than their solo grind.
 
-**Current Focus:** Phase 2 - Guild Invites (invite system, join modes)
+**Current Focus:** Phase 4 - Guild Bank (shared storage with role-based access)
 
 ## Current Position
 
-**Phase:** 2 of 7 - Guild Invites
-**Plan:** 3 of 4 complete
+**Phase:** 4 of 7 - Guild Bank
+**Plan:** 1 of 4 complete
 **Status:** In Progress
-**Last activity:** 2026-01-18 - Completed 02-03-PLAN.md (Game Server Handlers)
+**Last activity:** 2026-01-18 - Completed 04-01-PLAN.md (Database Schema)
 
 **Progress:**
 ```
 Phase 1: [==========] Guild Foundation (5/5 plans complete)
 Phase 2: [=======   ] Guild Invites (3/4 plans complete)
 Phase 3: [          ] Guild Chat (0/? plans)
-Phase 4: [          ] Guild Bank (0/? plans)
+Phase 4: [==        ] Guild Bank (1/4 plans complete)
 Phase 5: [          ] Guild Quests (0/? plans)
 Phase 6: [          ] Guild Shop & Statistics (0/? plans)
 Phase 7: [          ] Zone Content (0/? plans)
 ```
 
-**Overall:** Phase 2 IN PROGRESS - Wave 2 IN PROGRESS (1/2 complete)
+**Overall:** Phase 4 IN PROGRESS - Plan 1/4 complete
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans Completed | 8 |
-| Tasks Completed | 22 |
+| Plans Completed | 9 |
+| Tasks Completed | 26 |
 | Phases Completed | 1 |
 | Days Elapsed | 1 |
 
@@ -60,6 +60,11 @@ Phase 7: [          ] Zone Content (0/? plans)
 | Role-based UI button visibility | Permission checks computed per-member in MemberRow component | 2026-01-18 |
 | Separate GuildInvite vs GuildOutgoingInvite types | Incoming invites need guild info, outgoing need player info | 2026-01-18 |
 | getSupabase() for simple handler queries | Use getSupabase() for direct queries in handlers rather than adding new db.ts functions | 2026-01-18 |
+| BST-based Pokemon points: <300=1, 300-399=2, 400-499=5, 500-579=10, 580+=25 | Balanced for Gen 1 range, legendary tier at 580 BST | 2026-01-18 |
+| Default officer limits: 10000 currency, 20 items, 20 pokemon points | Reasonable daily caps preventing abuse while allowing functionality | 2026-01-18 |
+| Members cannot withdraw by default | Forces request system use, maintains leader control | 2026-01-18 |
+| Slot expansion doubles each purchase | Provides gold sink, prevents trivial max-slot guilds | 2026-01-18 |
+| Max 500 Pokemon slots per guild | Prevents runaway storage, keeps queries performant | 2026-01-18 |
 
 ### Technical Notes
 
@@ -73,6 +78,9 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Online status calculated via isPlayerOnline() in handler
 - Role management broadcasts guild_role_changed for real-time UI updates
 - Guild invite handlers use isPlayerBlocked() for block integration
+- Guild bank uses 10 tables: currency, items, pokemon, slots, permissions, limits, player_overrides, withdrawals, requests, logs
+- Daily withdrawal limits reset at midnight UTC via date_trunc('day', NOW() AT TIME ZONE 'UTC')
+- Pokemon point costs calculated by calculate_pokemon_point_cost() based on BST
 
 ### Patterns Established
 
@@ -91,6 +99,10 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Invite expiration via expires_at column filtered at query time (no cron needed)
 - Expired invites cleaned opportunistically during send/accept operations
 - Guild invite handlers: sendGuildInvite, acceptGuildInvite, declineGuildInvite, cancelGuildInvite, getIncomingGuildInvites, getOutgoingGuildInvites
+- Bank mutations via SECURITY DEFINER functions with FOR UPDATE row locking
+- Bank queries return JSON formatted for frontend via get_guild_bank(), get_bank_logs(), get_bank_requests()
+- Permission checks via check_bank_permission() helper function
+- Request fulfillment calls underlying withdraw functions for atomicity
 
 ### TODOs
 
@@ -105,6 +117,10 @@ Phase 7: [          ] Zone Content (0/? plans)
 - [x] Execute 02-02-PLAN.md (Shared Types for Guild Invites)
 - [x] Execute 02-03-PLAN.md (Game Server Handlers)
 - [ ] Execute 02-04-PLAN.md (Frontend UI)
+- [x] Execute 04-01-PLAN.md (Database Schema for Guild Bank)
+- [ ] Execute 04-02-PLAN.md (Shared Types for Guild Bank)
+- [ ] Execute 04-03-PLAN.md (Game Server Handlers)
+- [ ] Execute 04-04-PLAN.md (Frontend UI)
 
 ### Blockers
 
@@ -114,22 +130,24 @@ None currently.
 
 ### Last Session Summary
 
-Completed 02-03-PLAN.md (Game Server Handlers for Guild Invites):
-- Added 6 database functions for invite operations in db.ts
-- Added 11 invite-related type re-exports in types.ts
-- Added 6 WebSocket handlers and 6 handler methods in hub.ts
-- Integrated isPlayerBlocked() check for block system
-- Session update and guild broadcast on invite accept
+Completed 04-01-PLAN.md (Database Schema for Guild Bank):
+- Created 2008-line migration file with complete guild bank schema
+- Added 10 tables for storage, permissions, limits, tracking, requests, logs
+- Added 14 SECURITY DEFINER mutation functions with FOR UPDATE locking
+- Added 8 query/configuration functions for bank state and permissions
+- Added 40 RLS policies blocking direct mutations
+- Established BST-based Pokemon point cost system
 
 ### Next Actions
 
-1. Execute 02-04-PLAN.md (Frontend UI for Guild Invites)
-2. This is final plan in Phase 2
-3. Human verification checkpoint expected
+1. Execute 04-02-PLAN.md (Shared Types for Guild Bank)
+2. Continue through 04-03 and 04-04
+3. Phase 4 complete after 04-04
 
 ### Files Created This Session
 
-- `.planning/phases/02-guild-invites/02-03-SUMMARY.md` (created)
+- `supabase/migrations/026_guild_bank.sql` (created)
+- `.planning/phases/04-guild-bank/04-01-SUMMARY.md` (created)
 - `.planning/STATE.md` (updated)
 
 ---
