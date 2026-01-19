@@ -197,30 +197,32 @@ Plans:
 
 **Plans:** 4 plans
 
+**Status:** Complete (2026-01-19)
+
 Plans:
-- [ ] 06-01-PLAN.md - Database schema (buff tables, shop functions, statistics, leaderboard)
-- [ ] 06-02-PLAN.md - Shared types for shop and statistics
-- [ ] 06-03-PLAN.md - Game server handlers (purchase, buff application in tick, statistics, leaderboard)
-- [ ] 06-04-PLAN.md - Frontend UI (shop modal, active buffs, statistics section, leaderboard modal)
+- [x] 06-01-PLAN.md - Database schema (buff tables, shop functions, statistics, leaderboard)
+- [x] 06-02-PLAN.md - Shared types for shop and statistics
+- [x] 06-03-PLAN.md - Game server handlers (purchase, buff application in tick, statistics, leaderboard)
+- [x] 06-04-PLAN.md - Frontend UI (shop modal, active buffs, statistics section, leaderboard modal)
 
 **Success Criteria:**
 
 *Shop:*
-- [ ] Guild can spend bank currency or guild points on buffs
-- [ ] Buff available: +10% XP for all members (1 hour duration)
-- [ ] Buff available: +10% catch rate for all members (1 hour duration)
-- [ ] Buff available: +10% encounter rate for all members (1 hour duration)
-- [ ] Active buffs visible to all guild members with remaining duration
-- [ ] Only Leader or Officer can purchase buffs (Members cannot)
-- [ ] Buff effects apply during server tick processing
+- [x] Guild can spend bank currency or guild points on buffs
+- [x] Buff available: +10% XP for all members (1 hour duration)
+- [x] Buff available: +10% catch rate for all members (1 hour duration)
+- [x] Buff available: +10% encounter rate for all members (1 hour duration)
+- [x] Active buffs visible to all guild members with remaining duration
+- [x] Only Leader or Officer can purchase buffs (Members cannot)
+- [x] Buff effects apply during server tick processing
 
 *Statistics:*
-- [ ] Guild displays total Pokemon caught by all members all time
-- [ ] Guild displays total unique species caught (guild Pokedex count)
-- [ ] Guild displays member count and average member level
-- [ ] Guild displays age (days since creation)
-- [ ] Guild leaderboard ranks guilds by configurable metric (catches, Pokedex, members)
-- [ ] Player can view top 50 guilds on leaderboard
+- [x] Guild displays total Pokemon caught by all members all time
+- [x] Guild displays total unique species caught (guild Pokedex count)
+- [x] Guild displays member count and average member level
+- [x] Guild displays age (days since creation)
+- [x] Guild leaderboard ranks guilds by configurable metric (catches, Pokedex, members)
+- [x] Player can view top 50 guilds on leaderboard
 
 ---
 
@@ -251,11 +253,11 @@ Plans:
 | 3 | Guild Chat | 3 | 3 | Complete |
 | 4 | Guild Bank | 18 | 5 | Complete |
 | 5 | Guild Quests | 6 | 6 | Complete |
-| 6 | Guild Shop & Statistics | 12 | 4 | Planned |
+| 6 | Guild Shop & Statistics | 12 | 4 | Complete |
 | 7 | Zone Content | 5 | 0 | Not Started |
 
 **Total:** 63 requirements mapped (55 v1 + 8 expanded success criteria)
-**Progress:** 46/55 requirements complete (84%)
+**Progress:** 58/63 requirements complete (92%)
 
 ---
 
