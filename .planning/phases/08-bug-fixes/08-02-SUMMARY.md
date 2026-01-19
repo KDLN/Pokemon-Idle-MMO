@@ -69,10 +69,10 @@ Each task was committed atomically:
 - Used `as const` type assertion for the view mode array to avoid importing/exporting the type
 
 ## Deviations from Plan
-None - plan executed exactly as written.
+- Orchestrator correction: persist middleware was imported but not applied. Added `persist()` wrapper with `partialize` to persist only `guildBankViewMode` field (commit `24907ef`).
 
 ## Issues Encountered
-None
+- Initial implementation only added state to store but didn't wrap with persist middleware, causing view preference to not survive browser refresh.
 
 ## User Setup Required
 None - no external service configuration required.
