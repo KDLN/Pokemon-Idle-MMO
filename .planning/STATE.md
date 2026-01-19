@@ -1,6 +1,6 @@
 # Project State: Pokemon Idle MMO - Guild Milestone
 
-**Last Updated:** 2026-01-19
+**Last Updated:** 2026-01-18
 **Session:** Phase 4 Execution
 
 ## Project Reference
@@ -12,30 +12,30 @@
 ## Current Position
 
 **Phase:** 4 of 7 - Guild Bank
-**Plan:** 3 of 4 complete
-**Status:** In Progress
-**Last activity:** 2026-01-19 - Completed 04-03-PLAN.md (Game Server Handlers)
+**Plan:** 4 of 4 complete
+**Status:** Phase Complete
+**Last activity:** 2026-01-18 - Completed 04-04-PLAN.md (Guild Bank Withdrawal System)
 
 **Progress:**
 ```
 Phase 1: [==========] Guild Foundation (5/5 plans complete)
 Phase 2: [=======   ] Guild Invites (3/4 plans complete)
 Phase 3: [          ] Guild Chat (0/? plans)
-Phase 4: [=======   ] Guild Bank (3/4 plans complete)
+Phase 4: [==========] Guild Bank (4/4 plans complete)
 Phase 5: [          ] Guild Quests (0/? plans)
 Phase 6: [          ] Guild Shop & Statistics (0/? plans)
 Phase 7: [          ] Zone Content (0/? plans)
 ```
 
-**Overall:** Phase 4 IN PROGRESS - Plan 3/4 complete
+**Overall:** Phase 4 COMPLETE - Ready for Phase 5 or complete Phase 2
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans Completed | 11 |
-| Tasks Completed | 31 |
-| Phases Completed | 1 |
+| Plans Completed | 12 |
+| Tasks Completed | 34 |
+| Phases Completed | 2 |
 | Days Elapsed | 2 |
 
 ## Accumulated Context
@@ -65,7 +65,10 @@ Phase 7: [          ] Zone Content (0/? plans)
 | Members cannot withdraw by default | Forces request system use, maintains leader control | 2026-01-18 |
 | Slot expansion doubles each purchase | Provides gold sink, prevents trivial max-slot guilds | 2026-01-18 |
 | Max 500 Pokemon slots per guild | Prevents runaway storage, keeps queries performant | 2026-01-18 |
-| Flexible optional properties in bank detail types | Simpler than discriminated unions for varying action types | 2026-01-19 |
+| Flexible optional properties in bank detail types | Simpler than discriminated unions for varying action types | 2026-01-18 |
+| Members request withdrawals; officers/leaders withdraw directly | Maintains control while allowing member participation | 2026-01-18 |
+| Settings tab only visible to leaders | Restricts limit configuration to highest authority | 2026-01-18 |
+| Flex-based action panels in modal | Better than absolute positioning for scrollable content | 2026-01-18 |
 
 ### Technical Notes
 
@@ -87,6 +90,8 @@ Phase 7: [          ] Zone Content (0/? plans)
 - 17 client->server and 13 server->client WebSocket payload types defined
 - 18 db.ts wrapper functions for bank RPC calls
 - 17 hub.ts handlers for bank WebSocket messages
+- Frontend guild bank: Zustand store with 10 actions, gameSocket with 13 handlers and 14 send methods
+- GuildBankModal: 6 tabs (Currency, Items, Pokemon, Logs, Requests, Settings)
 
 ### Patterns Established
 
@@ -112,6 +117,9 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Bank category type alias: 'currency' | 'item' | 'pokemon'
 - Separate payload types for broadcasts vs responses in guild bank
 - Bank handlers: getGuildBank, depositCurrency, withdrawCurrency, depositItem, withdrawItem, depositPokemon, withdrawPokemon, expandPokemonSlots, createBankRequest, fulfillBankRequest, cancelBankRequest, getBankRequests, getBankLogs, setBankPermission, setBankLimit, setPlayerOverride, removePlayerOverride
+- Role-based tab visibility in modals (Settings for leaders, Requests for officers+)
+- Split-view layout for bank operations (bank contents | player inventory)
+- Inline editing for settings configuration tables
 
 ### TODOs
 
@@ -129,7 +137,7 @@ Phase 7: [          ] Zone Content (0/? plans)
 - [x] Execute 04-01-PLAN.md (Database Schema for Guild Bank)
 - [x] Execute 04-02-PLAN.md (Shared Types for Guild Bank)
 - [x] Execute 04-03-PLAN.md (Game Server Handlers)
-- [ ] Execute 04-04-PLAN.md (Frontend UI)
+- [x] Execute 04-04-PLAN.md (Frontend UI)
 
 ### Blockers
 
@@ -139,28 +147,33 @@ None currently.
 
 ### Last Session Summary
 
-Completed 04-03-PLAN.md (Game Server Handlers):
-- Added 18 database wrapper functions in db.ts for bank RPC calls
-- Added 46 type re-exports in types.ts for bank types and payloads
-- Added 17 WebSocket handlers in hub.ts for all bank operations
-- All handlers include guild membership checks
-- State changes broadcast to guild via broadcastToGuild()
-- Fire-and-forget async pattern followed consistently
+Completed 04-04-PLAN.md (Guild Bank Withdrawal System):
+- Added guild bank state to Zustand store (guildBank, guildBankLogs, guildBankRequests, myBankLimits)
+- Added 10 store actions for guild bank state management
+- Added 13 WebSocket handlers in gameSocket.ts for bank messages
+- Added 14 send methods for bank operations
+- Created GuildBankModal with 6 tabs (Currency, Items, Pokemon, Logs, Requests, Settings)
+- BankCurrencyTab: deposit/withdraw with balance display and quick amounts
+- BankItemsTab: split view with categorized bank items and inventory search
+- BankSettingsTab: leader-only limit configuration table
 
 ### Next Actions
 
-1. Execute 04-04-PLAN.md (Frontend UI)
-2. Phase 4 complete after 04-04
-3. Return to 02-04-PLAN.md (Guild Invites Frontend) if needed
+1. Complete Phase 2 (02-04-PLAN.md - Guild Invites Frontend)
+2. Create Phase 3 plans (Guild Chat) or Phase 5 plans (Guild Quests)
+3. Integrate GuildBankModal into GuildPanel via button
 
 ### Files Modified This Session
 
-- `apps/game-server/src/db.ts` (modified - 534 lines added)
-- `apps/game-server/src/types.ts` (modified - 50 lines added)
-- `apps/game-server/src/hub.ts` (modified - 573 lines added)
-- `.planning/phases/04-guild-bank/04-03-SUMMARY.md` (created)
+- `apps/web/src/stores/gameStore.ts` (modified - guild bank state and actions)
+- `apps/web/src/lib/ws/gameSocket.ts` (modified - handlers and send methods)
+- `apps/web/src/components/game/guild/GuildBankModal.tsx` (created)
+- `apps/web/src/components/game/guild/BankItemsTab.tsx` (created)
+- `apps/web/src/components/game/guild/BankSettingsTab.tsx` (created)
+- `apps/web/src/components/game/guild/index.ts` (modified - exports)
+- `.planning/phases/04-guild-bank/04-04-SUMMARY.md` (created)
 - `.planning/STATE.md` (updated)
 
 ---
 
-*State updated: 2026-01-19*
+*State updated: 2026-01-18*
