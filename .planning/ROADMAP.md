@@ -195,6 +195,14 @@ Plans:
 
 **Dependencies:** Phase 4 (shop requires guild bank currency/points), Phase 5 (quests earn guild points)
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] 06-01-PLAN.md - Database schema (buff tables, shop functions, statistics, leaderboard)
+- [ ] 06-02-PLAN.md - Shared types for shop and statistics
+- [ ] 06-03-PLAN.md - Game server handlers (purchase, buff application in tick, statistics, leaderboard)
+- [ ] 06-04-PLAN.md - Frontend UI (shop modal, active buffs, statistics section, leaderboard modal)
+
 **Success Criteria:**
 
 *Shop:*
@@ -243,7 +251,7 @@ Plans:
 | 3 | Guild Chat | 3 | 3 | Complete |
 | 4 | Guild Bank | 18 | 5 | Complete |
 | 5 | Guild Quests | 6 | 6 | Complete |
-| 6 | Guild Shop & Statistics | 12 | 0 | Not Started |
+| 6 | Guild Shop & Statistics | 12 | 4 | Planned |
 | 7 | Zone Content | 5 | 0 | Not Started |
 
 **Total:** 63 requirements mapped (55 v1 + 8 expanded success criteria)
