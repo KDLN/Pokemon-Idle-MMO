@@ -47,7 +47,11 @@ import type {
   // Guild Quest Payloads
   GetQuestDetailsPayload,
   RerollQuestPayload,
-  GetQuestHistoryPayload
+  GetQuestHistoryPayload,
+  // Guild Shop & Statistics Payloads
+  ActiveGuildBuffs,
+  PurchaseGuildBuffPayload,
+  GetGuildLeaderboardPayload
 } from './types.js'
 import {
   getPlayerByUserId,
@@ -162,7 +166,13 @@ import {
   getGuildQuests,
   getQuestDetails,
   rerollQuest,
-  getQuestHistory
+  getQuestHistory,
+  // Guild Shop & Statistics
+  purchaseGuildBuff,
+  getActiveGuildBuffs,
+  getGuildStatistics,
+  getGuildLeaderboard,
+  getPlayerGuildRank
 } from './db.js'
 import { processTick, simulateGymBattle, checkEvolutions, calculateEvolutionStats, applyEvolution, createEvolutionEvent, recalculateStats } from './game.js'
 
@@ -206,6 +216,8 @@ export class GameHub {
   private whisperHistory: Map<string, WhisperMessage[]> = new Map()
   // Whisper rate limiting: playerId -> timestamps of recent whispers
   private whisperRateLimits: Map<string, number[]> = new Map()
+  // Guild buff cache with 5-second TTL
+  private guildBuffCache: Map<string, { buffs: ActiveGuildBuffs | null; expiresAt: number }> = new Map()
 
   constructor(port: number) {
     this.wss = new WebSocketServer({ port })
@@ -288,6 +300,40 @@ export class GameHub {
         this.tradesBeingCompleted.delete(tradeId)
       }
     }
+
+    // Clean up buff cache for guilds with no online members
+    for (const guildId of this.guildBuffCache.keys()) {
+      let hasOnlineMember = false
+      for (const client of this.clients.values()) {
+        if (client.session?.guild?.id === guildId) {
+          hasOnlineMember = true
+          break
+        }
+      }
+      if (!hasOnlineMember) {
+        this.guildBuffCache.delete(guildId)
+      }
+    }
+  }
+
+  // Get guild buffs with caching (5 second TTL)
+  private async getGuildBuffsCached(guildId: string): Promise<ActiveGuildBuffs | null> {
+    const cached = this.guildBuffCache.get(guildId)
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.buffs
+    }
+
+    const buffs = await getActiveGuildBuffs(guildId)
+    this.guildBuffCache.set(guildId, {
+      buffs,
+      expiresAt: Date.now() + 5000  // 5 second TTL
+    })
+    return buffs
+  }
+
+  // Invalidate buff cache when a new buff is purchased
+  private invalidateGuildBuffCache(guildId: string): void {
+    this.guildBuffCache.delete(guildId)
   }
 
   stop() {
@@ -675,6 +721,22 @@ export class GameHub {
           break
         case 'get_quest_history':
           this.handleGetQuestHistory(client, msg.payload as GetQuestHistoryPayload)
+          break
+
+        // ================================
+        // Guild Shop & Statistics Handlers
+        // ================================
+        case 'purchase_guild_buff':
+          this.handlePurchaseGuildBuff(client, msg.payload as PurchaseGuildBuffPayload)
+          break
+        case 'get_active_buffs':
+          this.handleGetActiveBuffs(client)
+          break
+        case 'get_guild_statistics':
+          this.handleGetGuildStatistics(client)
+          break
+        case 'get_guild_leaderboard':
+          this.handleGetGuildLeaderboard(client, msg.payload as GetGuildLeaderboardPayload)
           break
 
         default:
@@ -1248,7 +1310,12 @@ export class GameHub {
     for (const [, client] of this.clients) {
       if (!client.session) continue
 
-      const result = processTick(client.session, this.speciesMap)
+      // Fetch guild buffs if player is in a guild (with caching)
+      const guildBuffs = client.session.guild?.id
+        ? await this.getGuildBuffsCached(client.session.guild.id)
+        : null
+
+      const result = processTick(client.session, this.speciesMap, guildBuffs)
 
       // Handle catch attempt (save ball consumption regardless of success)
       if (result.encounter?.catch_result) {
@@ -4351,5 +4418,116 @@ export class GameHub {
     }
 
     this.send(client, 'guild_quest_history', result)
+  }
+
+  // ================================
+  // Guild Shop & Statistics Handlers
+  // ================================
+
+  private async handlePurchaseGuildBuff(client: Client, payload: PurchaseGuildBuffPayload) {
+    if (!client.session?.guild) {
+      this.sendError(client, 'You must be in a guild')
+      return
+    }
+
+    const { buff_type, duration_hours, use_guild_points = false } = payload
+
+    // Validate buff type
+    const validBuffs = ['xp_bonus', 'catch_rate', 'encounter_rate']
+    if (!validBuffs.includes(buff_type)) {
+      this.sendError(client, 'Invalid buff type')
+      return
+    }
+
+    // Validate duration
+    if (duration_hours < 1 || duration_hours > 24) {
+      this.sendError(client, 'Duration must be between 1 and 24 hours')
+      return
+    }
+
+    const result = await purchaseGuildBuff(
+      client.session.player.id,
+      client.session.guild.id,
+      buff_type,
+      duration_hours,
+      use_guild_points
+    )
+
+    if (!result.success) {
+      this.sendError(client, result.error || 'Failed to purchase buff')
+      return
+    }
+
+    // Invalidate buff cache so next tick gets fresh data
+    this.invalidateGuildBuffCache(client.session.guild.id)
+
+    // Broadcast to guild members
+    this.broadcastToGuild(client.session.guild.id, 'guild_buff_purchased', {
+      buff: result.buff,
+      remaining_currency: result.remaining_currency,
+      remaining_guild_points: result.remaining_guild_points,
+      purchased_by: client.session.player.id,
+      purchased_by_username: client.session.player.username
+    })
+
+    // Send system message to guild chat
+    const buffName = buff_type.replace(/_/g, ' ')
+    const message = await saveGuildMessage(
+      client.session.guild.id,
+      null as unknown as string,  // System message has no player_id
+      'System',
+      'leader',
+      `${client.session.player.username} activated ${buffName} buff for ${duration_hours} hour(s)!`
+    )
+    if (message) {
+      this.broadcastToGuild(client.session.guild.id, 'guild_chat_message', { message })
+    }
+  }
+
+  private async handleGetActiveBuffs(client: Client) {
+    if (!client.session?.guild) {
+      this.sendError(client, 'You must be in a guild')
+      return
+    }
+
+    const buffs = await getActiveGuildBuffs(client.session.guild.id)
+
+    this.send(client, 'guild_active_buffs', { buffs })
+  }
+
+  private async handleGetGuildStatistics(client: Client) {
+    if (!client.session?.guild) {
+      this.sendError(client, 'You must be in a guild')
+      return
+    }
+
+    const statistics = await getGuildStatistics(client.session.guild.id)
+
+    this.send(client, 'guild_statistics', { statistics })
+  }
+
+  private async handleGetGuildLeaderboard(client: Client, payload: GetGuildLeaderboardPayload) {
+    const { metric, limit = 50 } = payload
+
+    // Validate metric
+    const validMetrics = ['catches', 'pokedex', 'members']
+    if (!validMetrics.includes(metric)) {
+      this.sendError(client, 'Invalid leaderboard metric')
+      return
+    }
+
+    const entries = await getGuildLeaderboard(metric, limit)
+
+    // Get player's guild rank if they're in a guild
+    let myGuildRank = null
+    if (client.session?.guild) {
+      myGuildRank = await getPlayerGuildRank(client.session.player.id, metric)
+    }
+
+    this.send(client, 'guild_leaderboard', {
+      metric,
+      entries,
+      my_guild_rank: myGuildRank
+    })
   }
 }
