@@ -98,55 +98,55 @@ Explicitly excluded. Documented to prevent scope creep.
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
+Which phases cover which requirements.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUG-01 | TBD | Pending |
-| BUG-02 | TBD | Pending |
-| DS-01 | TBD | Pending |
-| DS-02 | TBD | Pending |
-| DS-03 | TBD | Pending |
-| DS-04 | TBD | Pending |
-| DS-05 | TBD | Pending |
-| DS-06 | TBD | Pending |
-| DS-07 | TBD | Pending |
-| LAYOUT-01 | TBD | Pending |
-| LAYOUT-02 | TBD | Pending |
-| LAYOUT-03 | TBD | Pending |
-| LAYOUT-04 | TBD | Pending |
-| LAYOUT-05 | TBD | Pending |
-| LAYOUT-06 | TBD | Pending |
-| LAYOUT-07 | TBD | Pending |
-| UI-01 | TBD | Pending |
-| UI-02 | TBD | Pending |
-| UI-03 | TBD | Pending |
-| UI-04 | TBD | Pending |
-| UI-05 | TBD | Pending |
-| UI-06 | TBD | Pending |
-| UI-07 | TBD | Pending |
-| UI-08 | TBD | Pending |
-| MAP-01 | TBD | Pending |
-| MAP-02 | TBD | Pending |
-| MAP-03 | TBD | Pending |
-| MAP-04 | TBD | Pending |
-| MAP-05 | TBD | Pending |
-| BATTLE-01 | TBD | Pending |
-| BATTLE-02 | TBD | Pending |
-| BATTLE-03 | TBD | Pending |
-| BATTLE-04 | TBD | Pending |
-| BATTLE-05 | TBD | Pending |
-| BATTLE-06 | TBD | Pending |
-| BATTLE-07 | TBD | Pending |
-| THEME-01 | TBD | Pending |
-| THEME-02 | TBD | Pending |
-| THEME-03 | TBD | Pending |
+| BUG-01 | Phase 8 | Pending |
+| BUG-02 | Phase 8 | Pending |
+| DS-01 | Phase 9 | Pending |
+| DS-02 | Phase 9 | Pending |
+| DS-03 | Phase 9 | Pending |
+| DS-04 | Phase 9 | Pending |
+| DS-05 | Phase 9 | Pending |
+| DS-06 | Phase 9 | Pending |
+| DS-07 | Phase 9 | Pending |
+| LAYOUT-01 | Phase 10 | Pending |
+| LAYOUT-02 | Phase 10 | Pending |
+| LAYOUT-03 | Phase 10 | Pending |
+| LAYOUT-04 | Phase 10 | Pending |
+| LAYOUT-05 | Phase 10 | Pending |
+| LAYOUT-06 | Phase 10 | Pending |
+| LAYOUT-07 | Phase 10 | Pending |
+| UI-01 | Phase 11 | Pending |
+| UI-02 | Phase 11 | Pending |
+| UI-03 | Phase 11 | Pending |
+| UI-04 | Phase 11 | Pending |
+| UI-05 | Phase 11 | Pending |
+| UI-06 | Phase 12 | Pending |
+| UI-07 | Phase 12 | Pending |
+| UI-08 | Phase 12 | Pending |
+| MAP-01 | Phase 13 | Pending |
+| MAP-02 | Phase 13 | Pending |
+| MAP-03 | Phase 13 | Pending |
+| MAP-04 | Phase 13 | Pending |
+| MAP-05 | Phase 13 | Pending |
+| BATTLE-01 | Phase 14 | Pending |
+| BATTLE-02 | Phase 14 | Pending |
+| BATTLE-03 | Phase 14 | Pending |
+| BATTLE-04 | Phase 14 | Pending |
+| BATTLE-05 | Phase 14 | Pending |
+| BATTLE-06 | Phase 14 | Pending |
+| BATTLE-07 | Phase 14 | Pending |
+| THEME-01 | Phase 15 | Pending |
+| THEME-02 | Phase 15 | Pending |
+| THEME-03 | Phase 15 | Pending |
 
 **Coverage:**
-- v1 requirements: 36 total
-- Mapped to phases: 0
-- Unmapped: 36
+- v1 requirements: 39 total
+- Mapped to phases: 39
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-19 after initial definition*
+*Last updated: 2026-01-19 after roadmap creation*
