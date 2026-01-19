@@ -234,6 +234,13 @@ Plans:
 
 **Dependencies:** None (independent of guild features, can be built in parallel)
 
+**Plans:** 1 plan
+
+**Status:** Planned (2026-01-19)
+
+Plans:
+- [ ] 07-01-PLAN.md - SQL migration (zones, connections, encounters, Misty's Gym)
+
 **Success Criteria:**
 - [ ] Cerulean City zone exists as a town connected to Route 4 and Routes 24/25
 - [ ] Misty's Gym exists in Cerulean City (Water-type, rewards Cascade Badge)
@@ -254,7 +261,7 @@ Plans:
 | 4 | Guild Bank | 18 | 5 | Complete |
 | 5 | Guild Quests | 6 | 6 | Complete |
 | 6 | Guild Shop & Statistics | 12 | 4 | Complete |
-| 7 | Zone Content | 5 | 0 | Not Started |
+| 7 | Zone Content | 5 | 1 | Planned |
 
 **Total:** 63 requirements mapped (55 v1 + 8 expanded success criteria)
 **Progress:** 58/63 requirements complete (92%)
