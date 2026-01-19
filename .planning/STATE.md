@@ -1,20 +1,20 @@
 # Project State: Pokemon Idle MMO - Guild Milestone
 
 **Last Updated:** 2026-01-19
-**Session:** Phase 5 Execution
+**Session:** Phase 6 Execution
 
 ## Project Reference
 
 **Core Value:** Guilds give players a reason to come back daily and feel part of something bigger than their solo grind.
 
-**Current Focus:** Phase 5 - Guild Quests (COMPLETE)
+**Current Focus:** Phase 6 - Guild Shop & Statistics (In Progress)
 
 ## Current Position
 
-**Phase:** 5 of 7 - Guild Quests (COMPLETE)
-**Plan:** 6 of 6 complete (05-01 Database, 05-02 Shared Types, 05-03 Activity Hooks, 05-04 WebSocket Handlers, 05-05 State completed with 05-06, 05-06 Quest UI)
-**Status:** Phase Complete
-**Last activity:** 2026-01-19 - Completed 05-06-PLAN.md (Guild Quests UI)
+**Phase:** 6 of 7 - Guild Shop & Statistics (In Progress)
+**Plan:** 2 of 4 complete (06-01 Database, 06-02 Shared Types)
+**Status:** In Progress
+**Last activity:** 2026-01-19 - Completed 06-02-PLAN.md (Shared Types for Guild Shop & Statistics)
 
 **Progress:**
 ```
@@ -23,18 +23,18 @@ Phase 2: [==========] Guild Invites (3/3 plans complete)
 Phase 3: [==========] Guild Chat (3/3 plans complete)
 Phase 4: [==========] Guild Bank (5/5 plans complete)
 Phase 5: [==========] Guild Quests (6/6 plans complete)
-Phase 6: [          ] Guild Shop & Statistics (0/? plans)
+Phase 6: [=====     ] Guild Shop & Statistics (2/4 plans complete)
 Phase 7: [          ] Zone Content (0/? plans)
 ```
 
-**Overall:** Phase 5 COMPLETE - Ready for Phase 6 (Guild Shop & Statistics)
+**Overall:** 24/26 plans complete (~92%)
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans Completed | 22 |
-| Tasks Completed | 60 |
+| Plans Completed | 24 |
+| Tasks Completed | 63 |
 | Phases Completed | 5 |
 | Days Elapsed | 2 |
 
@@ -86,6 +86,8 @@ Phase 7: [          ] Zone Content (0/? plans)
 | History pagination max 50 per page | Prevents excessive data transfer | 2026-01-19 |
 | Custom event for quest completion confetti | Cross-component communication without prop drilling | 2026-01-19 |
 | Purple color for Quests button | Distinct from Bank (yellow) and Leave/Disband (red) | 2026-01-19 |
+| ActiveGuildBuffs uses keyed object | O(1) lookup by buff type, each type can only have one active buff | 2026-01-19 |
+| LeaderboardMetric = catches/pokedex/members | Three distinct ranking criteria matching statistics fields | 2026-01-19 |
 
 ### Technical Notes
 
@@ -126,6 +128,11 @@ Phase 7: [          ] Zone Content (0/? plans)
 - GuildQuestsModal: 2 tabs (Active Quests, History), daily/weekly sections
 - QuestCard: progress bar, expandable leaderboard, reroll button
 - QuestHistoryTab: paginated archive with completion status
+- Shop buff types: GuildBuffType (xp_bonus, catch_rate, encounter_rate)
+- Shop buff interfaces: GuildBuff, ActiveGuildBuffs (keyed), GuildBuffPurchase, GuildShopItem
+- Statistics types: GuildStatistics (7 fields), LeaderboardMetric, GuildLeaderboardEntry, GuildRankInfo
+- Shop client->server payloads: PurchaseGuildBuffPayload, GetActiveBuffsPayload, GetGuildStatisticsPayload, GetGuildLeaderboardPayload
+- Shop server->client payloads: GuildActiveBuffsPayload, GuildBuffPurchasedPayload, GuildBuffExpiredPayload, GuildStatisticsPayload, GuildLeaderboardPayload, GuildShopErrorPayload
 
 ### Patterns Established
 
@@ -202,6 +209,11 @@ Phase 7: [          ] Zone Content (0/? plans)
 - [x] Execute 05-04-PLAN.md (WebSocket Handlers)
 - [x] Execute 05-05-PLAN.md (Frontend State Management) - completed with 05-06
 - [x] Execute 05-06-PLAN.md (Guild Quests UI)
+- [x] Create Phase 6 plans (Guild Shop & Statistics)
+- [x] Execute 06-01-PLAN.md (Database Schema for Guild Shop & Statistics)
+- [x] Execute 06-02-PLAN.md (Shared Types for Guild Shop & Statistics)
+- [ ] Execute 06-03-PLAN.md (WebSocket Handlers)
+- [ ] Execute 06-04-PLAN.md (Frontend UI)
 
 ### Blockers
 
@@ -211,31 +223,22 @@ None currently.
 
 ### Last Session Summary
 
-Completed 05-06-PLAN.md (Guild Quests UI):
-- Added confetti utility with fireConfetti and fireConfettiAtElement
-- Created QuestCard with progress bar, leaderboard, reroll
-- Created GuildQuestsModal with active/history tabs
-- Created QuestHistoryTab with pagination
-- Added Quests button to GuildPanel
-- Fixed blocking issue: added guild quest state and WebSocket handlers (was 05-05)
+Completed 06-02-PLAN.md (Shared Types for Guild Shop & Statistics):
+- Added GuildBuffType, GuildBuff, ActiveGuildBuffs, GuildBuffPurchase, GuildShopItem
+- Added GuildStatistics (7 fields), LeaderboardMetric, GuildLeaderboardEntry, GuildRankInfo
+- Added 4 client->server payloads: PurchaseGuildBuff, GetActiveBuffs, GetGuildStatistics, GetGuildLeaderboard
+- Added 6 server->client payloads: ActiveBuffs, BuffPurchased, BuffExpired, Statistics, Leaderboard, ShopError
 
 ### Next Actions
 
-1. Create Phase 6 plans (Guild Shop & Statistics)
-2. Execute Phase 6 plans
+1. Execute 06-03-PLAN.md (WebSocket Handlers)
+2. Execute 06-04-PLAN.md (Frontend UI)
 3. Consider Phase 7 (Zone Content) if needed
 
 ### Files Modified This Session
 
-- `apps/web/src/lib/confetti.ts` (created)
-- `apps/web/src/stores/gameStore.ts` (modified)
-- `apps/web/src/lib/ws/gameSocket.ts` (modified)
-- `apps/web/src/components/game/guild/QuestCard.tsx` (created)
-- `apps/web/src/components/game/guild/QuestHistoryTab.tsx` (created)
-- `apps/web/src/components/game/guild/GuildQuestsModal.tsx` (created)
-- `apps/web/src/components/game/guild/index.ts` (modified)
-- `apps/web/src/components/game/guild/GuildPanel.tsx` (modified)
-- `.planning/phases/05-guild-quests/05-06-SUMMARY.md` (created)
+- `packages/shared/src/types/guild.ts` (+154 lines: buff types, statistics types, WebSocket payloads)
+- `.planning/phases/06-guild-shop-statistics/06-02-SUMMARY.md` (created)
 - `.planning/STATE.md` (updated)
 
 ---
