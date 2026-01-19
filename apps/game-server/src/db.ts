@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon, BlockedPlayer, WildPokemon, Guild, GuildMember, GuildPreview, PlayerGuildInfo, GuildInvite, GuildOutgoingInvite } from './types.js'
+import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon, BlockedPlayer, WildPokemon, Guild, GuildMember, GuildPreview, PlayerGuildInfo, GuildInvite, GuildOutgoingInvite, GuildMessageEntry, GuildRole, GuildBank, GuildBankRequest, GuildBankLog } from './types.js'
 import { calculateHP, calculateStat } from './game.js'
 
 let supabase: SupabaseClient
@@ -708,6 +708,70 @@ export async function saveChatMessage(
     player_id: data.player_id,
     player_name: extractUsername(data.player as ChatMessageRow['player']),
     channel: data.channel,
+    content: data.content,
+    created_at: data.created_at,
+  }
+}
+
+// ============================================
+// GUILD CHAT QUERIES
+// ============================================
+
+export async function getGuildChatHistory(guildId: string, limit = 100): Promise<GuildMessageEntry[]> {
+  const { data, error } = await supabase
+    .from('guild_messages')
+    .select('*')
+    .eq('guild_id', guildId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error('Failed to load guild chat history:', error)
+    return []
+  }
+
+  // Return in chronological order (oldest first)
+  return (data || []).reverse().map((row) => ({
+    id: row.id,
+    guild_id: row.guild_id,
+    player_id: row.player_id,
+    player_username: row.player_username,
+    player_role: row.player_role as GuildRole,
+    content: row.content,
+    created_at: row.created_at,
+  }))
+}
+
+export async function saveGuildMessage(
+  guildId: string,
+  playerId: string,
+  playerUsername: string,
+  playerRole: GuildRole,
+  content: string
+): Promise<GuildMessageEntry | null> {
+  const { data, error } = await supabase
+    .from('guild_messages')
+    .insert({
+      guild_id: guildId,
+      player_id: playerId,
+      player_username: playerUsername,
+      player_role: playerRole,
+      content,
+    })
+    .select('*')
+    .single()
+
+  if (error || !data) {
+    console.error('Failed to save guild message:', error)
+    return null
+  }
+
+  return {
+    id: data.id,
+    guild_id: data.guild_id,
+    player_id: data.player_id,
+    player_username: data.player_username,
+    player_role: data.player_role as GuildRole,
     content: data.content,
     created_at: data.created_at,
   }
@@ -2804,4 +2868,473 @@ export async function getOutgoingGuildInvites(guildId: string): Promise<GuildOut
     created_at: row.created_at,
     expires_at: row.expires_at
   }))
+}
+
+// ============================================
+// GUILD BANK QUERIES
+// ============================================
+
+/**
+ * Get full guild bank state for a player
+ * Returns currency, items, pokemon, slots, permissions, limits, and player's remaining limits
+ */
+export async function getGuildBank(
+  playerId: string,
+  guildId: string
+): Promise<GuildBank | null> {
+  const { data, error } = await supabase.rpc('get_guild_bank', {
+    p_player_id: playerId,
+    p_guild_id: guildId
+  })
+  if (error) {
+    console.error('Error getting guild bank:', error)
+    return null
+  }
+  return data as GuildBank
+}
+
+/**
+ * Get player's remaining daily limits
+ * Returns how much more they can withdraw today
+ */
+export async function getBankDailyLimits(
+  playerId: string,
+  guildId: string
+): Promise<{ currency: number; items: number; pokemon_points: number } | null> {
+  const { data, error } = await supabase.rpc('get_bank_daily_limits', {
+    p_player_id: playerId,
+    p_guild_id: guildId
+  })
+  if (error) {
+    console.error('Error getting bank limits:', error)
+    return null
+  }
+  return data
+}
+
+/**
+ * Deposit currency to guild bank
+ * Database function handles:
+ * - Validating player is in guild
+ * - Checking deposit permission
+ * - Deducting from player balance
+ * - Adding to bank balance
+ * - Creating log entry
+ */
+export async function depositCurrencyToBank(
+  playerId: string,
+  guildId: string,
+  amount: number
+): Promise<{ success: boolean; new_balance?: number; error?: string }> {
+  const { data, error } = await supabase.rpc('guild_bank_deposit_currency', {
+    p_player_id: playerId,
+    p_guild_id: guildId,
+    p_amount: amount
+  })
+  if (error) {
+    console.error('Error depositing currency:', error)
+    return { success: false, error: 'Database error' }
+  }
+  return data
+}
+
+/**
+ * Withdraw currency from guild bank
+ * Database function handles:
+ * - Validating player is in guild
+ * - Checking withdraw permission
+ * - Checking daily limit
+ * - Deducting from bank balance
+ * - Adding to player balance
+ * - Creating log entry
+ */
+export async function withdrawCurrencyFromBank(
+  playerId: string,
+  guildId: string,
+  amount: number
+): Promise<{ success: boolean; new_balance?: number; remaining_limit?: number; error?: string }> {
+  const { data, error } = await supabase.rpc('guild_bank_withdraw_currency', {
+    p_player_id: playerId,
+    p_guild_id: guildId,
+    p_amount: amount
+  })
+  if (error) {
+    console.error('Error withdrawing currency:', error)
+    return { success: false, error: 'Database error' }
+  }
+  return data
+}
+
+/**
+ * Deposit item to guild bank
+ * Database function handles:
+ * - Validating player is in guild
+ * - Checking deposit permission
+ * - Deducting from player inventory
+ * - Adding to bank items
+ * - Creating log entry
+ */
+export async function depositItemToBank(
+  playerId: string,
+  guildId: string,
+  itemId: string,
+  quantity: number
+): Promise<{ success: boolean; bank_quantity?: number; error?: string }> {
+  const { data, error } = await supabase.rpc('guild_bank_deposit_item', {
+    p_player_id: playerId,
+    p_guild_id: guildId,
+    p_item_id: itemId,
+    p_quantity: quantity
+  })
+  if (error) {
+    console.error('Error depositing item:', error)
+    return { success: false, error: 'Database error' }
+  }
+  return data
+}
+
+/**
+ * Withdraw item from guild bank
+ * Database function handles:
+ * - Validating player is in guild
+ * - Checking withdraw permission
+ * - Checking daily limit
+ * - Deducting from bank items
+ * - Adding to player inventory
+ * - Creating log entry
+ */
+export async function withdrawItemFromBank(
+  playerId: string,
+  guildId: string,
+  itemId: string,
+  quantity: number
+): Promise<{ success: boolean; remaining_limit?: number; error?: string }> {
+  const { data, error } = await supabase.rpc('guild_bank_withdraw_item', {
+    p_player_id: playerId,
+    p_guild_id: guildId,
+    p_item_id: itemId,
+    p_quantity: quantity
+  })
+  if (error) {
+    console.error('Error withdrawing item:', error)
+    return { success: false, error: 'Database error' }
+  }
+  return data
+}
+
+/**
+ * Deposit Pokemon to guild bank
+ * Database function handles:
+ * - Validating player is in guild
+ * - Checking deposit permission
+ * - Checking available slots
+ * - Removing from player's box
+ * - Adding to bank pokemon
+ * - Calculating point cost from BST
+ * - Creating log entry
+ */
+export async function depositPokemonToBank(
+  playerId: string,
+  guildId: string,
+  pokemonId: string
+): Promise<{ success: boolean; slot?: number; error?: string }> {
+  const { data, error } = await supabase.rpc('guild_bank_deposit_pokemon', {
+    p_player_id: playerId,
+    p_guild_id: guildId,
+    p_pokemon_id: pokemonId
+  })
+  if (error) {
+    console.error('Error depositing pokemon:', error)
+    return { success: false, error: 'Database error' }
+  }
+  return data
+}
+
+/**
+ * Withdraw Pokemon from guild bank
+ * Database function handles:
+ * - Validating player is in guild
+ * - Checking withdraw permission
+ * - Checking daily point limit
+ * - Removing from bank pokemon
+ * - Adding to player's box
+ * - Creating log entry
+ */
+export async function withdrawPokemonFromBank(
+  playerId: string,
+  guildId: string,
+  pokemonId: string
+): Promise<{ success: boolean; remaining_points?: number; error?: string }> {
+  const { data, error } = await supabase.rpc('guild_bank_withdraw_pokemon', {
+    p_player_id: playerId,
+    p_guild_id: guildId,
+    p_pokemon_id: pokemonId
+  })
+  if (error) {
+    console.error('Error withdrawing pokemon:', error)
+    return { success: false, error: 'Database error' }
+  }
+  return data
+}
+
+/**
+ * Expand guild bank pokemon slots
+ * Database function handles:
+ * - Validating player is leader
+ * - Calculating expansion price
+ * - Deducting from bank currency
+ * - Increasing slot count
+ * - Creating log entry
+ */
+export async function expandBankPokemonSlots(
+  playerId: string,
+  guildId: string
+): Promise<{ success: boolean; new_total_slots?: number; next_price?: number; error?: string }> {
+  const { data, error } = await supabase.rpc('guild_bank_expand_pokemon_slots', {
+    p_player_id: playerId,
+    p_guild_id: guildId
+  })
+  if (error) {
+    console.error('Error expanding slots:', error)
+    return { success: false, error: 'Database error' }
+  }
+  return data
+}
+
+/**
+ * Create a bank withdrawal request
+ * For players without direct withdraw permission
+ * Database function handles:
+ * - Validating player is in guild
+ * - Creating pending request
+ */
+export async function createBankRequest(
+  playerId: string,
+  guildId: string,
+  requestType: string,
+  details: Record<string, unknown>,
+  note?: string
+): Promise<{ success: boolean; request_id?: string; error?: string }> {
+  const { data, error } = await supabase.rpc('guild_bank_create_request', {
+    p_player_id: playerId,
+    p_guild_id: guildId,
+    p_type: requestType,
+    p_details: details,
+    p_note: note || null
+  })
+  if (error) {
+    console.error('Error creating request:', error)
+    return { success: false, error: 'Database error' }
+  }
+  return data
+}
+
+/**
+ * Fulfill a bank request
+ * Database function handles:
+ * - Validating fulfiller is leader/officer
+ * - Validating request exists and is pending
+ * - Performing the withdrawal on behalf of requester
+ * - Updating request status
+ * - Creating log entry
+ */
+export async function fulfillBankRequest(
+  fulfillerId: string,
+  guildId: string,
+  requestId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('guild_bank_fulfill_request', {
+    p_fulfiller_id: fulfillerId,
+    p_guild_id: guildId,
+    p_request_id: requestId
+  })
+  if (error) {
+    console.error('Error fulfilling request:', error)
+    return { success: false, error: 'Database error' }
+  }
+  return data
+}
+
+/**
+ * Cancel a bank request (by the requester)
+ * Database function handles:
+ * - Validating request belongs to player
+ * - Updating status to cancelled
+ */
+export async function cancelBankRequest(
+  playerId: string,
+  requestId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('guild_bank_cancel_request', {
+    p_player_id: playerId,
+    p_request_id: requestId
+  })
+  if (error) {
+    console.error('Error cancelling request:', error)
+    return { success: false, error: 'Database error' }
+  }
+  return data
+}
+
+/**
+ * Get pending bank requests for a guild
+ * Returns requests visible to the requesting player based on their role
+ */
+export async function getBankRequests(
+  guildId: string,
+  includeExpired: boolean = false
+): Promise<GuildBankRequest[]> {
+  const { data, error } = await supabase.rpc('get_bank_requests', {
+    p_guild_id: guildId,
+    p_include_expired: includeExpired
+  })
+  if (error) {
+    console.error('Error getting requests:', error)
+    return []
+  }
+  return data || []
+}
+
+/**
+ * Get bank transaction logs
+ * Database function handles:
+ * - Validating player is in guild
+ * - Filtering by role (leaders/officers see all, members see own)
+ * - Pagination and filtering
+ */
+export async function getBankLogs(
+  playerId: string,
+  guildId: string,
+  options: {
+    page?: number
+    limit?: number
+    filterPlayer?: string
+    filterAction?: string
+    filterCategory?: string
+  }
+): Promise<{ logs: GuildBankLog[]; total: number }> {
+  const { data, error } = await supabase.rpc('get_bank_logs', {
+    p_player_id: playerId,
+    p_guild_id: guildId,
+    p_page: options.page || 1,
+    p_limit: options.limit || 50,
+    p_filter_player: options.filterPlayer || null,
+    p_filter_action: options.filterAction || null,
+    p_filter_category: options.filterCategory || null
+  })
+  if (error) {
+    console.error('Error getting logs:', error)
+    return { logs: [], total: 0 }
+  }
+  return data || { logs: [], total: 0 }
+}
+
+/**
+ * Set bank permission for a role and category
+ * Database function handles:
+ * - Validating player is leader
+ * - Upserting permission record
+ */
+export async function setBankPermission(
+  playerId: string,
+  guildId: string,
+  category: string,
+  role: string,
+  canDeposit: boolean,
+  canWithdraw: boolean
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('set_bank_permission', {
+    p_player_id: playerId,
+    p_guild_id: guildId,
+    p_category: category,
+    p_role: role,
+    p_can_deposit: canDeposit,
+    p_can_withdraw: canWithdraw
+  })
+  if (error) {
+    console.error('Error setting permission:', error)
+    return { success: false, error: 'Database error' }
+  }
+  return data
+}
+
+/**
+ * Set daily withdrawal limit for a role and category
+ * Database function handles:
+ * - Validating player is leader
+ * - Upserting limit record
+ */
+export async function setBankLimit(
+  playerId: string,
+  guildId: string,
+  role: string,
+  category: string,
+  dailyLimit: number,
+  pokemonPointsLimit?: number
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('set_bank_limit', {
+    p_player_id: playerId,
+    p_guild_id: guildId,
+    p_role: role,
+    p_category: category,
+    p_daily_limit: dailyLimit,
+    p_pokemon_points_limit: pokemonPointsLimit || 0
+  })
+  if (error) {
+    console.error('Error setting limit:', error)
+    return { success: false, error: 'Database error' }
+  }
+  return data
+}
+
+/**
+ * Set a player-specific limit override
+ * Database function handles:
+ * - Validating setter is leader
+ * - Upserting override record
+ */
+export async function setPlayerBankOverride(
+  setterId: string,
+  guildId: string,
+  targetPlayerId: string,
+  category: string,
+  customLimit: number
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('set_player_bank_override', {
+    p_setter_id: setterId,
+    p_guild_id: guildId,
+    p_target_player_id: targetPlayerId,
+    p_category: category,
+    p_custom_limit: customLimit
+  })
+  if (error) {
+    console.error('Error setting override:', error)
+    return { success: false, error: 'Database error' }
+  }
+  return data
+}
+
+/**
+ * Remove a player-specific limit override
+ * Database function handles:
+ * - Validating remover is leader
+ * - Deleting override record
+ */
+export async function removePlayerBankOverride(
+  removerId: string,
+  guildId: string,
+  targetPlayerId: string,
+  category: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('remove_player_bank_override', {
+    p_remover_id: removerId,
+    p_guild_id: guildId,
+    p_target_player_id: targetPlayerId,
+    p_category: category
+  })
+  if (error) {
+    console.error('Error removing override:', error)
+    return { success: false, error: 'Database error' }
+  }
+  return data
 }
