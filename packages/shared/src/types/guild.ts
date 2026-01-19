@@ -795,3 +795,52 @@ export interface GuildQuestErrorPayload {
   error: string
   code?: string
 }
+
+// ================================
+// Guild Shop & Buff Types
+// ================================
+
+// Buff type enum
+export type GuildBuffType = 'xp_bonus' | 'catch_rate' | 'encounter_rate'
+
+// Active buff data
+export interface GuildBuff {
+  id: string
+  guild_id: string
+  buff_type: GuildBuffType
+  multiplier: number  // e.g., 1.10 for +10%
+  started_at: string
+  ends_at: string
+  purchased_by: string | null
+  purchased_by_username: string | null
+}
+
+// Active buffs state (keyed by buff type for easy lookup)
+export interface ActiveGuildBuffs {
+  xp_bonus: GuildBuff | null
+  catch_rate: GuildBuff | null
+  encounter_rate: GuildBuff | null
+}
+
+// Buff purchase history entry
+export interface GuildBuffPurchase {
+  id: string
+  buff_type: GuildBuffType
+  duration_hours: number
+  cost_currency: number | null
+  cost_guild_points: number | null
+  purchased_by: string
+  purchased_by_username: string
+  purchased_at: string
+}
+
+// Shop item definition (for UI display)
+export interface GuildShopItem {
+  buff_type: GuildBuffType
+  name: string
+  description: string
+  cost_currency_per_hour: number
+  cost_guild_points_per_hour: number
+  multiplier: number
+  max_duration_hours: number
+}
