@@ -40,7 +40,15 @@ Guilds give players a reason to come back daily and feel part of something bigge
 
 ### Active
 
-(None — ready for next milestone requirements)
+**v1.1 UI/UX Polish & Design System**
+
+- [ ] Bug fixes (Guild Quest contributors, Guild Bank view toggle)
+- [ ] Design system (colors, typography, spacing, component patterns)
+- [ ] Layout improvements (activity log, party display, responsive sizing)
+- [ ] UI improvements (navigation order, Boosts rename, bank display, drag-reorder party)
+- [ ] Map overhaul (visual styling, interactions, zone connections)
+- [ ] Battle system rework (real-time calculation, turn-by-turn reveal)
+- [ ] Theme exploration page (component showcase, mock screens, side-by-side comparison)
 
 ### Out of Scope
 
@@ -95,4 +103,4 @@ Guilds give players a reason to come back daily and feel part of something bigge
 | Misty requires Boulder Badge | Matches Gen 1 progression | ✓ Good — familiar flow |
 
 ---
-*Last updated: 2026-01-19 after v1.0 milestone*
+*Last updated: 2026-01-19 after starting v1.1 milestone*
