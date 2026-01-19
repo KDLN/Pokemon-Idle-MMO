@@ -236,18 +236,18 @@ Plans:
 
 **Plans:** 1 plan
 
-**Status:** Planned (2026-01-19)
+**Status:** Complete (2026-01-19)
 
 Plans:
-- [ ] 07-01-PLAN.md - SQL migration (zones, connections, encounters, Misty's Gym)
+- [x] 07-01-PLAN.md - SQL migration (zones, connections, encounters, Misty's Gym)
 
 **Success Criteria:**
-- [ ] Cerulean City zone exists as a town connected to Route 4 and Routes 24/25
-- [ ] Misty's Gym exists in Cerulean City (Water-type, rewards Cascade Badge)
-- [ ] Route 24 zone exists (Nugget Bridge, north of Cerulean)
-- [ ] Route 25 zone exists (Bill's House area, east of Route 24)
-- [ ] Route 24 and 25 encounter tables include: Bellsprout, Oddish, Abra, Slowpoke, Venonat, Pidgey
-- [ ] All new zones are navigable from existing zone network
+- [x] Cerulean City zone exists as a town connected to Route 4 and Routes 24/25
+- [x] Misty's Gym exists in Cerulean City (Water-type, rewards Cascade Badge)
+- [x] Route 24 zone exists (Nugget Bridge, north of Cerulean)
+- [x] Route 25 zone exists (Bill's House area, east of Route 24)
+- [x] Route 24 and 25 encounter tables include: Bellsprout, Oddish, Abra, Slowpoke, Venonat, Pidgey
+- [x] All new zones are navigable from existing zone network
 
 ---
 
@@ -261,10 +261,10 @@ Plans:
 | 4 | Guild Bank | 18 | 5 | Complete |
 | 5 | Guild Quests | 6 | 6 | Complete |
 | 6 | Guild Shop & Statistics | 12 | 4 | Complete |
-| 7 | Zone Content | 5 | 1 | Planned |
+| 7 | Zone Content | 5 | 1 | Complete |
 
 **Total:** 63 requirements mapped (55 v1 + 8 expanded success criteria)
-**Progress:** 58/63 requirements complete (92%)
+**Progress:** 63/63 requirements complete (100%)
 
 ---
 
