@@ -7,14 +7,14 @@
 
 **Core Value:** Guilds give players a reason to come back daily and feel part of something bigger than their solo grind.
 
-**Current Focus:** Phase 5 - Guild Quests (shared daily/weekly goals)
+**Current Focus:** Phase 5 - Guild Quests (COMPLETE)
 
 ## Current Position
 
-**Phase:** 5 of 7 - Guild Quests
-**Plan:** 4 of 6 complete (05-01 Database, 05-02 Shared Types, 05-03 Activity Hooks, 05-04 WebSocket Handlers)
-**Status:** In Progress
-**Last activity:** 2026-01-19 - Completed 05-04-PLAN.md (Quest WebSocket Handlers)
+**Phase:** 5 of 7 - Guild Quests (COMPLETE)
+**Plan:** 6 of 6 complete (05-01 Database, 05-02 Shared Types, 05-03 Activity Hooks, 05-04 WebSocket Handlers, 05-05 State completed with 05-06, 05-06 Quest UI)
+**Status:** Phase Complete
+**Last activity:** 2026-01-19 - Completed 05-06-PLAN.md (Guild Quests UI)
 
 **Progress:**
 ```
@@ -22,20 +22,20 @@ Phase 1: [==========] Guild Foundation (5/5 plans complete)
 Phase 2: [==========] Guild Invites (3/3 plans complete)
 Phase 3: [==========] Guild Chat (3/3 plans complete)
 Phase 4: [==========] Guild Bank (5/5 plans complete)
-Phase 5: [=======   ] Guild Quests (4/6 plans complete)
+Phase 5: [==========] Guild Quests (6/6 plans complete)
 Phase 6: [          ] Guild Shop & Statistics (0/? plans)
 Phase 7: [          ] Zone Content (0/? plans)
 ```
 
-**Overall:** Phase 5 IN PROGRESS - 05-01 through 05-04 complete, 05-05 (Frontend State Management) next
+**Overall:** Phase 5 COMPLETE - Ready for Phase 6 (Guild Shop & Statistics)
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans Completed | 20 |
-| Tasks Completed | 57 |
-| Phases Completed | 4 |
+| Plans Completed | 22 |
+| Tasks Completed | 60 |
+| Phases Completed | 5 |
 | Days Elapsed | 2 |
 
 ## Accumulated Context
@@ -84,6 +84,8 @@ Phase 7: [          ] Zone Content (0/? plans)
 | Every encounter is a battle | Simplifies battle quest tracking | 2026-01-19 |
 | Reroll restricted to leader/officer | Members cannot reroll quests via role check | 2026-01-19 |
 | History pagination max 50 per page | Prevents excessive data transfer | 2026-01-19 |
+| Custom event for quest completion confetti | Cross-component communication without prop drilling | 2026-01-19 |
+| Purple color for Quests button | Distinct from Bank (yellow) and Leave/Disband (red) | 2026-01-19 |
 
 ### Technical Notes
 
@@ -118,6 +120,12 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Quest db.ts functions: updateGuildQuestProgress, recordGuildActivity, getGuildQuests, getQuestDetails, rerollQuest, getQuestHistory
 - Activity hooks in processTicks: catch (with type filter), battle, evolution
 - updateQuestProgress helper broadcasts progress/milestone/completed events
+- Frontend quest state: guildQuests, guildQuestDetails, guildQuestHistory in Zustand
+- 9 quest WebSocket handlers + 4 quest methods in gameSocket
+- Quest completion triggers guild-quest-completed CustomEvent for confetti
+- GuildQuestsModal: 2 tabs (Active Quests, History), daily/weekly sections
+- QuestCard: progress bar, expandable leaderboard, reroll button
+- QuestHistoryTab: paginated archive with completion status
 
 ### Patterns Established
 
@@ -162,6 +170,8 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Quest handlers: handleGetGuildQuests, handleGetQuestDetails, handleRerollQuest, handleGetQuestHistory
 - Quest case statements: get_guild_quests, get_quest_details, reroll_quest, get_quest_history
 - Reroll broadcasts guild_quest_rerolled with old_quest_id, new_quest, reroll status
+- Quest modal follows GuildBankModal pattern with tabs and animation
+- Quest details fetched lazily on leaderboard expand
 
 ### TODOs
 
@@ -190,8 +200,8 @@ Phase 7: [          ] Zone Content (0/? plans)
 - [x] Execute 05-02-PLAN.md (Shared Types for Guild Quests)
 - [x] Execute 05-03-PLAN.md (Activity Hooks)
 - [x] Execute 05-04-PLAN.md (WebSocket Handlers)
-- [ ] Execute 05-05-PLAN.md (Frontend State Management)
-- [ ] Execute 05-06-PLAN.md (Quest Reset Automation)
+- [x] Execute 05-05-PLAN.md (Frontend State Management) - completed with 05-06
+- [x] Execute 05-06-PLAN.md (Guild Quests UI)
 
 ### Blockers
 
@@ -201,22 +211,31 @@ None currently.
 
 ### Last Session Summary
 
-Completed 05-04-PLAN.md (Quest WebSocket Handlers):
-- Verified all 4 quest handlers exist (get_guild_quests, get_quest_details, reroll_quest, get_quest_history)
-- Verified all 4 case statements in message switch
-- Confirmed permission check for reroll (leader/officer only)
-- Confirmed broadcast to guild on reroll
-- Work was actually completed during 05-03 execution but documented separately
+Completed 05-06-PLAN.md (Guild Quests UI):
+- Added confetti utility with fireConfetti and fireConfettiAtElement
+- Created QuestCard with progress bar, leaderboard, reroll
+- Created GuildQuestsModal with active/history tabs
+- Created QuestHistoryTab with pagination
+- Added Quests button to GuildPanel
+- Fixed blocking issue: added guild quest state and WebSocket handlers (was 05-05)
 
 ### Next Actions
 
-1. Execute 05-05-PLAN.md (Frontend State Management)
-2. Execute 05-06-PLAN.md (Quest Reset Automation)
-3. Continue Phase 5 execution
+1. Create Phase 6 plans (Guild Shop & Statistics)
+2. Execute Phase 6 plans
+3. Consider Phase 7 (Zone Content) if needed
 
 ### Files Modified This Session
 
-- `.planning/phases/05-guild-quests/05-04-SUMMARY.md` (created)
+- `apps/web/src/lib/confetti.ts` (created)
+- `apps/web/src/stores/gameStore.ts` (modified)
+- `apps/web/src/lib/ws/gameSocket.ts` (modified)
+- `apps/web/src/components/game/guild/QuestCard.tsx` (created)
+- `apps/web/src/components/game/guild/QuestHistoryTab.tsx` (created)
+- `apps/web/src/components/game/guild/GuildQuestsModal.tsx` (created)
+- `apps/web/src/components/game/guild/index.ts` (modified)
+- `apps/web/src/components/game/guild/GuildPanel.tsx` (modified)
+- `.planning/phases/05-guild-quests/05-06-SUMMARY.md` (created)
 - `.planning/STATE.md` (updated)
 
 ---
