@@ -12,9 +12,9 @@
 ## Current Position
 
 **Phase:** 6 of 7 - Guild Shop & Statistics (In Progress)
-**Plan:** 2 of 4 complete (06-01 Database, 06-02 Shared Types)
+**Plan:** 3 of 4 complete (06-01 Database, 06-02 Shared Types, 06-03 WebSocket Handlers)
 **Status:** In Progress
-**Last activity:** 2026-01-19 - Completed 06-02-PLAN.md (Shared Types for Guild Shop & Statistics)
+**Last activity:** 2026-01-19 - Completed 06-03-PLAN.md (WebSocket Handlers for Guild Shop & Statistics)
 
 **Progress:**
 ```
@@ -23,18 +23,18 @@ Phase 2: [==========] Guild Invites (3/3 plans complete)
 Phase 3: [==========] Guild Chat (3/3 plans complete)
 Phase 4: [==========] Guild Bank (5/5 plans complete)
 Phase 5: [==========] Guild Quests (6/6 plans complete)
-Phase 6: [=====     ] Guild Shop & Statistics (2/4 plans complete)
+Phase 6: [=======   ] Guild Shop & Statistics (3/4 plans complete)
 Phase 7: [          ] Zone Content (0/? plans)
 ```
 
-**Overall:** 24/26 plans complete (~92%)
+**Overall:** 25/26 plans complete (~96%)
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans Completed | 24 |
-| Tasks Completed | 63 |
+| Plans Completed | 25 |
+| Tasks Completed | 66 |
 | Phases Completed | 5 |
 | Days Elapsed | 2 |
 
@@ -88,6 +88,9 @@ Phase 7: [          ] Zone Content (0/? plans)
 | Purple color for Quests button | Distinct from Bank (yellow) and Leave/Disband (red) | 2026-01-19 |
 | ActiveGuildBuffs uses keyed object | O(1) lookup by buff type, each type can only have one active buff | 2026-01-19 |
 | LeaderboardMetric = catches/pokedex/members | Three distinct ranking criteria matching statistics fields | 2026-01-19 |
+| 5-second buff cache TTL | Balances freshness with performance - buffs don't change frequently | 2026-01-19 |
+| Apply bonus XP to Pokemon in memory | Ensures Pokemon's in-memory state reflects total XP including buff bonus | 2026-01-19 |
+| System message on buff purchase | Makes buff activation visible to all guild members | 2026-01-19 |
 
 ### Technical Notes
 
@@ -133,6 +136,13 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Statistics types: GuildStatistics (7 fields), LeaderboardMetric, GuildLeaderboardEntry, GuildRankInfo
 - Shop client->server payloads: PurchaseGuildBuffPayload, GetActiveBuffsPayload, GetGuildStatisticsPayload, GetGuildLeaderboardPayload
 - Shop server->client payloads: GuildActiveBuffsPayload, GuildBuffPurchasedPayload, GuildBuffExpiredPayload, GuildStatisticsPayload, GuildLeaderboardPayload, GuildShopErrorPayload
+- Buff cache (guildBuffCache) with 5-second TTL for efficient tick processing
+- getGuildBuffsCached() for buff retrieval with caching
+- invalidateGuildBuffCache() called on buff purchase
+- processTick accepts optional guildBuffs parameter for buff application
+- Buff multipliers applied: encounter_rate to rollEncounter, catch_rate to attemptCatch, xp_bonus to distributeXP result
+- Shop db.ts functions: purchaseGuildBuff, getActiveGuildBuffs, getGuildStatistics, getGuildLeaderboard, getPlayerGuildRank
+- Shop hub.ts handlers: handlePurchaseGuildBuff, handleGetActiveBuffs, handleGetGuildStatistics, handleGetGuildLeaderboard
 
 ### Patterns Established
 
@@ -179,6 +189,9 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Reroll broadcasts guild_quest_rerolled with old_quest_id, new_quest, reroll status
 - Quest modal follows GuildBankModal pattern with tabs and animation
 - Quest details fetched lazily on leaderboard expand
+- Buff cache with TTL for efficient tick processing without DB calls per tick
+- Buff multiplier chaining: processTick -> processEncounter -> attemptCatch
+- System message broadcast on buff purchase for guild visibility
 
 ### TODOs
 
@@ -212,7 +225,7 @@ Phase 7: [          ] Zone Content (0/? plans)
 - [x] Create Phase 6 plans (Guild Shop & Statistics)
 - [x] Execute 06-01-PLAN.md (Database Schema for Guild Shop & Statistics)
 - [x] Execute 06-02-PLAN.md (Shared Types for Guild Shop & Statistics)
-- [ ] Execute 06-03-PLAN.md (WebSocket Handlers)
+- [x] Execute 06-03-PLAN.md (WebSocket Handlers)
 - [ ] Execute 06-04-PLAN.md (Frontend UI)
 
 ### Blockers
@@ -223,22 +236,27 @@ None currently.
 
 ### Last Session Summary
 
-Completed 06-02-PLAN.md (Shared Types for Guild Shop & Statistics):
-- Added GuildBuffType, GuildBuff, ActiveGuildBuffs, GuildBuffPurchase, GuildShopItem
-- Added GuildStatistics (7 fields), LeaderboardMetric, GuildLeaderboardEntry, GuildRankInfo
-- Added 4 client->server payloads: PurchaseGuildBuff, GetActiveBuffs, GetGuildStatistics, GetGuildLeaderboard
-- Added 6 server->client payloads: ActiveBuffs, BuffPurchased, BuffExpired, Statistics, Leaderboard, ShopError
+Completed 06-03-PLAN.md (WebSocket Handlers for Guild Shop & Statistics):
+- Added 5 db.ts functions: purchaseGuildBuff, getActiveGuildBuffs, getGuildStatistics, getGuildLeaderboard, getPlayerGuildRank
+- Added type re-exports in types.ts for shop/statistics types
+- Modified game.ts: processTick, processEncounter, attemptCatch to accept guild buffs
+- Added buff cache with 5s TTL to hub.ts
+- Modified processTicks to fetch and pass guild buffs
+- Added 4 WebSocket handlers: purchase_guild_buff, get_active_buffs, get_guild_statistics, get_guild_leaderboard
 
 ### Next Actions
 
-1. Execute 06-03-PLAN.md (WebSocket Handlers)
-2. Execute 06-04-PLAN.md (Frontend UI)
+1. Execute 06-04-PLAN.md (Frontend UI for Guild Shop & Statistics)
+2. Complete Phase 6 Guild Shop & Statistics
 3. Consider Phase 7 (Zone Content) if needed
 
 ### Files Modified This Session
 
-- `packages/shared/src/types/guild.ts` (+154 lines: buff types, statistics types, WebSocket payloads)
-- `.planning/phases/06-guild-shop-statistics/06-02-SUMMARY.md` (created)
+- `apps/game-server/src/db.ts` (+107 lines: shop/stats db functions)
+- `apps/game-server/src/types.ts` (+18 lines: type re-exports)
+- `apps/game-server/src/game.ts` (+32 lines: buff parameter support)
+- `apps/game-server/src/hub.ts` (+178 lines: handlers, cache, processTicks)
+- `.planning/phases/06-guild-shop-statistics/06-03-SUMMARY.md` (created)
 - `.planning/STATE.md` (updated)
 
 ---
