@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon, BlockedPlayer, WildPokemon, Guild, GuildMember, GuildPreview, PlayerGuildInfo, GuildInvite, GuildOutgoingInvite, GuildMessageEntry, GuildRole, GuildBank, GuildBankRequest, GuildBankLog, GuildQuestsState, GuildQuestDetailed, GuildQuestWithContribution, QuestRerollStatus, GuildQuestHistory, GuildBuff, ActiveGuildBuffs, GuildStatistics, GuildLeaderboardEntry, GuildRankInfo } from './types.js'
-import { calculateHP, calculateStat } from './game.js'
+import { calculateHP, calculateStat, xpForLevel } from './game.js'
 
 let supabase: SupabaseClient
 
@@ -208,7 +208,7 @@ export async function saveCaughtPokemon(
       owner_id: playerId,
       species_id: wild.species_id,
       level: wild.level,
-      xp: 0,
+      xp: xpForLevel(wild.level),
       current_hp: wild.max_hp,
       max_hp: wild.max_hp,
       stat_attack: wild.stat_attack,

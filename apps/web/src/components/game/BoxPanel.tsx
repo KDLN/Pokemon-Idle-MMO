@@ -102,6 +102,25 @@ export function BoxPanel() {
     }
   }
 
+  const closePanel = () => {
+    setIsOpen(false)
+    setSelectedPokemon(null)
+    setSelectedSlot(null)
+    setDetailPokemon(null)
+  }
+
+  const handlePokemonClick = (pokemon: Pokemon) => {
+    const isCurrentlySelected = selectedPokemon === pokemon.id
+
+    setSelectedSlot(null)
+    if (isCurrentlySelected) {
+      setDetailPokemon(pokemon)
+    } else {
+      setSelectedPokemon(pokemon.id)
+      setDetailPokemon(null)
+    }
+  }
+
   return (
     <>
       {/* Toggle Button */}
@@ -127,7 +146,7 @@ export function BoxPanel() {
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40"
-            onClick={() => setIsOpen(false)}
+            onClick={closePanel}
           />
 
           {/* Panel */}
@@ -153,7 +172,7 @@ export function BoxPanel() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setIsOpen(false)}
+                    onClick={closePanel}
                     className="w-8 h-8 rounded-lg bg-[#1a1a2e] border border-[#2a2a4a] flex items-center justify-center text-[#606080] hover:text-white hover:border-[#EE1515] transition-colors"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -280,10 +299,7 @@ export function BoxPanel() {
                         <PokemonCard
                           pokemon={pokemon}
                           selected={selectedPokemon === pokemon.id}
-                          onClick={() => {
-                            // Single click opens details panel
-                            setDetailPokemon(pokemon)
-                          }}
+                          onClick={() => handlePokemonClick(pokemon)}
                           compact
                         />
                       </div>

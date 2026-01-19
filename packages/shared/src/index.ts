@@ -17,11 +17,14 @@ export function xpForLevel(level: number): number {
 export function getXPProgress(xp: number, level: number): { current: number; needed: number; percentage: number } {
   const currentLevelXP = xpForLevel(level)
   const nextLevelXP = xpForLevel(level + 1)
-  const xpIntoLevel = xp - currentLevelXP
-  const xpNeeded = nextLevelXP - currentLevelXP
+  const xpIntoLevel = Math.max(0, xp - currentLevelXP)
+  const xpNeeded = Math.max(1, nextLevelXP - currentLevelXP)
+  const current = Math.min(xpIntoLevel, xpNeeded)
+  const percentage = Math.min(100, Math.max(0, (current / xpNeeded) * 100))
+
   return {
-    current: xpIntoLevel,
+    current,
     needed: xpNeeded,
-    percentage: Math.min(100, Math.max(0, (xpIntoLevel / xpNeeded) * 100))
+    percentage
   }
 }
