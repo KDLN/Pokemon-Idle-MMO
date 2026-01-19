@@ -4148,6 +4148,81 @@ export class GameHub {
   }
 
   // ================================
+  // Guild Quest Progress Helper
+  // ================================
+
+  /**
+   * Update guild quest progress and broadcast results
+   * Fire-and-forget pattern - does not block tick processing
+   */
+  private async updateQuestProgress(
+    guildId: string,
+    playerId: string,
+    username: string,
+    questType: 'catch_pokemon' | 'catch_type' | 'battle' | 'evolve',
+    amount: number,
+    typeFilter?: string
+  ): Promise<void> {
+    try {
+      const updates = await updateGuildQuestProgress(
+        guildId,
+        playerId,
+        questType,
+        amount,
+        typeFilter
+      )
+
+      if (!updates || updates.length === 0) return
+
+      for (const update of updates) {
+        // Broadcast progress update
+        this.broadcastToGuild(guildId, 'guild_quest_progress', {
+          quest_id: update.quest_id,
+          current_progress: update.current_progress,
+          target_count: update.target_count,
+          is_completed: update.is_completed,
+          contributor_id: playerId,
+          contributor_username: username,
+          contribution_amount: amount
+        })
+
+        // Broadcast milestone if reached
+        if (update.milestone) {
+          this.broadcastToGuild(guildId, 'guild_quest_milestone', {
+            quest_id: update.quest_id,
+            quest_description: update.description,
+            period: update.period,
+            milestone: update.milestone,
+            current_progress: update.current_progress,
+            target_count: update.target_count
+          })
+
+          // If 100% milestone (completion), broadcast completion with rewards
+          if (update.milestone === 100) {
+            // Fetch full quest details for reward info
+            const questDetails = await getQuestDetails(update.quest_id, playerId)
+            if (questDetails) {
+              this.broadcastToGuild(guildId, 'guild_quest_completed', {
+                quest_id: update.quest_id,
+                quest_description: update.description,
+                period: update.period,
+                reward_currency: questDetails.reward_currency,
+                reward_guild_points: questDetails.reward_guild_points,
+                reward_item_id: questDetails.reward_item_id,
+                reward_item_quantity: questDetails.reward_item_quantity,
+                top_contributors: questDetails.contributions.slice(0, 3)
+              })
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error updating quest progress:', error)
+      // Don't throw - fire-and-forget pattern
+    }
+  }
+
+  // ================================
   // Guild Quest Handlers
   // ================================
 
@@ -4276,76 +4351,5 @@ export class GameHub {
     }
 
     this.send(client, 'guild_quest_history', result)
-  }
-
-  /**
-   * Update guild quest progress and broadcast results
-   * Fire-and-forget pattern - does not block tick processing
-   */
-  private async updateQuestProgress(
-    guildId: string,
-    playerId: string,
-    username: string,
-    questType: 'catch_pokemon' | 'catch_type' | 'battle' | 'evolve',
-    amount: number,
-    typeFilter?: string
-  ): Promise<void> {
-    try {
-      const updates = await updateGuildQuestProgress(
-        guildId,
-        playerId,
-        questType,
-        amount,
-        typeFilter
-      )
-
-      if (!updates || updates.length === 0) return
-
-      for (const update of updates) {
-        // Broadcast progress update
-        this.broadcastToGuild(guildId, 'guild_quest_progress', {
-          quest_id: update.quest_id,
-          current_progress: update.current_progress,
-          target_count: update.target_count,
-          is_completed: update.is_completed,
-          contributor_id: playerId,
-          contributor_username: username,
-          contribution_amount: amount
-        })
-
-        // Broadcast milestone if reached
-        if (update.milestone) {
-          this.broadcastToGuild(guildId, 'guild_quest_milestone', {
-            quest_id: update.quest_id,
-            quest_description: update.description,
-            period: update.period,
-            milestone: update.milestone,
-            current_progress: update.current_progress,
-            target_count: update.target_count
-          })
-
-          // If 100% milestone (completion), broadcast completion with rewards
-          if (update.milestone === 100) {
-            // Fetch full quest details for reward info
-            const questDetails = await getQuestDetails(update.quest_id, playerId)
-            if (questDetails) {
-              this.broadcastToGuild(guildId, 'guild_quest_completed', {
-                quest_id: update.quest_id,
-                quest_description: update.description,
-                period: update.period,
-                reward_currency: questDetails.reward_currency,
-                reward_guild_points: questDetails.reward_guild_points,
-                reward_item_id: questDetails.reward_item_id,
-                reward_item_quantity: questDetails.reward_item_quantity,
-                top_contributors: questDetails.contributions.slice(0, 3)
-              })
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error updating quest progress:', error)
-      // Don't throw - fire-and-forget pattern
-    }
   }
 }
