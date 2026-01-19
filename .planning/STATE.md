@@ -12,9 +12,9 @@
 ## Current Position
 
 **Phase:** 5 of 7 - Guild Quests
-**Plan:** 1 of 6 complete (05-02 Shared Types)
+**Plan:** 2 of 6 complete (05-01 Database, 05-02 Shared Types)
 **Status:** In Progress
-**Last activity:** 2026-01-19 - Completed 05-02-PLAN.md (Shared Types for Guild Quests)
+**Last activity:** 2026-01-19 - Completed 05-01-PLAN.md (Database Schema for Guild Quests)
 
 **Progress:**
 ```
@@ -22,19 +22,19 @@ Phase 1: [==========] Guild Foundation (5/5 plans complete)
 Phase 2: [==========] Guild Invites (3/3 plans complete)
 Phase 3: [==========] Guild Chat (3/3 plans complete)
 Phase 4: [==========] Guild Bank (5/5 plans complete)
-Phase 5: [==        ] Guild Quests (1/6 plans complete)
+Phase 5: [===       ] Guild Quests (2/6 plans complete)
 Phase 6: [          ] Guild Shop & Statistics (0/? plans)
 Phase 7: [          ] Zone Content (0/? plans)
 ```
 
-**Overall:** Phase 5 IN PROGRESS - 05-02 complete, 05-01 (database) pending
+**Overall:** Phase 5 IN PROGRESS - 05-01 and 05-02 complete, 05-03 (handlers) next
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans Completed | 17 |
-| Tasks Completed | 48 |
+| Plans Completed | 18 |
+| Tasks Completed | 51 |
 | Phases Completed | 4 |
 | Days Elapsed | 2 |
 
@@ -74,6 +74,11 @@ Phase 7: [          ] Zone Content (0/? plans)
 | Quest types extend base interface progressively | GuildQuest -> GuildQuestWithContribution -> GuildQuestDetailed for flexible data | 2026-01-19 |
 | Milestone union type (25/50/75/100) | Type-safe percentage markers for notifications | 2026-01-19 |
 | Separate daily/weekly reroll pools | Flexible limits for different quest periods | 2026-01-19 |
+| Quest count scales with guild size: 3 + (members/10), max 6 daily | Scalable difficulty for different guild sizes | 2026-01-19 |
+| Weekly quests fixed at 3 per guild | Simpler than scaling, provides consistent weekly goals | 2026-01-19 |
+| Reroll costs: 500 daily, 2000 weekly | Prevent abuse while allowing flexibility | 2026-01-19 |
+| Individual bonuses: 10% of reward pool proportionally | Encourages participation, fair distribution | 2026-01-19 |
+| Difficulty scales with 7-day rolling activity average | Adaptive quests based on actual guild performance | 2026-01-19 |
 
 ### Technical Notes
 
@@ -136,6 +141,12 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Quest contribution leaderboard: QuestContribution[] with rank field
 - Quest reset notification includes new_quests and reset_times
 - Quest history includes top_contributors for leaderboard display in archives
+- Guild quest tables: guild_quests, guild_quest_contributions, guild_quest_rerolls, guild_quest_history, guild_activity_stats
+- 14 SECURITY DEFINER functions for quest operations in 027_guild_quests.sql
+- Lazy quest generation: generate_daily_quests/generate_weekly_quests called from get_guild_quests
+- Advisory locks prevent race conditions: pg_advisory_xact_lock(hashtext(guild_id || 'daily'/'weekly'))
+- Quest rewards deposit to guild_bank_currency/guild_bank_items via existing bank tables
+- Activity tracking: record_guild_activity() for catches/battles/evolves, auto-cleanup after 30 days
 
 ### TODOs
 
@@ -160,8 +171,8 @@ Phase 7: [          ] Zone Content (0/? plans)
 - [x] Execute 04-04-PLAN.md (Frontend UI)
 - [x] Execute 04-05-PLAN.md (Complete Guild Bank Tabs)
 - [x] Create Phase 5 plans (Guild Quests)
+- [x] Execute 05-01-PLAN.md (Database Schema for Guild Quests)
 - [x] Execute 05-02-PLAN.md (Shared Types for Guild Quests)
-- [ ] Execute 05-01-PLAN.md (Database Schema for Guild Quests)
 - [ ] Execute 05-03-PLAN.md (Game Server Handlers)
 - [ ] Execute 05-04-PLAN.md (Frontend UI)
 - [ ] Execute 05-05-PLAN.md (Progress Tracking)
@@ -175,22 +186,24 @@ None currently.
 
 ### Last Session Summary
 
-Completed 05-02-PLAN.md (Shared Types for Guild Quests):
-- Added 10 quest data types to packages/shared/src/types/guild.ts
-- Added 13 WebSocket payload types for quest operations
-- Quest types: QuestType, QuestPeriod, GuildQuest, GuildQuestWithContribution, GuildQuestDetailed, etc.
-- Payloads cover: get quests, get details, reroll, history, progress, milestones, completion, reset
+Completed 05-01-PLAN.md (Database Schema for Guild Quests):
+- Created 5 tables: guild_quests, guild_quest_contributions, guild_quest_rerolls, guild_quest_history, guild_activity_stats
+- Created 2 enums: quest_type, quest_period
+- Created 14 SECURITY DEFINER functions for quest operations
+- Implemented lazy generation with advisory locks
+- Built reroll system with currency costs and limits
+- Integrated reward distribution with existing guild bank tables
 
 ### Next Actions
 
-1. Execute 05-01-PLAN.md (Database Schema for Guild Quests)
-2. Execute 05-03-PLAN.md (Game Server Handlers)
+1. Execute 05-03-PLAN.md (Game Server Handlers)
+2. Execute 05-04-PLAN.md (Frontend UI)
 3. Continue Phase 5 execution
 
 ### Files Modified This Session
 
-- `packages/shared/src/types/guild.ts` (modified - added quest types and payloads)
-- `.planning/phases/05-guild-quests/05-02-SUMMARY.md` (created)
+- `supabase/migrations/027_guild_quests.sql` (created - 1370 lines)
+- `.planning/phases/05-guild-quests/05-01-SUMMARY.md` (created)
 - `.planning/STATE.md` (updated)
 
 ---
