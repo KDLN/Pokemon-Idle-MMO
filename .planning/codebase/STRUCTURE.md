@@ -1,6 +1,6 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-01-18
+**Analysis Date:** 2026-01-19
 
 ## Directory Layout
 
@@ -8,136 +8,120 @@
 pokemon-idle-mmo/
 ├── apps/
 │   ├── game-server/           # Node.js WebSocket game server
-│   │   ├── src/               # TypeScript source files
-│   │   ├── dist/              # Compiled JavaScript (generated)
-│   │   ├── package.json
-│   │   └── tsconfig.json
+│   │   └── src/               # Server source code (6 files)
 │   └── web/                   # Next.js frontend application
-│       ├── src/
-│       │   ├── app/           # Next.js App Router pages
-│       │   ├── components/    # React components
-│       │   ├── hooks/         # Custom React hooks
-│       │   ├── lib/           # Utilities and clients
-│       │   ├── stores/        # Zustand state stores
-│       │   └── types/         # Frontend-only TypeScript types
 │       ├── public/            # Static assets (sprites, maps)
-│       └── package.json
+│       └── src/               # Frontend source code
+│           ├── app/           # Next.js App Router pages
+│           ├── components/    # React components
+│           ├── hooks/         # Custom React hooks
+│           ├── lib/           # Utility libraries
+│           ├── stores/        # Zustand state stores
+│           └── types/         # Frontend-specific types
 ├── packages/
 │   └── shared/                # Shared types and utilities
-│       ├── src/
-│       │   ├── types/         # TypeScript interfaces
-│       │   ├── utils/         # Shared utility functions
-│       │   └── index.ts       # Package entry point
-│       └── package.json
+│       └── src/
+│           ├── types/         # TypeScript interfaces
+│           └── utils/         # Shared utility functions
 ├── supabase/
-│   └── migrations/            # SQL migration files (numbered)
-├── package.json               # Root package.json with workspace scripts
+│   └── migrations/            # SQL migration files (001-030+)
+├── .planning/                 # GSD planning documents
+│   ├── codebase/              # Architecture analysis docs
+│   ├── phases/                # Phase planning documents
+│   └── research/              # Research notes
 ├── CLAUDE.md                  # AI assistant instructions
+├── package.json               # Root monorepo config
 └── README.md                  # Project documentation
 ```
 
 ## Directory Purposes
 
-**apps/game-server/src/:**
-- Purpose: Game server source code
-- Contains: WebSocket hub, battle logic, database queries, type definitions
+**`apps/game-server/src/`:**
+- Purpose: All game server logic in 6 focused files
+- Contains: WebSocket hub, game mechanics, database queries, types
 - Key files:
-  - `index.ts` - Server entry point, initializes DB and starts hub
-  - `hub.ts` - WebSocket server, client management, tick loop, message routing
-  - `game.ts` - Battle calculations, encounter processing, evolution logic
-  - `db.ts` - All Supabase database queries (players, pokemon, zones, etc.)
-  - `types.ts` - Backend-only types (re-exports shared + PlayerSession)
-  - `ivs.ts` - IV (Individual Values) generation logic
+  - `index.ts`: Entry point, server startup
+  - `hub.ts`: WebSocket server, client management, message routing, tick loop
+  - `game.ts`: Battle logic, stat calculations, type effectiveness, encounters
+  - `db.ts`: All Supabase database queries (~2600 lines)
+  - `types.ts`: Re-exports shared types + backend-only types
+  - `ivs.ts`: Individual Value generation and formatting
 
-**apps/web/src/app/:**
+**`apps/web/src/app/`:**
 - Purpose: Next.js App Router pages and layouts
-- Contains: Route components using React Server Components
+- Contains: Page components, route groups
 - Key files:
-  - `layout.tsx` - Root layout with global styles
-  - `page.tsx` - Landing/home page
-  - `game/page.tsx` - Main game page (requires auth)
-  - `(auth)/login/page.tsx` - Login page
-  - `(auth)/signup/page.tsx` - Signup/player creation page
+  - `layout.tsx`: Root layout with fonts, metadata
+  - `page.tsx`: Landing page (redirects to login/game)
+  - `game/page.tsx`: Main game page (auth-protected)
+  - `(auth)/login/page.tsx`: Login form
+  - `(auth)/signup/page.tsx`: Signup/player creation form
 
-**apps/web/src/components/:**
-- Purpose: React UI components organized by feature
-- Contains: Game panels, UI primitives, feature-specific components
-- Key files:
-  - `game/GameShell.tsx` - Main game container with 3-column layout
-  - `game/EncounterDisplay.tsx` - Battle animation component
-  - `game/PartyPanel.tsx` - Pokemon party display
-  - `game/BoxPanel.tsx` - Pokemon storage PC box
-  - `game/ShopPanel.tsx` - In-game shop
-  - `game/GymBattlePanel.tsx` - Gym challenge interface
+**`apps/web/src/components/game/`:**
+- Purpose: All game UI components (main game interface)
+- Contains: Panels, modals, displays, feature-grouped subdirectories
+- Key subdirectories:
+  - `guild/`: Guild-related components (panel, bank, quests, shop)
+  - `social/`: Chat, friends, trades, nearby players
+  - `world/`: World view, trainer sprites, backgrounds
+  - `encounter/`: Battle animations, floating rewards
+  - `header/`: Currency display, badges, battle pass
+  - `interactions/`: Town menu, world log, museum
+  - `settings/`: Trainer customizer, blocked players
 
-**apps/web/src/components/game/ subdirectories:**
-- `encounter/` - Battle animation components (FloatingReward, AttackAnimation)
-- `header/` - Header components (BadgeCase, CurrencyDisplay, BattlePassProgress)
-- `interactions/` - Town interaction components (TownMenu, MuseumPanel, WorldLog)
-- `settings/` - Settings components (TrainerCustomizer, BlockedPlayers)
-- `social/` - Social features (ChatSidebar, FriendsList, TradeModal)
-- `world/` - World view components (WorldView, TrainerSprite, TimeOfDayOverlay)
-
-**apps/web/src/components/ui/:**
+**`apps/web/src/components/ui/`:**
 - Purpose: Reusable UI primitives
 - Contains: Button, Card, Badge, ProgressBar, Tooltip
+- Key files: `Button.tsx`, `Card.tsx`, `Tooltip.tsx`, `index.ts` (barrel export)
 
-**apps/web/src/lib/:**
-- Purpose: Client utilities, external service clients, helpers
+**`apps/web/src/lib/`:**
+- Purpose: Utility functions, clients, helpers
 - Contains: Supabase clients, WebSocket client, sprite utilities
-- Key files:
-  - `ws/gameSocket.ts` - WebSocket client singleton with message handlers
-  - `supabase/client.ts` - Browser Supabase client
-  - `supabase/server.ts` - Server-side Supabase client
-  - `sprites/` - Sprite animation utilities
-  - `utils/friendUtils.ts` - Friend status helpers
-  - `ivUtils.ts` - IV grade calculation
+- Key subdirectories:
+  - `supabase/`: `client.ts` (browser), `server.ts` (SSR)
+  - `ws/`: `gameSocket.ts` (WebSocket client singleton)
+  - `sprites/`: Animation controllers, sprite catalogs
+  - `zones/`: Town-specific action helpers
+  - `utils/`: General utilities (friend helpers)
 
-**apps/web/src/stores/:**
+**`apps/web/src/stores/`:**
 - Purpose: Zustand state management
-- Contains: Central game store
-- Key files:
-  - `gameStore.ts` - All game state (player, party, zone, chat, trades, etc.)
+- Contains: Single comprehensive game store
+- Key files: `gameStore.ts` (~1200 lines, all game state and actions)
 
-**apps/web/src/types/:**
-- Purpose: Frontend-only TypeScript types
-- Contains: Types that extend shared types or are UI-specific
-- Key files:
-  - `game.ts` - Game state types, re-exports from shared
-  - `chat.ts` - Chat message types
-  - `friends.ts` - Friend relationship types
-  - `trade.ts` - Trade session types
+**`apps/web/src/types/`:**
+- Purpose: Frontend-specific type definitions
+- Contains: Types that extend or customize shared types for UI
+- Key files: `game.ts`, `chat.ts`, `friends.ts`, `trade.ts`
 
-**packages/shared/src/types/:**
-- Purpose: Shared TypeScript interfaces used by both apps
-- Contains: Core game types split by domain
+**`packages/shared/src/`:**
+- Purpose: Types and utilities shared between frontend and backend
+- Contains: Core game interfaces, XP calculations
 - Key files:
-  - `core.ts` - Player, Pokemon, PokemonSpecies, Zone, WildPokemon
-  - `battle.ts` - BattleTurn, BattleSequence, GymBattleMatchup
-  - `catching.ts` - CatchResult, EncounterEvent, CatchSequence
-  - `progression.ts` - LevelUpEvent, PendingEvolution, EvolutionEvent
-  - `social.ts` - Friend, FriendRequest, ChatMessageEntry, WhisperMessage
-  - `trade.ts` - Trade, TradeOffer, TradeRequest, TradeHistoryEntry
-  - `leaderboard.ts` - LeaderboardEntry, PlayerRank
-  - `common.ts` - WSMessage, ShopItem, TickResult
+  - `index.ts`: Main exports, XP functions
+  - `types/index.ts`: Barrel export for all types
+  - `types/core.ts`: Player, Pokemon, Zone, Species
+  - `types/guild.ts`: All guild-related types and payloads
+  - `types/social.ts`: Chat, friends, blocked players
+  - `types/trade.ts`: Trading system types
 
-**supabase/migrations/:**
-- Purpose: Database schema evolution
+**`supabase/migrations/`:**
+- Purpose: Database schema and seed data
 - Contains: Numbered SQL files applied in order
 - Key files:
-  - `001_initial_schema.sql` - Core tables (players, pokemon, zones)
-  - `009_trades.sql` - Trading system tables
-  - `012_trade_history.sql` - Trade history tracking
-  - `015_evolution_data.sql` - Evolution chain data
-  - `019_iv_system.sql` - IV columns on pokemon table
-  - `020_week6_leaderboards_route4.sql` - Leaderboard functions
+  - `001_initial_schema.sql`: Core tables, RLS policies
+  - `002_seed_data.sql`: Pokemon species, zones, encounters
+  - `015_evolution_data.sql`: Evolution chain data
+  - `022_guilds.sql`: Guild system tables
+  - `026_guild_bank.sql`: Guild bank system
+  - `027_guild_quests.sql`: Guild quest system
 
 ## Key File Locations
 
 **Entry Points:**
-- `apps/game-server/src/index.ts`: Server bootstrap
+- `apps/game-server/src/index.ts`: Server startup
 - `apps/web/src/app/game/page.tsx`: Main game page
-- `apps/web/src/app/layout.tsx`: Root React layout
+- `apps/web/src/components/game/GameShell.tsx`: Game UI root
 
 **Configuration:**
 - `apps/web/.env.local`: Frontend environment variables
@@ -146,90 +130,93 @@ pokemon-idle-mmo/
 - `apps/game-server/tsconfig.json`: Server TypeScript config
 
 **Core Logic:**
-- `apps/game-server/src/hub.ts`: WebSocket management and tick loop
-- `apps/game-server/src/game.ts`: Battle mechanics and encounters
+- `apps/game-server/src/hub.ts`: WebSocket server, tick loop, message handlers
+- `apps/game-server/src/game.ts`: Battle mechanics, stat calculations
 - `apps/game-server/src/db.ts`: All database operations
+- `apps/web/src/stores/gameStore.ts`: Client state management
+- `apps/web/src/lib/ws/gameSocket.ts`: WebSocket client, message handling
 
 **Testing:**
-- No test files detected. Testing framework not configured.
+- No test files detected in the codebase
 
 ## Naming Conventions
 
 **Files:**
-- React components: PascalCase (`GameShell.tsx`, `PartyPanel.tsx`)
-- Utilities/hooks: camelCase (`gameSocket.ts`, `useBattleAnimation.ts`)
-- Types: camelCase (`game.ts`, `friends.ts`)
-- Index files: `index.ts` for barrel exports
+- React components: `PascalCase.tsx` (e.g., `GameShell.tsx`, `BoxPanel.tsx`)
+- TypeScript modules: `camelCase.ts` (e.g., `gameStore.ts`, `townActions.ts`)
+- SQL migrations: `NNN_description.sql` (e.g., `022_guilds.sql`)
+- Barrel exports: `index.ts`
 
 **Directories:**
-- Feature groupings: lowercase (`game/`, `social/`, `world/`)
-- Top-level: lowercase (`app/`, `components/`, `lib/`, `stores/`)
+- Feature groups: `kebab-case` or `camelCase` (e.g., `game-server`, `guild`)
+- React component groups: `lowercase` (e.g., `social`, `world`, `header`)
 
 **Components:**
-- Component files named after the component they export
-- Index files re-export from directory for clean imports
+- Named exports matching filename: `export function GameShell() {}`
+- Co-located with related components in feature directories
+- Barrel exports via `index.ts` for directory imports
 
 ## Where to Add New Code
 
-**New Game Feature (Frontend):**
-- Component: `apps/web/src/components/game/[FeatureName].tsx`
-- If complex, create directory: `apps/web/src/components/game/[feature]/`
-- Add to GameShell.tsx if it's a panel/modal
+**New Feature (e.g., Achievements):**
+- Shared types: `packages/shared/src/types/achievements.ts`
+- Server handlers: Add to `apps/game-server/src/hub.ts` switch statement
+- Server DB queries: Add to `apps/game-server/src/db.ts`
+- Client store: Add state/actions to `apps/web/src/stores/gameStore.ts`
+- Client handlers: Add to `apps/web/src/lib/ws/gameSocket.ts`
+- UI component: `apps/web/src/components/game/AchievementsPanel.tsx`
 
-**New Game Logic (Server):**
-- Message handler: Add to `apps/game-server/src/hub.ts` in message handler map
-- Game calculation: Add to `apps/game-server/src/game.ts`
-- Database query: Add to `apps/game-server/src/db.ts`
+**New Game Component:**
+- Simple component: `apps/web/src/components/game/ComponentName.tsx`
+- Feature with subcomponents: `apps/web/src/components/game/feature/` directory
 
-**New Shared Type:**
-- Add to appropriate file in `packages/shared/src/types/`
-- Export from `packages/shared/src/types/index.ts`
-- Re-export in both `apps/game-server/src/types.ts` and `apps/web/src/types/game.ts`
-
-**New WebSocket Message:**
-1. Define types in `packages/shared/src/types/common.ts` if shared
-2. Add server handler in `apps/game-server/src/hub.ts`
-3. Add client handler and send method in `apps/web/src/lib/ws/gameSocket.ts`
-4. Update Zustand store if message affects state
+**New UI Primitive:**
+- Location: `apps/web/src/components/ui/ComponentName.tsx`
+- Export: Add to `apps/web/src/components/ui/index.ts`
 
 **New Database Table:**
-- Create numbered migration in `supabase/migrations/` (e.g., `022_new_feature.sql`)
-- Add types to `packages/shared/src/types/`
-- Add queries to `apps/game-server/src/db.ts`
+- Migration: `supabase/migrations/NNN_description.sql` (increment NNN)
+- Apply via Supabase Dashboard SQL Editor
 
-**New UI Component:**
-- Primitive (button, card): `apps/web/src/components/ui/`
-- Game feature: `apps/web/src/components/game/`
-- Export from `index.ts` in directory for clean imports
+**Utilities:**
+- Frontend utilities: `apps/web/src/lib/utils/` or `apps/web/src/lib/` subdirectory
+- Shared utilities: `packages/shared/src/utils/`
+
+**New WebSocket Message Type:**
+1. Define payload type in `packages/shared/src/types/`
+2. Add handler case to `apps/game-server/src/hub.ts:handleMessage()`
+3. Implement handler method in `GameHub` class
+4. Add client handler to `apps/web/src/lib/ws/gameSocket.ts`
+5. Update store if needed in `apps/web/src/stores/gameStore.ts`
 
 ## Special Directories
 
-**apps/web/public/:**
-- Purpose: Static assets served at root URL
-- Generated: No
+**`.planning/`:**
+- Purpose: GSD methodology planning documents
+- Generated: Manually via /gsd commands
 - Committed: Yes
-- Contains: `sprites/trainers/`, `maps/`
 
-**apps/game-server/dist/:**
-- Purpose: Compiled JavaScript from TypeScript
-- Generated: Yes (by `npm run build`)
-- Committed: No (in .gitignore)
+**`.next/`:**
+- Purpose: Next.js build cache and output
+- Generated: Yes (by `npm run build/dev`)
+- Committed: No (.gitignore)
 
-**packages/shared/dist/:**
-- Purpose: Compiled shared package
-- Generated: Yes (by `npm run build:shared`)
-- Committed: No
+**`dist/`:**
+- Purpose: Compiled JavaScript output
+- Generated: Yes (by TypeScript compiler)
+- Committed: No (.gitignore)
 
-**apps/web/.next/:**
-- Purpose: Next.js build output
-- Generated: Yes
-- Committed: No
+**`node_modules/`:**
+- Purpose: npm dependencies
+- Generated: Yes (by `npm install`)
+- Committed: No (.gitignore)
 
-**node_modules/ (all levels):**
-- Purpose: NPM dependencies
-- Generated: Yes
-- Committed: No
+**`apps/web/public/`:**
+- Purpose: Static assets served at root URL
+- Generated: No (manual asset management)
+- Committed: Yes
+- Subdirectories: `maps/` (zone backgrounds), `sprites/` (Pokemon/trainer sprites)
 
 ---
 
-*Structure analysis: 2026-01-18*
+*Structure analysis: 2026-01-19*

@@ -1,115 +1,144 @@
 # External Integrations
 
-**Analysis Date:** 2026-01-18
+**Analysis Date:** 2026-01-19
 
 ## APIs & External Services
 
-**Supabase (Primary Backend):**
-- Database: PostgreSQL with Row Level Security
-- Authentication: JWT-based with JWKS endpoint
-- SDK/Client: `@supabase/supabase-js`, `@supabase/ssr`
-- Usage: All persistent data storage, user auth, real-time subscriptions
-
-**PokeAPI (Sprite Assets):**
-- Usage: Pokemon sprite images loaded via Next.js Image component
-- Endpoint: `https://raw.githubusercontent.com/PokeAPI/sprites/**`
-- Auth: None (public CDN)
-- Configured in: `apps/web/next.config.ts` (remotePatterns)
-
-**GitHub Actions (CI/CD):**
-- Claude Code Action for automated code review
-- Triggered on: issue comments, PR reviews, issues mentioning `@claude`
+**PokeAPI (Sprites Only):**
+- Used for Pokemon sprite images
+- Configured in `apps/web/next.config.ts` as allowed remote image source
+- Pattern: `https://raw.githubusercontent.com/PokeAPI/sprites/**`
+- No API calls made - static sprite URLs only
 
 ## Data Storage
 
 **Primary Database:**
-- Provider: Supabase PostgreSQL
-- Connection: Direct via `DATABASE_URL` (game server)
-- Client Access: Via Supabase JS client (both apps)
-- ORM: None - Direct Supabase query builder
+- Supabase PostgreSQL (managed)
+- Connection:
+  - Frontend: `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - Game Server: `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` (service role bypasses RLS)
+  - Direct: `DATABASE_URL` (PostgreSQL connection string)
 
-**Database Tables (from migrations):**
-- Static data: `pokemon_species`, `zones`, `zone_connections`, `encounter_tables`
-- Player data: `players`, `pokemon`, `pokedex_entries`, `inventory`
-- Social: `friends`, `chat_messages`, `trades`, `trade_offers`, `trade_history`, `blocked_players`
-- Progression: `gym_leaders`, `gym_leader_pokemon`, `player_gym_progress`, `weekly_stats`
+**Client Libraries:**
+- Frontend Browser: `@supabase/ssr` createBrowserClient (`apps/web/src/lib/supabase/client.ts`)
+- Frontend Server: `@supabase/ssr` createServerClient (`apps/web/src/lib/supabase/server.ts`)
+- Game Server: `@supabase/supabase-js` createClient (`apps/game-server/src/db.ts`)
 
-**Row Level Security:**
-- Enabled on player data tables
-- Players can only access their own data
-- Service key bypasses RLS for game server operations
+**Database Schema:**
+- 30+ migrations in `supabase/migrations/` (001_initial_schema.sql through 030_cerulean_city.sql)
+- Core tables: `players`, `pokemon`, `pokemon_species`, `zones`, `inventory`
+- Social tables: `friends`, `trades`, `chat_messages`, `guilds`, `guild_members`
+- RLS policies scope player data - each user sees only their own data
+- Game server uses service key to bypass RLS for cross-player operations
 
 **File Storage:**
-- None - No user-uploaded files
-- All sprites are external (PokeAPI GitHub)
+- None - All assets served from external URLs (PokeAPI sprites)
 
 **Caching:**
-- Client-side: Zustand with persist middleware (`apps/web/src/stores/gameStore.ts`)
-- Server-side: In-memory species cache in game hub (`this.speciesMap`)
-- No Redis or external cache
+- None at infrastructure level
+- Client-side: Zustand store with localStorage persistence (`apps/web/src/stores/gameStore.ts`)
 
 ## Authentication & Identity
 
 **Auth Provider:**
 - Supabase Auth (built-in)
-- Method: Email/password (assumed from JWT usage)
 
 **Implementation:**
-- Frontend: `@supabase/ssr` with cookie-based session (`apps/web/src/lib/supabase/`)
-  - Browser client: `createBrowserClient()` in `client.ts`
-  - Server client: `createServerClient()` in `server.ts`
-- Game Server: JWT verification via jose library
-  - JWKS endpoint: `${SUPABASE_URL}/auth/v1/.well-known/jwks.json`
-  - Token passed via WebSocket query param: `?token=JWT`
+- Browser Client: Supabase SSR handles session cookies automatically
+- Server Components: Cookie-based session via `next/headers`
+- WebSocket Auth: JWT token passed as query param (`?token=JWT`)
 
-**Session Management:**
-- Frontend: Supabase SSR handles cookie refresh
-- Game Server: JWT validated on WebSocket connection
-- Service Key: Used by game server for privileged operations
+**JWT Verification (Game Server):**
+- Uses `jose` library for ES256 JWT verification
+- Fetches public keys from Supabase JWKS endpoint
+- Location: `apps/game-server/src/hub.ts`
+```typescript
+const JWKS = createRemoteJWKSet(new URL(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`))
+const { payload } = await jwtVerify(token, JWKS, {...})
+```
+
+**Session Flow:**
+1. User logs in via Supabase Auth (frontend)
+2. Supabase sets session cookie
+3. Frontend extracts access token for WebSocket connection
+4. Game server validates token via JWKS before accepting connection
+
+## Real-Time Communication
+
+**WebSocket Server:**
+- Custom implementation using `ws` package
+- Location: `apps/game-server/src/hub.ts`
+- Port: 8080 (configurable via PORT env var)
+- Protocol: JSON messages with `{ type: string, payload: unknown }` format
+
+**Message Types (Client to Server):**
+- `move_zone` - Travel between zones
+- `swap_party` - Manage Pokemon party
+- `get_state` - Request full game state
+- `get_shop` / `buy_item` - Shop interactions
+- `chat_message` / `send_whisper` - Chat system
+- `send_friend_request` / `accept_friend_request` - Social features
+- Guild operations: `create_guild`, `join_guild`, `guild_chat`, etc.
+- Trade operations: `create_trade`, `add_trade_offer`, `confirm_trade`, etc.
+
+**Message Types (Server to Client):**
+- `tick` - Game loop update (every 1 second)
+- `game_state` - Full state sync
+- `zone_update` / `party_update` - Partial state updates
+- `encounter` / `catch_result` - Battle events
+- `chat_message` / `whisper` - Chat delivery
+- `error` - Error responses
+
+**Tick Loop:**
+- Runs every 1000ms on game server
+- Processes encounters, battles, XP gains
+- Pushes results to connected clients
 
 ## Monitoring & Observability
 
 **Error Tracking:**
 - None configured
-- Errors logged to console
 
 **Logs:**
-- Console logging throughout game server
-- No structured logging or log aggregation
-
-**Metrics:**
-- None configured
+- Console logging only (console.log/console.error)
+- No structured logging framework
 
 ## CI/CD & Deployment
 
-**Frontend Hosting:**
-- Platform: Vercel
-- Auto-deploy: From GitHub pushes
-- Config: `.vercel/` directory present
-
-**Game Server Hosting:**
-- Platform: Railway
-- Deployment: Via root `package.json` scripts (`build` + `start`)
-- Docker: `Dockerfile.bak` present but not currently used
+**Hosting:**
+- Frontend: Vercel (inferred from Next.js project structure)
+- Game Server: Railway (Dockerfile.bak indicates Docker deployment)
 
 **CI Pipeline:**
-- GitHub Actions workflows in `.github/workflows/`
-  - `claude.yml` - Claude Code automation for reviews
-  - `claude-code-review.yml` - Automated code review
+- None detected (no .github/workflows for this project)
+
+**Build Process:**
+1. `npm run build:shared` - Compile shared types
+2. `npm run build:web` - Next.js production build
+3. `npm run build:server` - TypeScript compilation to dist/
+
+**Docker (Game Server):**
+- Base image: node:20-slim
+- Build: Install deps, compile TypeScript, prune dev deps
+- Expose: Port 8080
+- Run: `node dist/index.js`
+- Location: `apps/game-server/Dockerfile.bak`
 
 ## Environment Configuration
 
-**Frontend Required Env Vars (`apps/web/.env.example`):**
+**Required Environment Variables:**
+
+Frontend (apps/web/.env.local):
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 NEXT_PUBLIC_WS_URL=ws://localhost:8080
 ```
 
-**Game Server Required Env Vars (`apps/game-server/.env.example`):**
+Game Server (apps/game-server/.env):
 ```
-DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT.supabase.co:5432/postgres
-SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+DATABASE_URL=postgresql://postgres:PASSWORD@db.PROJECT.supabase.co:5432/postgres
+SUPABASE_URL=https://PROJECT.supabase.co
 SUPABASE_SERVICE_KEY=your_service_key_here
 SUPABASE_JWT_SECRET=your_jwt_secret_here
 PORT=8080
@@ -117,65 +146,49 @@ ALLOWED_ORIGINS=http://localhost:3000
 ```
 
 **Secrets Location:**
-- Development: Local `.env` / `.env.local` files (gitignored)
+- Local: `.env` / `.env.local` files (gitignored)
 - Production: Platform-specific (Vercel env vars, Railway env vars)
-
-## WebSocket Protocol
-
-**Connection:**
-- URL: `NEXT_PUBLIC_WS_URL` (e.g., `ws://localhost:8080` or `wss://production-url`)
-- Authentication: JWT token in query string `?token=JWT`
-- Library: `ws` (server), native WebSocket (client)
-
-**Message Format:**
-```typescript
-interface WSMessage {
-  type: string
-  payload: unknown
-}
-```
-
-**Client to Server Messages:**
-- `get_state`, `move_zone`, `swap_party`, `remove_from_party`
-- `get_shop`, `buy_item`, `use_potion`
-- `send_chat`, `send_whisper`, `get_whisper_history`
-- `send_friend_request`, `accept_friend_request`, `decline_friend_request`, `remove_friend`
-- `send_trade_request`, `accept_trade_request`, `cancel_trade_request`, `add_trade_offer`, `remove_trade_offer`, `ready_trade`, `complete_trade`, `get_trade_history`
-- `challenge_gym`, `enter_museum`, `purchase_membership`
-- `block_player`, `unblock_player`, `get_blocked_players`
-- `get_leaderboard`
-- `evolve_pokemon`, `cancel_evolution`
-
-**Server to Client Messages:**
-- `game_state`, `tick`, `zone_update`, `party_update`, `box_update`
-- `encounter`, `xp_gained`, `level_up`, `evolution_ready`, `evolution_complete`
-- `shop_data`, `inventory_update`, `money_update`
-- `chat_history`, `chat_message`, `whisper_message`, `whisper_history`
-- `friends_update`, `nearby_players`, `friend_zone_update`
-- `trade_requests`, `trade_accepted`, `trade_offers_update`, `trade_ready_update`, `trade_complete`, `trade_history`
-- `gym_data`, `gym_battle_result`, `badge_earned`
-- `museum_data`, `museum_error`
-- `blocked_players`
-- `leaderboard_data`
-- `error`
+- Examples provided: `.env.example` files in both apps
 
 ## Webhooks & Callbacks
 
 **Incoming:**
-- None configured
+- None
 
 **Outgoing:**
-- None configured
+- None
 
-## Database Functions (Supabase RPC)
+## Third-Party SDKs
 
-**Defined in migrations:**
-- `complete_trade(p_trade_id)` - Atomic trade completion with Pokemon transfer
-- `get_pokedex_leaderboard(result_limit)` - Aggregated pokedex rankings
-- `get_catch_leaderboard(result_limit)` - Total catches rankings
-- `get_level_leaderboard(result_limit)` - Highest level rankings
-- `get_player_rank(p_player_id, p_type)` - Individual player ranking
+**Supabase:**
+- Primary integration for auth + database
+- Frontend: `@supabase/ssr` for Next.js SSR compatibility
+- Backend: `@supabase/supabase-js` with service role key
+- Auth: JWKS-based JWT verification
+
+**No Other Third-Party Services:**
+- No payment processing
+- No email/SMS providers
+- No analytics
+- No CDN (besides Vercel/Next.js defaults)
+
+## Database Migrations
+
+**Location:** `supabase/migrations/`
+
+**Application Method:**
+- Manual via Supabase Dashboard SQL Editor
+- Run in numbered order (001, 002, etc.)
+
+**Key Migrations:**
+- `001_initial_schema.sql` - Core tables, RLS policies
+- `004_chat_and_progression.sql` - Chat system
+- `007_friends.sql` - Friend system
+- `009_trades.sql` - Trading system
+- `022_guilds.sql` - Guild system
+- `027_guild_quests.sql` - Guild quests
+- `028_guild_shop.sql` - Guild shop
 
 ---
 
-*Integration audit: 2026-01-18*
+*Integration audit: 2026-01-19*

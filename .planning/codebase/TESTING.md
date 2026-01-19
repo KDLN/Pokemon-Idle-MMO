@@ -1,13 +1,12 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-01-18
+**Analysis Date:** 2025-01-19
 
 ## Test Framework
 
 **Runner:**
-- Not configured
-- No test framework detected in `package.json` files
-- No Jest, Vitest, or other test config files present
+- Not configured - no test framework installed
+- No Jest, Vitest, or other test runner present in `package.json`
 
 **Assertion Library:**
 - Not configured
@@ -15,260 +14,302 @@
 **Run Commands:**
 ```bash
 # No test commands available
-# npm test is not defined
+# Tests would need to be added to package.json scripts
 ```
 
 ## Test File Organization
 
 **Location:**
-- No test files detected in the codebase
-- Pattern expected (if tests were added): co-located `*.test.ts` / `*.test.tsx` files
-
-**Naming:**
-- Not established (no test files exist)
-
-**Structure:**
-- Not established
-
-## Test Structure
-
-**Suite Organization:**
-- Not established (no tests present)
+- No test files exist in the codebase
+- No `__tests__` directories
+- No `.test.ts` or `.spec.ts` files (only in node_modules)
 
 **Recommended Pattern (if adding tests):**
-```typescript
-describe('ComponentName or functionName', () => {
-  describe('scenario', () => {
-    it('should expected behavior', () => {
-      // Arrange
-      // Act
-      // Assert
-    })
-  })
-})
-```
+- Co-located tests: `ComponentName.test.tsx` next to `ComponentName.tsx`
+- Or separate `__tests__/` directories per feature
 
-## Mocking
+## Current Testing Status
 
-**Framework:**
-- Not configured
+**Coverage:** No automated testing
 
-**Patterns:**
-- Not established
-
-**What to Mock (recommendations based on architecture):**
-- WebSocket connections (`ws`)
-- Supabase client
-- External API calls (if any)
-
-**What NOT to Mock:**
-- Pure calculation functions (in `game.ts`)
-- Type utilities
-- Simple helper functions
-
-## Fixtures and Factories
-
-**Test Data:**
-- Not established
-
-**Location:**
-- Suggest: `__fixtures__/` or `test/fixtures/` if tests added
-
-**Recommended Pattern:**
-```typescript
-// Example factory for Pokemon
-function createMockPokemon(overrides: Partial<Pokemon> = {}): Pokemon {
-  return {
-    id: 'test-pokemon-1',
-    owner_id: 'test-player-1',
-    species_id: 1,
-    level: 5,
-    // ... defaults
-    ...overrides
-  }
-}
-```
-
-## Coverage
-
-**Requirements:**
-- None enforced (no tests)
-
-**View Coverage:**
-```bash
-# Not available
-```
-
-## Test Types
-
-**Unit Tests:**
-- Not present
-- Candidates for unit testing:
-  - `apps/game-server/src/game.ts` - Pure calculation functions
-    - `calculateHP()`, `calculateStat()`, `xpForLevel()`
-    - `getTypeEffectiveness()`, `calculateDamage()`
-    - `rollEncounter()`, `rollLevel()`, `rollShiny()`
-  - `packages/shared/src/index.ts` - XP utilities
-    - `xpForLevel()`, `getXPProgress()`
-  - `apps/web/src/lib/ui/index.ts` - Formatting utilities
-    - `formatNumber()`, `formatTime()`, `formatRelativeTime()`, `cn()`
-
-**Integration Tests:**
-- Not present
-- Candidates:
-  - WebSocket message handling (`hub.ts` + `gameSocket.ts`)
-  - Database operations (`db.ts`)
-  - State store actions (`gameStore.ts`)
-
-**E2E Tests:**
-- Not present
-- Framework not configured (Playwright or Cypress would be candidates)
-
-## Common Patterns
-
-**Async Testing:**
-- Not established
-- Recommended:
-```typescript
-it('should handle async operation', async () => {
-  const result = await someAsyncFunction()
-  expect(result).toBe(expectedValue)
-})
-```
-
-**Error Testing:**
-- Not established
-- Recommended:
-```typescript
-it('should throw on invalid input', () => {
-  expect(() => functionWithValidation(invalidInput)).toThrow()
-})
-```
-
-## Testing Gaps Analysis
-
-**Critical Untested Code:**
-
-1. **Game Logic** (`apps/game-server/src/game.ts`):
-   - Battle simulation (`simulate1v1Battle`, `resolveBattle`)
-   - Catch mechanics (`attemptCatch`)
-   - XP/Level calculations
-   - Evolution logic (`findEvolutionTarget`, `checkEvolutions`)
-   - Type effectiveness chart
-   - These are pure functions with complex logic - high value test targets
-
-2. **Database Operations** (`apps/game-server/src/db.ts`):
-   - Player data CRUD
-   - Pokemon storage/retrieval
-   - Party management
-   - Integration tests would catch schema mismatches
-
-3. **WebSocket Hub** (`apps/game-server/src/hub.ts`):
-   - Message routing
-   - Session management
-   - Authentication flow
-   - Tick loop timing
-
-4. **State Management** (`apps/web/src/stores/gameStore.ts`):
-   - State transitions
-   - Side effects
-   - Zustand persistence
-
-5. **UI Components** (`apps/web/src/components/`):
-   - Rendering with various props
-   - Event handler triggers
-   - Conditional rendering logic
-
-**Recommended Priority for Adding Tests:**
-
-1. **High Priority** - Pure game logic functions:
-   - File: `apps/game-server/src/game.ts`
-   - Functions: `calculateHP`, `calculateDamage`, `getTypeEffectiveness`, `attemptCatch`
-   - Rationale: Pure functions, easy to test, core game balance
-
-2. **Medium Priority** - State management:
-   - File: `apps/web/src/stores/gameStore.ts`
-   - Actions: `setParty`, `updatePokemonInParty`, `applyXPGains`
-   - Rationale: State transitions affect entire app
-
-3. **Medium Priority** - WebSocket message handlers:
-   - File: `apps/web/src/lib/ws/gameSocket.ts`
-   - Handlers: `handleTick`, `handleGameState`, `handleEvolution`
-   - Rationale: Critical data flow path
-
-4. **Lower Priority** - UI components:
-   - Files: `apps/web/src/components/ui/*.tsx`
-   - Rationale: Visual verification often sufficient
+**Manual Testing:**
+- Development servers for both apps
+- Browser-based testing of UI
+- Console logging for debugging WebSocket messages
 
 ## Recommended Test Setup
 
-If adding tests, consider:
+**For Frontend (apps/web):**
 
-**For Backend (game-server):**
-```json
-// package.json additions
-{
-  "devDependencies": {
-    "vitest": "^3.0.0"
-  },
-  "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest"
-  }
-}
+Install Vitest (recommended for Vite/Next.js):
+```bash
+npm install -D vitest @testing-library/react @testing-library/jest-dom jsdom
 ```
 
-**For Frontend (web):**
-```json
-// package.json additions
-{
-  "devDependencies": {
-    "@testing-library/react": "^16.0.0",
-    "@testing-library/jest-dom": "^6.0.0",
-    "vitest": "^3.0.0",
-    "jsdom": "^24.0.0"
-  },
-  "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest"
-  }
-}
-```
-
-**Vitest Config (suggested):**
+**vitest.config.ts:**
 ```typescript
-// vitest.config.ts
 import { defineConfig } from 'vitest/config'
+import react from '@vitejs/plugin-react'
+import { resolve } from 'path'
 
 export default defineConfig({
+  plugins: [react()],
   test: {
-    environment: 'jsdom', // for React tests
+    environment: 'jsdom',
     globals: true,
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'html'],
+    setupFiles: ['./src/test/setup.ts'],
+  },
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './src'),
     },
   },
 })
 ```
 
-## Manual Testing Patterns
+**For Game Server (apps/game-server):**
 
-**Current Approach:**
-- Manual browser testing
-- Console logging with prefixes (`[WS]`, `[Evolution]`)
-- Debug commands exposed in development:
-  - `window.__gameSocket` for WebSocket debugging
+Install Vitest:
+```bash
+npm install -D vitest
+```
 
-**Recommended Manual Test Cases:**
-1. Authentication flow (login/signup)
-2. WebSocket reconnection
-3. Battle sequence animations
-4. Evolution prompt flow
-5. Party management (swap, remove)
-6. Shop purchase flow
-7. Chat message sending/receiving
+**vitest.config.ts:**
+```typescript
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    globals: true,
+  },
+})
+```
+
+## Test Structure (Recommended)
+
+**Suite Organization:**
+```typescript
+import { describe, it, expect, beforeEach } from 'vitest'
+import { calculateHP, calculateStat, xpForLevel } from './game'
+
+describe('calculateHP', () => {
+  it('calculates HP correctly at level 1 with 0 IVs', () => {
+    // Base HP 45, Level 1, IV 0
+    expect(calculateHP(45, 1, 0)).toBe(11)
+  })
+
+  it('calculates HP correctly at level 50 with max IVs', () => {
+    // Base HP 45, Level 50, IV 31
+    expect(calculateHP(45, 50, 31)).toBe(120)
+  })
+})
+```
+
+**Patterns:**
+- Group related tests in `describe` blocks
+- Clear test names describing expected behavior
+- One assertion per test when possible
+- Use `beforeEach` for shared setup
+
+## Mocking (Recommended)
+
+**Framework:** Vitest built-in mocking
+
+**Patterns:**
+```typescript
+import { vi } from 'vitest'
+
+// Mock Supabase client
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: vi.fn(() => ({
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: mockPlayer, error: null }),
+    })),
+  })),
+}))
+
+// Mock WebSocket
+vi.mock('ws', () => ({
+  WebSocket: vi.fn(),
+  WebSocketServer: vi.fn(() => ({
+    on: vi.fn(),
+  })),
+}))
+```
+
+**What to Mock:**
+- External APIs (Supabase)
+- WebSocket connections
+- Time-based functions (`Date.now()`, `setTimeout`)
+- Random number generation for deterministic tests
+
+**What NOT to Mock:**
+- Pure calculation functions (`calculateHP`, `xpForLevel`)
+- Type utilities and helpers
+- State management logic
+
+## Fixtures and Factories (Recommended)
+
+**Test Data:**
+```typescript
+// tests/fixtures/pokemon.ts
+import type { Pokemon, PokemonSpecies } from '@pokemon-idle/shared'
+
+export const mockSpecies: PokemonSpecies = {
+  id: 1,
+  name: 'Bulbasaur',
+  type1: 'GRASS',
+  type2: 'POISON',
+  base_hp: 45,
+  base_attack: 49,
+  base_defense: 49,
+  base_sp_attack: 65,
+  base_sp_defense: 65,
+  base_speed: 45,
+  base_catch_rate: 45,
+  base_xp_yield: 64,
+  evolves_from_species_id: null,
+  evolution_level: 16,
+  evolution_method: 'level',
+}
+
+export const mockPokemon: Pokemon = {
+  id: 'test-pokemon-1',
+  owner_id: 'test-player-1',
+  species_id: 1,
+  nickname: null,
+  level: 5,
+  xp: 125,
+  current_hp: 20,
+  max_hp: 20,
+  stat_attack: 10,
+  stat_defense: 10,
+  stat_sp_attack: 12,
+  stat_sp_defense: 12,
+  stat_speed: 10,
+  iv_hp: 15,
+  iv_attack: 15,
+  iv_defense: 15,
+  iv_sp_attack: 15,
+  iv_sp_defense: 15,
+  iv_speed: 15,
+  party_slot: 1,
+  caught_at: '2025-01-01T00:00:00Z',
+  is_shiny: false,
+}
+
+export function createMockPokemon(overrides: Partial<Pokemon> = {}): Pokemon {
+  return { ...mockPokemon, ...overrides }
+}
+```
+
+**Location:**
+- `apps/game-server/tests/fixtures/`
+- `apps/web/src/test/fixtures/`
+
+## Coverage
+
+**Requirements:** None enforced
+
+**Recommended Targets:**
+- Game logic (calculation functions): 90%+
+- WebSocket message handlers: 80%+
+- React components: 70%+
+- Utilities: 90%+
+
+**View Coverage (if configured):**
+```bash
+npm run test -- --coverage
+```
+
+## Test Types
+
+**Unit Tests:**
+- Pure functions (stat calculations, XP formulas)
+- Type effectiveness calculations
+- Utility functions (`cn()`, `formatNumber()`)
+- State update logic
+
+**Integration Tests:**
+- WebSocket message handling flow
+- Store updates from server messages
+- Database query chains
+
+**E2E Tests:**
+- Not configured
+- Playwright or Cypress recommended for future
+- Would cover: login flow, game actions, trades
+
+## Common Patterns (Recommended)
+
+**Async Testing:**
+```typescript
+import { describe, it, expect } from 'vitest'
+
+describe('Database Operations', () => {
+  it('fetches player by user ID', async () => {
+    const player = await getPlayerByUserId('test-user-id')
+    expect(player).not.toBeNull()
+    expect(player?.username).toBe('TestPlayer')
+  })
+})
+```
+
+**Error Testing:**
+```typescript
+describe('Error Handling', () => {
+  it('returns null when player not found', async () => {
+    const player = await getPlayerByUserId('nonexistent-id')
+    expect(player).toBeNull()
+  })
+
+  it('returns empty array when no encounters', async () => {
+    const encounters = await getEncounterTable(999)
+    expect(encounters).toEqual([])
+  })
+})
+```
+
+**Zustand Store Testing:**
+```typescript
+import { renderHook, act } from '@testing-library/react'
+import { useGameStore } from '@/stores/gameStore'
+
+describe('Game Store', () => {
+  beforeEach(() => {
+    useGameStore.getState().reset()
+  })
+
+  it('sets player data', () => {
+    const { result } = renderHook(() => useGameStore())
+
+    act(() => {
+      result.current.setPlayer(mockPlayer)
+    })
+
+    expect(result.current.player).toEqual(mockPlayer)
+  })
+})
+```
+
+## Priority Test Areas
+
+**High Priority (game-critical logic):**
+1. `apps/game-server/src/game.ts` - Battle calculations, stat formulas
+2. `apps/game-server/src/ivs.ts` - IV generation
+3. `packages/shared/src/index.ts` - XP calculations
+
+**Medium Priority:**
+4. `apps/game-server/src/db.ts` - Database query functions
+5. `apps/web/src/stores/gameStore.ts` - State management
+6. `apps/web/src/lib/ui/index.ts` - UI utilities
+
+**Lower Priority:**
+7. React components (visual testing)
+8. WebSocket integration tests
 
 ---
 
-*Testing analysis: 2026-01-18*
+*Testing analysis: 2025-01-19*

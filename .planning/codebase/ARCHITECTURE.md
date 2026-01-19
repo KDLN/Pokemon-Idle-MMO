@@ -1,139 +1,154 @@
 # Architecture
 
-**Analysis Date:** 2026-01-18
+**Analysis Date:** 2026-01-19
 
 ## Pattern Overview
 
-**Overall:** Real-time Client-Server Architecture with WebSocket Communication
+**Overall:** Client-Server Monorepo with Real-time WebSocket Communication
 
 **Key Characteristics:**
-- Monorepo with three packages: web app, game server, shared types
-- Game server runs a 1-second tick loop, pushing state updates to connected clients
-- Frontend uses client-side state management (Zustand) synced via WebSocket messages
-- Supabase handles authentication (JWT), database (PostgreSQL), and RLS policies
-- Stateful server: player sessions are held in-memory on game server
+- Monorepo with three packages: web frontend, game server, shared types/utilities
+- Real-time game state synchronization via WebSocket (1-second tick loop)
+- Supabase PostgreSQL as persistence layer with Row Level Security
+- JWT-based authentication shared between REST and WebSocket connections
+- Zustand-based client state management with persistence middleware
 
 ## Layers
 
-**Presentation Layer (Frontend):**
-- Purpose: Render game UI, handle user interactions, animate encounters
+**Frontend (Next.js Web App):**
+- Purpose: React-based game UI with server-side rendering for auth pages
 - Location: `apps/web/src/`
-- Contains: React components, Zustand store, WebSocket client, Tailwind CSS
-- Depends on: Game server (WebSocket), Supabase (Auth)
-- Used by: Browser clients
+- Contains: React components, Zustand store, WebSocket client, Supabase SSR client
+- Depends on: `@pokemon-idle/shared` package, Supabase, WebSocket server
+- Used by: End users via browser
 
-**Game Logic Layer (Game Server):**
-- Purpose: Process game ticks, battles, catches, evolution, trading, chat
+**Game Server (Node.js WebSocket):**
+- Purpose: Authoritative game state, tick processing, real-time message handling
 - Location: `apps/game-server/src/`
-- Contains: Hub (WebSocket management), Game (battle logic), DB queries
-- Depends on: Supabase (Database, JWT verification)
-- Used by: Frontend via WebSocket
+- Contains: WebSocket hub, game logic, database queries, session management
+- Depends on: `@pokemon-idle/shared` package, Supabase service client
+- Used by: Frontend via WebSocket connection
 
-**Shared Types Layer:**
-- Purpose: TypeScript interfaces shared between frontend and backend
+**Shared Package:**
+- Purpose: Type definitions and utility functions shared between frontend and backend
 - Location: `packages/shared/src/`
-- Contains: Type definitions, XP calculation utilities
-- Depends on: Nothing
-- Used by: Both apps/web and apps/game-server
+- Contains: TypeScript interfaces for all game entities, XP calculations
+- Depends on: Nothing (pure TypeScript)
+- Used by: Both `apps/web` and `apps/game-server`
 
-**Data Layer (Supabase):**
-- Purpose: Persistent storage, authentication, row-level security
-- Location: `supabase/migrations/` (schema)
-- Contains: PostgreSQL tables, RLS policies, database functions
-- Depends on: Supabase cloud service
-- Used by: Game server (via service key), Frontend (via anon key for auth only)
+**Database (Supabase PostgreSQL):**
+- Purpose: Persistent storage for all game data with RLS policies
+- Location: `supabase/migrations/` (schema definitions)
+- Contains: Static game data (species, zones), player data (pokemon, inventory)
+- Depends on: Supabase infrastructure
+- Used by: Game server via service key, frontend via anon key with RLS
 
 ## Data Flow
 
-**Game Tick Flow:**
-
-1. Server runs 1-second tick loop in `hub.ts`
-2. For each connected client, call `processTick()` from `game.ts`
-3. Tick checks for encounters, battles, XP, evolution eligibility
-4. Server sends `tick` message with results to client WebSocket
-5. Frontend receives tick, updates Zustand store, triggers animations
-
 **Authentication Flow:**
 
-1. User logs in via Supabase Auth on frontend
-2. Frontend receives JWT access token
-3. Client connects to WebSocket with token in query string: `?token=JWT`
-4. Server validates JWT using jose library against Supabase JWKS endpoint
-5. Server loads player session from database
+1. User authenticates via Supabase Auth (login/signup pages)
+2. Frontend receives JWT access token from Supabase session
+3. Frontend passes JWT as query param when connecting to WebSocket: `?token=JWT`
+4. Game server validates JWT against Supabase JWKS endpoint using jose library
+5. On validation, server loads player session from database
 
-**Zone Movement Flow:**
+**Real-time Game Loop:**
 
-1. Frontend sends `move_zone` message with target zone_id
-2. Server validates zone connectivity, updates player in DB
-3. Server loads new zone's encounter table
-4. Server sends `zone_update` to client with new zone and connected zones
-5. Server broadcasts `nearby_players` to all players in old and new zones
+1. Game server runs tick loop every 1 second (`hub.ts:processTicks()`)
+2. Each tick processes encounters, battles, XP gains for all connected players
+3. Tick results sent to clients via WebSocket: `{ type: 'tick', payload: TickResult }`
+4. Frontend Zustand store updates with new state, React re-renders affected components
+5. Pending animations (battles, evolutions) queue state updates until complete
+
+**Client-Server Message Flow:**
+
+1. Client sends JSON message: `{ type: string, payload: unknown }`
+2. Server `handleMessage()` switch-cases on `type` to route to handler
+3. Handler validates session, executes game logic, updates database
+4. Server sends response(s) back to client (and sometimes broadcasts to others)
+5. Client `gameSocket.ts` message handlers update Zustand store
 
 **State Management:**
-- Server holds authoritative state in `PlayerSession` objects (in-memory)
-- Frontend holds UI state in Zustand store with persistence middleware
-- State syncs via WebSocket messages on connect and on state changes
-- Reconnection triggers full state refresh from server
+- Server maintains in-memory `PlayerSession` objects per connected client
+- Session includes: player data, party, zone, inventory, pending evolutions, guild info
+- Client Zustand store mirrors relevant server state with UI-specific additions
+- Some state persisted to localStorage via Zustand persist middleware (trainer customization)
 
 ## Key Abstractions
 
-**PlayerSession (Server):**
-- Purpose: In-memory representation of connected player's game state
-- Examples: `apps/game-server/src/types.ts` (PlayerSession interface)
-- Pattern: Mutable object updated on each tick, persisted to DB on changes
+**PlayerSession (Server-side):**
+- Purpose: In-memory representation of connected player's current game state
+- Examples: `apps/game-server/src/types.ts` (interface), `apps/game-server/src/hub.ts` (usage)
+- Pattern: Loaded on WebSocket connect, updated during gameplay, synced to DB
 
-**GameStore (Frontend):**
-- Purpose: Client-side state container for all game data
+**GameStore (Client-side):**
+- Purpose: Centralized reactive state container for all UI data
 - Examples: `apps/web/src/stores/gameStore.ts`
-- Pattern: Zustand store with actions for each state mutation
+- Pattern: Zustand store with actions, partial persistence, selector-based subscriptions
 
-**WebSocket Message Protocol:**
-- Purpose: Structured communication between client and server
-- Examples: `{ type: string, payload: unknown }` format
-- Pattern: Type-based routing with handler map
+**GameSocket (Client-side singleton):**
+- Purpose: WebSocket connection manager with message routing
+- Examples: `apps/web/src/lib/ws/gameSocket.ts`
+- Pattern: Singleton class, handler map for message types, reconnection logic
 
-**Encounter Event:**
-- Purpose: Represents a wild Pokemon encounter with battle/catch data
-- Examples: `packages/shared/src/types/catching.ts`
-- Pattern: Immutable data object passed from server to client
+**Shared Types:**
+- Purpose: Single source of truth for data shapes
+- Examples: `packages/shared/src/types/core.ts`, `packages/shared/src/types/guild.ts`
+- Pattern: TypeScript interfaces re-exported from both server and client type files
 
 ## Entry Points
 
 **Frontend Entry:**
-- Location: `apps/web/src/app/game/page.tsx`
-- Triggers: User navigates to /game route
-- Responsibilities: Auth check, redirect if needed, render GameShell with access token
+- Location: `apps/web/src/app/layout.tsx` (root layout), `apps/web/src/app/game/page.tsx` (main game)
+- Triggers: User navigates to `/game` route
+- Responsibilities: Auth check, player existence check, render `GameShell` component
 
 **Game Server Entry:**
 - Location: `apps/game-server/src/index.ts`
-- Triggers: Node.js process start
-- Responsibilities: Initialize DB connection, start GameHub on port
+- Triggers: `npm run dev` or `npm start`
+- Responsibilities: Initialize database client, start WebSocket server, begin tick loop
 
-**WebSocket Connection Entry:**
-- Location: `apps/game-server/src/hub.ts` (handleConnection method)
-- Triggers: Client WebSocket connection
-- Responsibilities: Validate JWT, load session, send initial state, register handlers
+**WebSocket Connection Handler:**
+- Location: `apps/game-server/src/hub.ts:handleConnection()`
+- Triggers: Client connects with `?token=JWT`
+- Responsibilities: Validate token, load session, send initial game state, register handlers
+
+**GameShell Component:**
+- Location: `apps/web/src/components/game/GameShell.tsx`
+- Triggers: Mounted when `/game` page renders
+- Responsibilities: Initialize WebSocket connection, render game UI layout, manage modals
 
 ## Error Handling
 
-**Strategy:** Graceful degradation with error messages to client
+**Strategy:** Fail-fast with user feedback, reconnection for transient failures
 
 **Patterns:**
-- Server catches all errors in message handlers, sends `error` message to client
-- Database query failures return null/empty, logged to console
-- WebSocket disconnect triggers cleanup and trade cancellation
-- Frontend displays connection status indicator, auto-reconnects with exponential backoff
+- WebSocket errors close connection with error code, client attempts reconnect
+- Server sends `error` message type with payload `{ message: string }`
+- Client `handleError()` updates store or shows notification
+- Database errors logged server-side, generic error sent to client
+- Invalid message types/payloads silently ignored (no crash)
 
 ## Cross-Cutting Concerns
 
-**Logging:** Console.log statements throughout server code. No structured logging framework.
+**Logging:**
+- Server uses `console.log/error` directly
+- Structured format: `console.log('Event description:', data)`
+- No client-side logging framework (browser console only)
 
-**Validation:** Server validates all client messages before processing. Zone connectivity, item ownership, trade participation all checked.
+**Validation:**
+- Server validates all incoming WebSocket message payloads before processing
+- Database constraints (CHECK, UNIQUE) provide last-line defense
+- RLS policies enforce player-scoped data access
+- Frontend validates forms before sending requests
 
-**Authentication:** JWT verified on every WebSocket connection. No per-message auth (trust established connection). Player ownership verified on all mutations.
-
-**Rate Limiting:** Encounter cooldown (8 ticks), whisper rate limit (10 per 10 seconds).
+**Authentication:**
+- Supabase Auth handles user accounts, sessions, tokens
+- Server validates JWT on every WebSocket connection (not per-message)
+- Session state cached in-memory for duration of connection
+- Reconnections require fresh token from Supabase client
 
 ---
 
-*Architecture analysis: 2026-01-18*
+*Architecture analysis: 2026-01-19*

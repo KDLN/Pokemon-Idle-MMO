@@ -1,249 +1,266 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-01-18
+**Analysis Date:** 2025-01-19
 
 ## Naming Patterns
 
 **Files:**
-- React components: PascalCase (`PokemonCard.tsx`, `Button.tsx`, `HPBar.tsx`)
-- Utility/service files: camelCase (`gameSocket.ts`, `gameStore.ts`)
-- Type definition files: camelCase or lowercase (`game.ts`, `core.ts`, `battle.ts`)
-- Backend modules: camelCase (`hub.ts`, `db.ts`, `game.ts`, `types.ts`)
-- Index files for barrel exports: `index.ts`
+- Components: PascalCase (`PokemonCard.tsx`, `GuildPanel.tsx`, `ChatMessage.tsx`)
+- Utilities/libs: camelCase (`gameSocket.ts`, `friendUtils.ts`, `timeOfDay.ts`)
+- Types: camelCase (`game.ts`, `chat.ts`, `friends.ts`, `trade.ts`)
+- Index files: `index.ts` for barrel exports
 
 **Functions:**
-- camelCase for all functions: `handleLogin`, `moveToZone`, `calculateHP`
-- Event handlers prefixed with `handle`: `handleTick`, `handleGameState`
-- Getter functions prefixed with `get`: `getSpeciesData`, `getTypeColor`
-- Boolean functions start with `is`/`has`/`roll`: `isConnected`, `rollEncounter`
-- Message handlers use `handle` + message type: `handleEvolution`, `handleChatMessage`
+- camelCase for all functions: `handleTick`, `getSpeciesData`, `calculateHP`
+- Event handlers prefixed with `handle`: `handleGameState`, `handleChatMessage`
+- Boolean functions prefixed with `is`/`has`/`can`: `isPlayerMuted`, `isConnected`
+- Getters prefixed with `get`: `getTypeColor`, `getStaggerDelay`
+- Setters prefixed with `set`: `setPlayer`, `setGuildMembers`
 
 **Variables:**
-- camelCase: `reconnectAttempts`, `pokeballs`, `typeMultiplier`
-- React state: `[value, setValue]` pattern
-- Constants: SCREAMING_SNAKE_CASE for module-level constants: `SHINY_RATE`, `TYPE_COLORS`, `SPECIES_DATA`
+- camelCase for all variables: `speciesMap`, `currentEncounter`, `whisperHistory`
+- UPPER_SNAKE_CASE for constants: `CHAT_CHANNELS`, `MAX_CHAT_LENGTH`, `SHINY_RATE`
+- Private class members prefixed with `private`: `private ws: WebSocket`
 
 **Types/Interfaces:**
-- PascalCase: `Pokemon`, `PlayerSession`, `BattleResult`
-- Props interfaces: `{ComponentName}Props` (e.g., `ButtonProps`, `PokemonCardProps`)
-- Payloads/Data: descriptive PascalCase (`TickResult`, `EncounterEvent`)
+- PascalCase: `PlayerSession`, `GuildMember`, `TradeOffer`
+- Props interfaces: `{ComponentName}Props` pattern (`ButtonProps`, `PokemonCardProps`)
+- Payloads suffixed with `Payload`: `GuildDataPayload`, `TickResult`
 
 **Database Columns:**
-- snake_case in database: `species_id`, `current_hp`, `stat_attack`
-- Mapped to camelCase in TypeScript where appropriate
+- snake_case: `player_id`, `current_zone_id`, `iv_attack`, `created_at`
 
 ## Code Style
 
 **Formatting:**
-- No Prettier config detected; rely on ESLint rules
-- 2-space indentation (inferred from source files)
-- Single quotes for strings in TypeScript
-- Trailing commas in multiline arrays/objects
-- Max line length: ~100-120 characters (flexible)
+- No Prettier or other formatter configured
+- 2-space indentation (implicit from TypeScript defaults)
+- Single quotes for strings (consistent in codebase)
+- Semicolons omitted (Next.js default)
+- Trailing commas in multiline objects/arrays
 
 **Linting:**
-- ESLint 9 with `eslint-config-next` for frontend
-- Uses core-web-vitals and TypeScript presets
-- No custom rules defined; follows Next.js defaults
-- Config: `apps/web/eslint.config.mjs`
+- ESLint with Next.js config (`eslint-config-next/core-web-vitals`, `eslint-config-next/typescript`)
+- Config location: `apps/web/eslint.config.mjs`
+- No custom rules beyond Next.js defaults
+- Run with: `npm run lint`
 
-**TypeScript Settings:**
-- Strict mode enabled: `"strict": true`
-- No implicit any (via strict mode)
-- ES Modules: `"type": "module"` in package.json
-- Path aliases: `@/*` for frontend src, `@pokemon-idle/shared` for shared package
+**TypeScript:**
+- Strict mode enabled in both apps
+- No `any` types (use `unknown` and type guards)
+- Explicit return types on exported functions
+- Use `type` imports: `import type { Player } from '@/types/game'`
 
 ## Import Organization
 
 **Order:**
-1. Node.js built-ins (rare in this codebase)
-2. External packages (`react`, `next`, `zustand`, `ws`, `jose`)
-3. Internal packages (`@pokemon-idle/shared`)
-4. Path-aliased imports (`@/lib/...`, `@/stores/...`, `@/components/...`)
-5. Relative imports (`./types.js`, `./db.js`)
-
-**Example from `apps/web/src/lib/ws/gameSocket.ts`:**
-```typescript
-import { useGameStore } from '@/stores/gameStore'
-import type { TickResult, GameState, Zone, Pokemon } from '@/types/game'
-import type { GymLeader, GymBattleResult } from '@/components/game/GymBattlePanel'
-import type { ChatMessageData, ChatChannel } from '@/types/chat'
-```
+1. React imports: `'use client'` directive first, then `import { ... } from 'react'`
+2. External packages: `@supabase/supabase-js`, `zustand`, `jose`, `ws`
+3. Internal packages: `@pokemon-idle/shared`
+4. Path aliases: `@/stores/...`, `@/types/...`, `@/lib/...`, `@/components/...`
+5. Relative imports (if any)
 
 **Path Aliases:**
-- Frontend: `@/*` maps to `./src/*`
-- Both: `@pokemon-idle/shared` maps to shared package
-- Configured in `tsconfig.json` paths
+- `@/*` maps to `./src/*` (configured in `tsconfig.json`)
+- `@pokemon-idle/shared` maps to `../../packages/shared/dist/index`
 
-**Backend Import Convention:**
-- Use `.js` extension for local imports (ESM requirement): `import { initDatabase } from './db.js'`
-- Type-only imports: `import type { ... } from './types.js'`
+**Example:**
+```typescript
+'use client'
+
+import { useState, useEffect } from 'react'
+import { create } from 'zustand'
+import type { Guild, GuildMember } from '@pokemon-idle/shared'
+import { useGameStore } from '@/stores/gameStore'
+import type { ChatMessageData } from '@/types/chat'
+import { cn, getSpeciesData } from '@/lib/ui'
+import { Button } from '@/components/ui/Button'
+```
 
 ## Error Handling
 
-**Frontend Patterns:**
-- Try/catch with state-based error display:
+**Patterns:**
+- Database errors logged with `console.error()` and return safe defaults:
 ```typescript
-try {
-  const result = await someAsyncOperation()
-} catch (err) {
-  setError('An unexpected error occurred')
-  console.error(err)
-} finally {
-  setLoading(false)
+if (error) {
+  console.error('Failed to get player:', error)
+  return null
 }
 ```
+- WebSocket errors caught and logged, reconnection scheduled
+- No throw statements in data fetching - return `null` or empty arrays
+- Type guards for unknown payloads: `const data = payload as GuildDataPayload`
 
-**Backend Patterns:**
-- Try/catch with console.error and process.exit for fatal errors:
-```typescript
-try {
-  initDatabase()
-} catch (err) {
-  console.error('Failed to initialize database:', err)
-  process.exit(1)
-}
-```
-- WebSocket message parsing uses try/catch with silent error logging
+**Server-side:**
+- Database operations return `null` or empty arrays on failure
+- Validation errors sent to client via `error` message type
+- Rate limiting with in-memory maps and periodic cleanup
 
-**Error Messages:**
-- User-facing: Generic, non-technical ("An unexpected error occurred")
-- Console: Detailed with original error object
-- Server responses: JSON with `message` field
+**Client-side:**
+- Store error state in Zustand (`guildError`, `setGuildError`)
+- Display errors in system chat or toast notifications
+- Graceful degradation - show loading states, not crashes
 
 ## Logging
 
-**Framework:** `console` (native)
+**Framework:** `console.log`, `console.error` (native)
 
 **Patterns:**
-- Prefix logs with context: `[WS]`, `[Evolution]`, `[Evolution Handler]`
-- Log message types on receive: `console.log('[WS] Received:', msg.type, msg.payload)`
-- Debug logs for state transitions: `console.log('[applyEvolution] BEFORE: ...)`
-- Error logs via `console.error` with full error object
+- Prefix WebSocket logs with `[WS]`: `console.log('[WS] Received:', msg.type)`
+- Prefix debug logs: `console.log('[Debug] Level up result:', result)`
+- Server startup: `console.log(\`WebSocket server running on port ${port}\`)`
+- Error contexts: `console.error('Guild bank error:', data.error)`
 
 **When to Log:**
-- WebSocket message receipt/send
-- State transitions (evolutions, level ups)
-- Connection events (connect, disconnect, reconnect)
-- Errors and failures
+- WebSocket connection/disconnection events
+- Incoming message types (in development)
+- Error conditions with context
+- Server startup and configuration
 
 ## Comments
 
 **When to Comment:**
-- Section headers using `// ===...===` delimiter pattern for large files
-- Brief inline comments for non-obvious logic
-- Type comments for complex data structures
-
-**Example Section Headers:**
-```typescript
-// ============================================
-// 1v1 BATTLE SYSTEM
-// ============================================
-
-// ============================================
-// EVOLUTION LOGIC
-// ============================================
-```
+- Section headers in large files using `// ============================================`
+- Complex game logic (type effectiveness, stat calculations)
+- Race condition mitigations with explanation
+- Temporary workarounds with TODO markers
 
 **JSDoc/TSDoc:**
-- Not used consistently
-- Inline comments preferred for complex logic
-- Type information carried by TypeScript interfaces
+- Not extensively used
+- Function comments inline where complex
+- Type interfaces self-documenting via property names
 
-**TODO Pattern:**
-- Use `TODO:` prefix for future work
-- Example: `// TODO: Replace with real data from backend when news/events system is implemented`
+**Example section header:**
+```typescript
+// ============================================
+// GUILD BANK HANDLERS
+// ============================================
+```
 
 ## Function Design
 
 **Size:**
-- Small, focused functions (typically 10-40 lines)
-- Larger functions broken into sections with comments
+- Keep functions focused on single responsibility
+- Large message handlers acceptable (WebSocket handler pattern)
+- Complex state updates in single Zustand action to avoid race conditions
 
 **Parameters:**
-- Destructure props in React components: `({ pokemon, showXP = false, onClick }: PokemonCardProps)`
-- Pass objects for many parameters; use defaults for optionals
-- Order: required params first, optional with defaults last
+- Destructure objects in function signatures where appropriate
+- Use typed interfaces for complex parameter objects
+- Optional parameters with defaults: `size?: 'sm' | 'md'`
 
 **Return Values:**
-- Single return type (no union unless necessary)
-- Return objects for multiple values: `{ result, newBallCount }`
-- Use `void` for side-effect functions (handlers, setters)
+- Return `null` for not-found queries
+- Return empty arrays `[]` for list queries that fail
+- Return objects with success/error fields for operations
+- Use discriminated unions for complex returns
 
 ## Module Design
 
 **Exports:**
-- Named exports preferred over default exports
-- One component per file (components)
-- Related functions grouped in single file (utilities)
-- Re-export from index files for packages
+- Named exports for all functions, types, components
+- Default exports only for page components (Next.js requirement)
+- Re-export patterns in index files for barrel exports
 
 **Barrel Files:**
-- `packages/shared/src/index.ts` re-exports all types
-- `packages/shared/src/types/index.ts` re-exports type modules
-- `apps/web/src/lib/ui/index.ts` exports constants and utilities
+- Located at `components/game/*/index.ts`
+- Re-export all public components: `export { WorldView } from './WorldView'`
+- Used for: `@/components/game/world`, `@/components/game/social`, etc.
 
-**React Component Files:**
-- Single component export per file
-- Related helper components in same file if small (`HeldItemSlot`, `EmptyPokemonSlot`)
-- Styled variant maps at top of file (`sizeClasses`, `variantClasses`)
-
-## React Component Patterns
-
-**Client Components:**
-- Mark with `'use client'` directive at top
-- Use hooks: `useState`, `useRouter`, `useGameStore`
-
-**Props Pattern:**
+**Example barrel file:**
 ```typescript
-interface ComponentProps extends React.HTMLAttributes<HTMLElement> {
-  variant?: 'primary' | 'secondary'
+// apps/web/src/components/game/world/index.ts
+export { WorldView } from './WorldView'
+export { TrainerSprite } from './TrainerSprite'
+export { BackgroundLayer } from './BackgroundLayer'
+```
+
+## Component Patterns
+
+**React Components:**
+- Use `'use client'` directive for client components
+- Props interface defined above component
+- Destructure props in function signature
+- Use `cn()` helper for conditional class names
+
+**Example component structure:**
+```typescript
+'use client'
+
+import { cn } from '@/lib/ui'
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'ghost'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
 }
+
+export function Button({
+  children,
+  variant = 'primary',
+  size = 'md',
+  loading,
+  disabled,
+  className,
+  ...props
+}: ButtonProps) {
+  return (
+    <button
+      disabled={disabled || loading}
+      className={cn(
+        'base-classes',
+        variantClasses[variant],
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  )
+}
 ```
 
-**Variant/Size Mapping:**
+## State Management
+
+**Zustand Store:**
+- Single store at `apps/web/src/stores/gameStore.ts`
+- Actions defined inline with state
+- Use `get()` to access current state in actions
+- Atomic updates for related state changes
+
+**Pattern:**
 ```typescript
-const sizeClasses = {
-  sm: 'h-1.5',
-  md: 'h-2',
-  lg: 'h-3',
-}
+const useGameStore = create<GameStore>((set, get) => ({
+  player: null,
+  setPlayer: (player) => set({ player }),
 
-const variantClasses = {
-  primary: 'bg-gradient-to-b from-[#3B4CCA] to-[#2a3b9a]',
-  secondary: 'bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a]',
-}
+  // Complex updates use callback form
+  addGuildMember: (member) =>
+    set((state) => ({
+      guildMembers: [...state.guildMembers, member],
+      guild: state.guild
+        ? { ...state.guild, member_count: state.guild.member_count + 1 }
+        : null,
+    })),
+}))
 ```
-
-**Conditional Classes:**
-- Use `cn()` utility from `@/lib/ui`: `cn('base-class', condition && 'conditional-class')`
 
 ## WebSocket Message Protocol
 
-**Client-to-Server:**
-- JSON format: `{ type: string, payload: unknown }`
-- Types: `move_zone`, `swap_party`, `get_state`, `send_chat_message`
-- Payload contains required data for the action
+**Message Format:**
+```typescript
+{ type: string, payload: unknown }
+```
 
-**Server-to-Client:**
-- Same JSON format
-- Types: `tick`, `game_state`, `error`, `evolution`, `chat_message`
-- Handlers registered in constructor, called via Map lookup
+**Handler Registration:**
+```typescript
+this.handlers.set('message_type', this.handleMessageType)
+```
 
-## State Management (Zustand)
-
-**Store Pattern:**
-- Single store for game state at `apps/web/src/stores/gameStore.ts`
-- Actions are methods on the store
-- Persistence middleware for key state
-
-**Naming Actions:**
-- Setters: `setPlayer`, `setParty`, `setZone`
-- Adders: `addChatMessage`, `addLevelUps`
-- Updaters: `updatePokemonInParty`, `updateFriendZone`
+**Handler Naming:**
+- Private methods with arrow functions to preserve `this`
+- Prefixed with `handle`: `private handleGuildData = (payload: unknown) => { ... }`
 
 ---
 
-*Convention analysis: 2026-01-18*
+*Convention analysis: 2025-01-19*

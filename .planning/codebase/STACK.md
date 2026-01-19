@@ -1,130 +1,148 @@
 # Technology Stack
 
-**Analysis Date:** 2026-01-18
+**Analysis Date:** 2026-01-19
 
 ## Languages
 
 **Primary:**
-- TypeScript 5.x - Used throughout frontend (apps/web), game server (apps/game-server), and shared package (packages/shared)
+- TypeScript 5.x - Used throughout all packages (web, game-server, shared)
 
 **Secondary:**
-- SQL - Database migrations and stored procedures in `supabase/migrations/`
-- JSON - Configuration files throughout
+- SQL (PostgreSQL) - Database migrations in `supabase/migrations/`
 
 ## Runtime
 
 **Environment:**
-- Node.js (version unspecified, ES2022 target)
-- Browsers (React 19 frontend)
+- Node.js 20+ (specified in Dockerfile.bak)
+- Browser (Next.js client-side)
 
 **Package Manager:**
-- npm
-- Lockfile: `package-lock.json` present at root
+- npm (package-lock.json present)
+- Monorepo structure without workspace tooling (manual cross-package builds)
 
 ## Frameworks
 
 **Core:**
-- Next.js 16.1.1 - Frontend web application framework (`apps/web`)
-- React 19.2.3 - UI component library
-- ws 8.18.0 - WebSocket server for real-time game communication (`apps/game-server`)
-
-**Testing:**
-- Not detected - No test framework configuration found
+- Next.js 16.1.1 - Frontend framework with App Router (`apps/web/`)
+- React 19.2.3 - UI library (latest major version)
 
 **Build/Dev:**
-- TypeScript Compiler (tsc) - For shared package and game-server builds
-- tsx 4.19.2 - TypeScript execution with hot reload for game-server development
-- PostCSS with @tailwindcss/postcss - CSS processing
-- ESLint 9 with eslint-config-next - Linting
+- tsx 4.19.2 - TypeScript execution for game server dev mode
+- tsc - TypeScript compilation for production builds
 
 ## Key Dependencies
 
-**Critical (Frontend - `apps/web/package.json`):**
-- `next` 16.1.1 - App router, server components, image optimization
-- `react` / `react-dom` 19.2.3 - Latest React with concurrent features
-- `@supabase/ssr` 0.8.0 - Server-side Supabase client for Next.js
-- `@supabase/supabase-js` 2.90.1 - Supabase JavaScript client
-- `zustand` 5.0.10 - Lightweight state management with persistence middleware
-- `tailwindcss` 4 - Utility-first CSS framework
+**Frontend (`apps/web/package.json`):**
+- `@supabase/ssr` ^0.8.0 - Server-side Supabase client for Next.js
+- `@supabase/supabase-js` ^2.90.1 - Core Supabase client
+- `zustand` ^5.0.10 - Client state management with persistence
+- `canvas-confetti` ^1.9.4 - Visual effects
+- `react-responsive-spritesheet` ^2.4.0 - Sprite animations
 
-**Critical (Game Server - `apps/game-server/package.json`):**
-- `ws` 8.18.0 - WebSocket server
-- `jose` 6.1.3 - JWT verification using JWKS endpoint
-- `@supabase/supabase-js` 2.49.1 - Database client with service key
-- `dotenv` 16.4.7 - Environment variable loading
+**Game Server (`apps/game-server/package.json`):**
+- `ws` ^8.18.0 - WebSocket server implementation
+- `jose` ^6.1.3 - JWT verification via Supabase JWKS
+- `@supabase/supabase-js` ^2.49.1 - Database access
+- `dotenv` ^16.4.7 - Environment variable loading
 
-**Shared Package (`packages/shared`):**
-- Pure TypeScript, no runtime dependencies
-- Provides shared types between frontend and game-server via `@pokemon-idle/shared`
+**Shared (`packages/shared/package.json`):**
+- Pure TypeScript with no runtime dependencies
+- Exports types and utility functions (XP calculations)
 
-**UI/Animation:**
-- `react-responsive-spritesheet` 2.4.0 - Sprite sheet animation component
+## Project Structure
 
-**Infrastructure:**
-- `@tailwindcss/postcss` 4 - PostCSS plugin for Tailwind CSS 4
-- `lightningcss-win32-x64-msvc` (optional) - Native CSS minification
+**Monorepo Layout:**
+```
+/
+├── apps/
+│   ├── web/           # Next.js frontend (port 3000)
+│   └── game-server/   # WebSocket server (port 8080)
+├── packages/
+│   └── shared/        # @pokemon-idle/shared types package
+└── supabase/
+    └── migrations/    # PostgreSQL migrations (001-030+)
+```
+
+**Build Order:**
+1. `packages/shared` must build first (exports types to both apps)
+2. Apps reference shared via file path: `"@pokemon-idle/shared": "file:../../packages/shared"`
 
 ## Configuration
 
-**TypeScript Configuration:**
-- Frontend (`apps/web/tsconfig.json`): ES2017 target, bundler module resolution, strict mode
-- Game Server (`apps/game-server/tsconfig.json`): ES2022 target, ESNext modules, strict mode
-- Shared (`packages/shared/tsconfig.json`): ES2022 target, generates declarations
+**TypeScript:**
+- Web: ES2017 target, bundler resolution, strict mode (`apps/web/tsconfig.json`)
+- Game Server: ES2022 target, ESNext modules, strict mode (`apps/game-server/tsconfig.json`)
+- Shared: ES2022 target, ESNext modules, declarations enabled (`packages/shared/tsconfig.json`)
 
-**Path Aliases:**
-- `@/*` - Maps to `./src/*` in frontend
-- `@pokemon-idle/shared` - Maps to `../../packages/shared/dist/index`
+**Styling:**
+- Tailwind CSS 4 with PostCSS plugin (`apps/web/postcss.config.mjs`)
+- No separate Tailwind config file (v4 uses CSS-first configuration)
 
-**ESLint:**
-- Uses flat config (`eslint.config.mjs`)
-- Extends `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`
+**Linting:**
+- ESLint 9 with Next.js config (`apps/web/eslint.config.mjs`)
+- Uses `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`
 
-**PostCSS:**
-- Single plugin: `@tailwindcss/postcss`
+**Environment Variables:**
 
-**Next.js (`apps/web/next.config.ts`):**
-- Transpiles `@pokemon-idle/shared` package
-- Allows remote images from `raw.githubusercontent.com/PokeAPI/sprites/**`
+Frontend (`apps/web/.env.local`):
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
+- `NEXT_PUBLIC_WS_URL` - WebSocket server URL (ws://localhost:8080 for dev)
 
-**Environment:**
-- Frontend: `.env.local` (gitignored)
-- Game Server: `.env` (gitignored)
-- Example files provided for both
+Game Server (`apps/game-server/.env`):
+- `DATABASE_URL` - Direct PostgreSQL connection string
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_SERVICE_KEY` - Service role key (bypasses RLS)
+- `SUPABASE_JWT_SECRET` - For JWT verification
+- `PORT` - WebSocket server port (default 8080)
+- `ALLOWED_ORIGINS` - CORS origins (comma-separated)
+
+## Scripts
+
+**Root (`package.json`):**
+```bash
+npm run build:shared    # Build shared package first
+npm run dev:server      # Build shared + run game server
+npm run dev:web         # Build shared + run web app
+npm run build:all       # Build everything for production
+npm run typecheck       # Type-check all packages
+```
+
+**Web (`apps/web/package.json`):**
+```bash
+npm run dev      # Start Next.js dev server
+npm run build    # Production build
+npm run lint     # ESLint check
+```
+
+**Game Server (`apps/game-server/package.json`):**
+```bash
+npm run dev      # tsx watch for hot reload
+npm run build    # Compile TypeScript to dist/
+npm start        # Run compiled server
+```
 
 ## Platform Requirements
 
 **Development:**
-- Node.js with npm
-- Access to Supabase project (URL + keys)
-- Environment variables configured per `.env.example` files
+- Node.js 20+
+- npm (for package management)
+- Supabase project with configured auth
+- PostgreSQL access (via Supabase or direct)
 
 **Production:**
-- Frontend: Vercel (auto-deploy from GitHub)
-- Game Server: Railway (Node.js deployment)
-- Database: Supabase PostgreSQL (managed)
+- Frontend: Vercel (Next.js optimized hosting)
+- Game Server: Railway (Docker-based, uses Dockerfile.bak pattern)
+- Database: Supabase (managed PostgreSQL)
 
-## Monorepo Structure
+## Module System
 
-```
-pokemon-idle-mmo/
-├── apps/
-│   ├── web/           # Next.js 16 frontend
-│   └── game-server/   # Node.js WebSocket server
-├── packages/
-│   └── shared/        # Shared TypeScript types
-├── supabase/
-│   └── migrations/    # SQL migration files
-└── package.json       # Root scripts for orchestration
-```
-
-**Root Scripts (`package.json`):**
-- `build:shared` - Build shared package first (dependency for others)
-- `dev:server` - Build shared + run game server with hot reload
-- `dev:web` - Build shared + run Next.js dev server
-- `build:all` - Full production build
-- `typecheck` - Type check both apps
-- `build` / `start` - Railway deployment (game server)
+**ESM Throughout:**
+- Game server uses `"type": "module"` in package.json
+- Shared package uses `"type": "module"`
+- All imports use `.js` extension for ESM compatibility
+- Web uses Next.js bundler (handles both ESM and CommonJS)
 
 ---
 
-*Stack analysis: 2026-01-18*
+*Stack analysis: 2026-01-19*
