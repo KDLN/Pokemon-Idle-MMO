@@ -43,7 +43,11 @@ import type {
   SetBankPermissionPayload,
   SetBankLimitPayload,
   SetPlayerOverridePayload,
-  RemovePlayerOverridePayload
+  RemovePlayerOverridePayload,
+  // Guild Quest Payloads
+  GetQuestDetailsPayload,
+  RerollQuestPayload,
+  GetQuestHistoryPayload
 } from './types.js'
 import {
   getPlayerByUserId,
@@ -151,7 +155,14 @@ import {
   setBankPermission,
   setBankLimit,
   setPlayerBankOverride,
-  removePlayerBankOverride
+  removePlayerBankOverride,
+  // Guild Quests
+  updateGuildQuestProgress,
+  recordGuildActivity,
+  getGuildQuests,
+  getQuestDetails,
+  rerollQuest,
+  getQuestHistory
 } from './db.js'
 import { processTick, simulateGymBattle, checkEvolutions, calculateEvolutionStats, applyEvolution, createEvolutionEvent, recalculateStats } from './game.js'
 
@@ -649,6 +660,23 @@ export class GameHub {
         case 'remove_player_override':
           this.handleRemovePlayerOverride(client, msg.payload as RemovePlayerOverridePayload)
           break
+
+        // ================================
+        // Guild Quest Handlers
+        // ================================
+        case 'get_guild_quests':
+          this.handleGetGuildQuests(client)
+          break
+        case 'get_quest_details':
+          this.handleGetQuestDetails(client, msg.payload as GetQuestDetailsPayload)
+          break
+        case 'reroll_quest':
+          this.handleRerollQuest(client, msg.payload as RerollQuestPayload)
+          break
+        case 'get_quest_history':
+          this.handleGetQuestHistory(client, msg.payload as GetQuestHistoryPayload)
+          break
+
         default:
           console.log('Unknown message type:', msg.type)
       }
@@ -1261,6 +1289,22 @@ export class GameHub {
               catches: 1,
               pokedex: isNewSpecies ? 1 : 0
             })
+
+            // Update guild quest progress for catch
+            if (client.session.guild?.id) {
+              // Fire-and-forget: update quest progress and record activity
+              this.updateQuestProgress(
+                client.session.guild.id,
+                client.session.player.id,
+                client.session.player.username,
+                'catch_pokemon',
+                1,
+                wild.species?.type1  // Pass primary type for catch_type quests
+              )
+
+              // Record for difficulty scaling
+              recordGuildActivity(client.session.guild.id, 'catch', 1)
+            }
           } else {
             // Pokemon save failed - refund the ball in memory AND database
             // and mark catch as failed
@@ -1346,6 +1390,19 @@ export class GameHub {
           if (pokemon) {
             await updatePokemonHP(pokemon.id, pokemon.current_hp, client.session.player.id)
           }
+        }
+
+        // Update guild quest progress for battle (every encounter is a battle)
+        if (client.session.guild?.id) {
+          this.updateQuestProgress(
+            client.session.guild.id,
+            client.session.player.id,
+            client.session.player.username,
+            'battle',
+            1
+          )
+
+          recordGuildActivity(client.session.guild.id, 'battle', 1)
         }
       }
 
@@ -2599,6 +2656,19 @@ export class GameHub {
     void this.markNewlyCaughtSpecies(client.session.player.id, [targetSpecies.id]).catch(err => {
       console.error('Failed to update pokedex after evolution:', err)
     })
+
+    // Update guild quest progress for evolution
+    if (client.session.guild?.id) {
+      this.updateQuestProgress(
+        client.session.guild.id,
+        client.session.player.id,
+        client.session.player.username,
+        'evolve',
+        1
+      )
+
+      recordGuildActivity(client.session.guild.id, 'evolve', 1)
+    }
 
     // Send evolution event to client
     this.send(client, 'evolution', evolutionEvent)
@@ -4075,5 +4145,207 @@ export class GameHub {
     }
 
     this.send(client, 'guild_bank_success', { success: true, message: 'Override removed' })
+  }
+
+  // ================================
+  // Guild Quest Handlers
+  // ================================
+
+  /**
+   * Handle get_guild_quests - fetch all active quests (triggers lazy generation)
+   */
+  private async handleGetGuildQuests(client: Client): Promise<void> {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_quest_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const quests = await getGuildQuests(
+      client.session.guild.id,
+      client.session.player.id
+    )
+
+    if (!quests) {
+      this.send(client, 'guild_quest_error', { error: 'Failed to fetch quests' })
+      return
+    }
+
+    this.send(client, 'guild_quests_data', { quests })
+  }
+
+  /**
+   * Handle get_quest_details - fetch quest with full contribution leaderboard
+   */
+  private async handleGetQuestDetails(
+    client: Client,
+    payload: GetQuestDetailsPayload
+  ): Promise<void> {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_quest_error', { error: 'Not in a guild' })
+      return
+    }
+
+    if (!payload.quest_id) {
+      this.send(client, 'guild_quest_error', { error: 'Quest ID required' })
+      return
+    }
+
+    const quest = await getQuestDetails(
+      payload.quest_id,
+      client.session.player.id
+    )
+
+    if (!quest) {
+      this.send(client, 'guild_quest_error', { error: 'Quest not found' })
+      return
+    }
+
+    this.send(client, 'guild_quest_details', { quest })
+  }
+
+  /**
+   * Handle reroll_quest - reroll a quest (leader/officer only)
+   */
+  private async handleRerollQuest(
+    client: Client,
+    payload: RerollQuestPayload
+  ): Promise<void> {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_quest_error', { error: 'Not in a guild' })
+      return
+    }
+
+    // Permission check: must be leader or officer
+    if (client.session.guild.role === 'member') {
+      this.send(client, 'guild_quest_error', {
+        error: 'Only leaders and officers can reroll quests'
+      })
+      return
+    }
+
+    if (!payload.quest_id) {
+      this.send(client, 'guild_quest_error', { error: 'Quest ID required' })
+      return
+    }
+
+    const result = await rerollQuest(
+      client.session.guild.id,
+      client.session.player.id,
+      payload.quest_id
+    )
+
+    if ('error' in result) {
+      this.send(client, 'guild_quest_error', { error: result.error })
+      return
+    }
+
+    // Broadcast reroll to all guild members
+    this.broadcastToGuild(client.session.guild.id, 'guild_quest_rerolled', {
+      old_quest_id: payload.quest_id,
+      new_quest: result.new_quest,
+      rerolled_by: client.session.player.id,
+      rerolled_by_username: client.session.player.username,
+      new_reroll_status: result.new_reroll_status
+    })
+  }
+
+  /**
+   * Handle get_quest_history - fetch paginated quest history
+   */
+  private async handleGetQuestHistory(
+    client: Client,
+    payload: GetQuestHistoryPayload
+  ): Promise<void> {
+    if (!client.session?.guild) {
+      this.send(client, 'guild_quest_error', { error: 'Not in a guild' })
+      return
+    }
+
+    const page = payload.page || 1
+    const limit = Math.min(payload.limit || 20, 50)  // Max 50 per page
+
+    const result = await getQuestHistory(
+      client.session.guild.id,
+      page,
+      limit
+    )
+
+    if (!result) {
+      this.send(client, 'guild_quest_error', { error: 'Failed to fetch history' })
+      return
+    }
+
+    this.send(client, 'guild_quest_history', result)
+  }
+
+  /**
+   * Update guild quest progress and broadcast results
+   * Fire-and-forget pattern - does not block tick processing
+   */
+  private async updateQuestProgress(
+    guildId: string,
+    playerId: string,
+    username: string,
+    questType: 'catch_pokemon' | 'catch_type' | 'battle' | 'evolve',
+    amount: number,
+    typeFilter?: string
+  ): Promise<void> {
+    try {
+      const updates = await updateGuildQuestProgress(
+        guildId,
+        playerId,
+        questType,
+        amount,
+        typeFilter
+      )
+
+      if (!updates || updates.length === 0) return
+
+      for (const update of updates) {
+        // Broadcast progress update
+        this.broadcastToGuild(guildId, 'guild_quest_progress', {
+          quest_id: update.quest_id,
+          current_progress: update.current_progress,
+          target_count: update.target_count,
+          is_completed: update.is_completed,
+          contributor_id: playerId,
+          contributor_username: username,
+          contribution_amount: amount
+        })
+
+        // Broadcast milestone if reached
+        if (update.milestone) {
+          this.broadcastToGuild(guildId, 'guild_quest_milestone', {
+            quest_id: update.quest_id,
+            quest_description: update.description,
+            period: update.period,
+            milestone: update.milestone,
+            current_progress: update.current_progress,
+            target_count: update.target_count
+          })
+
+          // If 100% milestone (completion), broadcast completion with rewards
+          if (update.milestone === 100) {
+            // Fetch full quest details for reward info
+            const questDetails = await getQuestDetails(update.quest_id, playerId)
+            if (questDetails) {
+              this.broadcastToGuild(guildId, 'guild_quest_completed', {
+                quest_id: update.quest_id,
+                quest_description: update.description,
+                period: update.period,
+                reward_currency: questDetails.reward_currency,
+                reward_guild_points: questDetails.reward_guild_points,
+                reward_item_id: questDetails.reward_item_id,
+                reward_item_quantity: questDetails.reward_item_quantity,
+                top_contributors: questDetails.contributions.slice(0, 3)
+              })
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error updating quest progress:', error)
+      // Don't throw - fire-and-forget pattern
+    }
   }
 }
