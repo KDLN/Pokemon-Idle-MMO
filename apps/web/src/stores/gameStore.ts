@@ -11,7 +11,24 @@ import type { TimeOfDay } from '@/lib/time/timeOfDay'
 import type { TrainerCustomization } from '@/lib/sprites/trainerCustomization'
 import { DEFAULT_TRAINER_CUSTOMIZATION } from '@/lib/sprites/trainerCustomization'
 import type { EventCosmetics } from '@/components/game/world/SpriteTrainer'
-import type { Guild, GuildMember, GuildRole, GuildPreview, GuildInvite, GuildOutgoingInvite, GuildBank, GuildBankItem, GuildBankPokemon, GuildBankLog, GuildBankRequest } from '@pokemon-idle/shared'
+import type {
+  Guild,
+  GuildMember,
+  GuildRole,
+  GuildPreview,
+  GuildInvite,
+  GuildOutgoingInvite,
+  GuildBank,
+  GuildBankItem,
+  GuildBankPokemon,
+  GuildBankLog,
+  GuildBankRequest,
+  GuildQuestsState,
+  GuildQuestDetailed,
+  GuildQuestHistory,
+  GuildQuestWithContribution,
+  QuestRerollStatus,
+} from '@pokemon-idle/shared'
 
 // Museum exhibit interface
 interface MuseumExhibit {
@@ -313,6 +330,22 @@ interface GameStore {
   setMyBankLimits: (limits: { currency: number; items: number; pokemon_points: number }) => void
   clearGuildBank: () => void
 
+  // Guild quest state
+  guildQuests: GuildQuestsState | null
+  guildQuestDetails: GuildQuestDetailed | null
+  guildQuestHistory: {
+    history: GuildQuestHistory[]
+    total: number
+    page: number
+  } | null
+  setGuildQuests: (quests: GuildQuestsState | null) => void
+  setGuildQuestDetails: (details: GuildQuestDetailed | null) => void
+  setGuildQuestHistory: (history: { history: GuildQuestHistory[]; total: number; page: number } | null) => void
+  updateQuestProgress: (questId: string, progress: number, isCompleted: boolean) => void
+  updateQuestContribution: (questId: string, playerId: string, amount: number) => void
+  replaceQuest: (oldQuestId: string, newQuest: GuildQuestWithContribution, newRerollStatus: QuestRerollStatus) => void
+  clearGuildQuests: () => void
+
   // Player action modal state (global clickable usernames)
   selectedPlayer: { id: string; username: string; guild_id?: string | null; is_online?: boolean; is_friend?: boolean } | null
   openPlayerModal: (player: { id: string; username: string; guild_id?: string | null; is_online?: boolean; is_friend?: boolean }) => void
@@ -436,6 +469,10 @@ const initialState = {
   guildBankLogsTotal: 0,
   guildBankRequests: [] as GuildBankRequest[],
   myBankLimits: null as { currency: number; items: number; pokemon_points: number } | null,
+  // Guild quest state
+  guildQuests: null as GuildQuestsState | null,
+  guildQuestDetails: null as GuildQuestDetailed | null,
+  guildQuestHistory: null as { history: GuildQuestHistory[]; total: number; page: number } | null,
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -1133,6 +1170,73 @@ export const useGameStore = create<GameStore>((set, get) => ({
     guildBankLogsTotal: 0,
     guildBankRequests: [],
     myBankLimits: null
+  }),
+
+  // Guild quest methods
+  setGuildQuests: (guildQuests) => set({ guildQuests }),
+
+  setGuildQuestDetails: (guildQuestDetails) => set({ guildQuestDetails }),
+
+  setGuildQuestHistory: (guildQuestHistory) => set({ guildQuestHistory }),
+
+  updateQuestProgress: (questId, progress, isCompleted) =>
+    set((state) => {
+      if (!state.guildQuests) return state
+
+      const updateQuest = (quest: GuildQuestWithContribution) =>
+        quest.id === questId
+          ? { ...quest, current_progress: progress, is_completed: isCompleted }
+          : quest
+
+      return {
+        guildQuests: {
+          ...state.guildQuests,
+          daily: state.guildQuests.daily.map(updateQuest),
+          weekly: state.guildQuests.weekly.map(updateQuest),
+        },
+      }
+    }),
+
+  updateQuestContribution: (questId, _playerId, amount) =>
+    set((state) => {
+      if (!state.guildQuests) return state
+
+      const updateQuest = (quest: GuildQuestWithContribution) => {
+        if (quest.id !== questId) return quest
+        // Update my_contribution for current player
+        return { ...quest, my_contribution: quest.my_contribution + amount }
+      }
+
+      return {
+        guildQuests: {
+          ...state.guildQuests,
+          daily: state.guildQuests.daily.map(updateQuest),
+          weekly: state.guildQuests.weekly.map(updateQuest),
+        },
+      }
+    }),
+
+  replaceQuest: (oldQuestId, newQuest, newRerollStatus) =>
+    set((state) => {
+      if (!state.guildQuests) return state
+
+      const replaceInList = (quests: GuildQuestWithContribution[]) =>
+        quests.map(q => q.id === oldQuestId ? newQuest : q)
+
+      return {
+        guildQuests: {
+          ...state.guildQuests,
+          daily: replaceInList(state.guildQuests.daily),
+          weekly: replaceInList(state.guildQuests.weekly),
+          reroll_status: newRerollStatus,
+        },
+      }
+    }),
+
+  clearGuildQuests: () => set({
+    guildQuests: null,
+    guildQuestDetails: null,
+    guildQuestHistory: null
   }),
 
   // Player action modal

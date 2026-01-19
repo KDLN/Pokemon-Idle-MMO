@@ -45,6 +45,15 @@ import type {
   GuildBankSuccessPayload,
   GuildBankRequest,
   BankCategory,
+  GuildQuestsDataPayload,
+  GuildQuestDetailsPayload,
+  GuildQuestProgressPayload,
+  GuildQuestMilestonePayload,
+  GuildQuestCompletedPayload,
+  GuildQuestRerolledPayload,
+  GuildQuestHistoryPayload,
+  GuildQuestsResetPayload,
+  GuildQuestErrorPayload,
 } from '@pokemon-idle/shared'
 
 type MessageHandler = (payload: unknown) => void
@@ -171,6 +180,16 @@ class GameSocket {
     this.handlers.set('guild_bank_my_limits', this.handleGuildBankMyLimits)
     this.handlers.set('guild_bank_error', this.handleGuildBankError)
     this.handlers.set('guild_bank_success', this.handleGuildBankSuccess)
+    // Guild quest handlers
+    this.handlers.set('guild_quests_data', this.handleGuildQuestsData)
+    this.handlers.set('guild_quest_details', this.handleGuildQuestDetails)
+    this.handlers.set('guild_quest_progress', this.handleGuildQuestProgress)
+    this.handlers.set('guild_quest_milestone', this.handleGuildQuestMilestone)
+    this.handlers.set('guild_quest_completed', this.handleGuildQuestCompleted)
+    this.handlers.set('guild_quest_rerolled', this.handleGuildQuestRerolled)
+    this.handlers.set('guild_quest_history', this.handleGuildQuestHistory)
+    this.handlers.set('guild_quests_reset', this.handleGuildQuestsReset)
+    this.handlers.set('guild_quest_error', this.handleGuildQuestError)
   }
 
   connect(token: string) {
@@ -1600,6 +1619,152 @@ class GameSocket {
 
   removePlayerOverride(playerId: string, category: string) {
     this.send('remove_player_override', { player_id: playerId, category })
+  }
+
+  // ============================================
+  // Guild Quest Handlers
+  // ============================================
+
+  private handleGuildQuestsData = (payload: unknown) => {
+    const data = payload as GuildQuestsDataPayload
+    useGameStore.getState().setGuildQuests(data.quests)
+  }
+
+  private handleGuildQuestDetails = (payload: unknown) => {
+    const data = payload as GuildQuestDetailsPayload
+    useGameStore.getState().setGuildQuestDetails(data.quest)
+  }
+
+  private handleGuildQuestProgress = (payload: unknown) => {
+    const data = payload as GuildQuestProgressPayload
+    const store = useGameStore.getState()
+    store.updateQuestProgress(data.quest_id, data.current_progress, data.is_completed)
+    // Update my contribution if I'm the contributor
+    if (data.contributor_id === store.player?.id) {
+      store.updateQuestContribution(data.quest_id, data.contributor_id, data.contribution_amount)
+    }
+  }
+
+  private handleGuildQuestMilestone = (payload: unknown) => {
+    const data = payload as GuildQuestMilestonePayload
+    // Add milestone to system chat
+    const milestoneText = data.milestone === 100 ? 'COMPLETE' : `${data.milestone}%`
+    useGameStore.getState().addChatMessage({
+      id: `quest-milestone-${data.quest_id}-${data.milestone}`,
+      playerId: 'system',
+      playerName: 'System',
+      channel: 'guild',
+      content: `[${data.period.toUpperCase()}] Quest "${data.quest_description}" is ${milestoneText}! (${data.current_progress}/${data.target_count})`,
+      createdAt: new Date(),
+      isSystem: true
+    })
+  }
+
+  private handleGuildQuestCompleted = (payload: unknown) => {
+    const data = payload as GuildQuestCompletedPayload
+    // Dispatch custom event for confetti celebration
+    window.dispatchEvent(new CustomEvent('guild-quest-completed', {
+      detail: { quest_id: data.quest_id }
+    }))
+    // Add completion message to guild chat
+    const rewards: string[] = []
+    if (data.reward_currency) rewards.push(`${data.reward_currency.toLocaleString()} currency`)
+    if (data.reward_guild_points) rewards.push(`${data.reward_guild_points} guild points`)
+    if (data.reward_item_id && data.reward_item_quantity) {
+      rewards.push(`${data.reward_item_quantity}x ${data.reward_item_id}`)
+    }
+    useGameStore.getState().addChatMessage({
+      id: `quest-complete-${data.quest_id}`,
+      playerId: 'system',
+      playerName: 'System',
+      channel: 'guild',
+      content: `[${data.period.toUpperCase()}] Quest "${data.quest_description}" COMPLETED! Rewards: ${rewards.join(', ')}`,
+      createdAt: new Date(),
+      isSystem: true
+    })
+  }
+
+  private handleGuildQuestRerolled = (payload: unknown) => {
+    const data = payload as GuildQuestRerolledPayload
+    useGameStore.getState().replaceQuest(data.old_quest_id, data.new_quest, data.new_reroll_status)
+    // Add message to guild chat
+    useGameStore.getState().addChatMessage({
+      id: `quest-reroll-${data.new_quest.id}`,
+      playerId: 'system',
+      playerName: 'System',
+      channel: 'guild',
+      content: `${data.rerolled_by_username} rerolled a quest. New quest: "${data.new_quest.description}"`,
+      createdAt: new Date(),
+      isSystem: true
+    })
+  }
+
+  private handleGuildQuestHistory = (payload: unknown) => {
+    const data = payload as GuildQuestHistoryPayload
+    useGameStore.getState().setGuildQuestHistory({
+      history: data.history,
+      total: data.total,
+      page: data.page
+    })
+  }
+
+  private handleGuildQuestsReset = (payload: unknown) => {
+    const data = payload as GuildQuestsResetPayload
+    // Refresh the quest state with new quests
+    const store = useGameStore.getState()
+    if (store.guildQuests) {
+      if (data.period === 'daily') {
+        store.setGuildQuests({
+          ...store.guildQuests,
+          daily: data.new_quests,
+          reset_times: data.reset_times
+        })
+      } else {
+        store.setGuildQuests({
+          ...store.guildQuests,
+          weekly: data.new_quests,
+          reset_times: data.reset_times
+        })
+      }
+    }
+    // Add reset message to guild chat
+    useGameStore.getState().addChatMessage({
+      id: `quest-reset-${data.period}-${Date.now()}`,
+      playerId: 'system',
+      playerName: 'System',
+      channel: 'guild',
+      content: `${data.period.charAt(0).toUpperCase() + data.period.slice(1)} quests have been reset! Check the Quests tab for new challenges.`,
+      createdAt: new Date(),
+      isSystem: true
+    })
+  }
+
+  private handleGuildQuestError = (payload: unknown) => {
+    const data = payload as GuildQuestErrorPayload
+    console.error('Guild quest error:', data.error)
+  }
+
+  // ============================================
+  // Guild Quest Methods
+  // ============================================
+
+  getGuildQuests() {
+    this.send('get_guild_quests', {})
+  }
+
+  getQuestDetails(questId: string) {
+    this.send('get_quest_details', { quest_id: questId })
+  }
+
+  rerollQuest(questId: string) {
+    this.send('reroll_quest', { quest_id: questId })
+  }
+
+  getQuestHistory(options: { page?: number; limit?: number } = {}) {
+    this.send('get_quest_history', {
+      page: options.page ?? 1,
+      limit: options.limit ?? 20
+    })
   }
 }
 
