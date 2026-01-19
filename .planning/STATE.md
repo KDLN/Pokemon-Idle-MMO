@@ -12,29 +12,29 @@
 ## Current Position
 
 **Phase:** 4 of 7 - Guild Bank
-**Plan:** 2 of 4 complete
+**Plan:** 3 of 4 complete
 **Status:** In Progress
-**Last activity:** 2026-01-19 - Completed 04-02-PLAN.md (Shared Types for Guild Bank)
+**Last activity:** 2026-01-19 - Completed 04-03-PLAN.md (Game Server Handlers)
 
 **Progress:**
 ```
 Phase 1: [==========] Guild Foundation (5/5 plans complete)
 Phase 2: [=======   ] Guild Invites (3/4 plans complete)
 Phase 3: [          ] Guild Chat (0/? plans)
-Phase 4: [=====     ] Guild Bank (2/4 plans complete)
+Phase 4: [=======   ] Guild Bank (3/4 plans complete)
 Phase 5: [          ] Guild Quests (0/? plans)
 Phase 6: [          ] Guild Shop & Statistics (0/? plans)
 Phase 7: [          ] Zone Content (0/? plans)
 ```
 
-**Overall:** Phase 4 IN PROGRESS - Plan 2/4 complete
+**Overall:** Phase 4 IN PROGRESS - Plan 3/4 complete
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans Completed | 10 |
-| Tasks Completed | 28 |
+| Plans Completed | 11 |
+| Tasks Completed | 31 |
 | Phases Completed | 1 |
 | Days Elapsed | 2 |
 
@@ -85,6 +85,8 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Bank types: BankCategory, BankAction, BankRequestStatus type aliases
 - GuildBank interface aggregates all bank state for single-request fetch
 - 17 client->server and 13 server->client WebSocket payload types defined
+- 18 db.ts wrapper functions for bank RPC calls
+- 17 hub.ts handlers for bank WebSocket messages
 
 ### Patterns Established
 
@@ -109,6 +111,7 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Request fulfillment calls underlying withdraw functions for atomicity
 - Bank category type alias: 'currency' | 'item' | 'pokemon'
 - Separate payload types for broadcasts vs responses in guild bank
+- Bank handlers: getGuildBank, depositCurrency, withdrawCurrency, depositItem, withdrawItem, depositPokemon, withdrawPokemon, expandPokemonSlots, createBankRequest, fulfillBankRequest, cancelBankRequest, getBankRequests, getBankLogs, setBankPermission, setBankLimit, setPlayerOverride, removePlayerOverride
 
 ### TODOs
 
@@ -125,7 +128,7 @@ Phase 7: [          ] Zone Content (0/? plans)
 - [ ] Execute 02-04-PLAN.md (Frontend UI)
 - [x] Execute 04-01-PLAN.md (Database Schema for Guild Bank)
 - [x] Execute 04-02-PLAN.md (Shared Types for Guild Bank)
-- [ ] Execute 04-03-PLAN.md (Game Server Handlers)
+- [x] Execute 04-03-PLAN.md (Game Server Handlers)
 - [ ] Execute 04-04-PLAN.md (Frontend UI)
 
 ### Blockers
@@ -136,23 +139,26 @@ None currently.
 
 ### Last Session Summary
 
-Completed 04-02-PLAN.md (Shared Types for Guild Bank):
-- Added 3 type aliases (BankCategory, BankAction, BankRequestStatus)
-- Added 14 data model interfaces matching database schema
-- Added 17 client->server WebSocket payload types
-- Added 13 server->client WebSocket payload types
-- All types compile and are importable from @pokemon-idle/shared
+Completed 04-03-PLAN.md (Game Server Handlers):
+- Added 18 database wrapper functions in db.ts for bank RPC calls
+- Added 46 type re-exports in types.ts for bank types and payloads
+- Added 17 WebSocket handlers in hub.ts for all bank operations
+- All handlers include guild membership checks
+- State changes broadcast to guild via broadcastToGuild()
+- Fire-and-forget async pattern followed consistently
 
 ### Next Actions
 
-1. Execute 04-03-PLAN.md (Game Server Handlers)
-2. Execute 04-04-PLAN.md (Frontend UI)
-3. Phase 4 complete after 04-04
+1. Execute 04-04-PLAN.md (Frontend UI)
+2. Phase 4 complete after 04-04
+3. Return to 02-04-PLAN.md (Guild Invites Frontend) if needed
 
-### Files Created This Session
+### Files Modified This Session
 
-- `packages/shared/src/types/guild.ts` (modified - 358 lines added)
-- `.planning/phases/04-guild-bank/04-02-SUMMARY.md` (created)
+- `apps/game-server/src/db.ts` (modified - 534 lines added)
+- `apps/game-server/src/types.ts` (modified - 50 lines added)
+- `apps/game-server/src/hub.ts` (modified - 573 lines added)
+- `.planning/phases/04-guild-bank/04-03-SUMMARY.md` (created)
 - `.planning/STATE.md` (updated)
 
 ---
