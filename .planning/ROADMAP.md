@@ -164,6 +164,18 @@ Plans:
 
 **Dependencies:** Phase 4 (quests reward guild bank)
 
+**Plans:** 6 plans
+
+**Status:** Planned
+
+Plans:
+- [ ] 05-01-PLAN.md - Database schema (quest tables, SECURITY DEFINER functions)
+- [ ] 05-02-PLAN.md - Shared types for quest system
+- [ ] 05-03-PLAN.md - Game server activity hooks (catches, battles, evolutions update progress)
+- [ ] 05-04-PLAN.md - Game server handlers (fetch quests, reroll, history)
+- [ ] 05-05-PLAN.md - Frontend state (Zustand store, WebSocket handlers)
+- [ ] 05-06-PLAN.md - Frontend UI (GuildQuestsModal, QuestCard, history, confetti)
+
 **Success Criteria:**
 - [ ] Guild receives daily quests that reset at midnight UTC
 - [ ] Guild receives weekly quests that reset Monday midnight UTC
@@ -230,7 +242,7 @@ Plans:
 | 2 | Guild Invites | 5 | 3 | Complete |
 | 3 | Guild Chat | 3 | 3 | Complete |
 | 4 | Guild Bank | 18 | 5 | Complete |
-| 5 | Guild Quests | 6 | 0 | Not Started |
+| 5 | Guild Quests | 6 | 6 | Planned |
 | 6 | Guild Shop & Statistics | 12 | 0 | Not Started |
 | 7 | Zone Content | 5 | 0 | Not Started |
 
@@ -260,4 +272,4 @@ Phase 7: Zone Content (independent, can run in parallel)
 ---
 
 *Roadmap created: 2026-01-18*
-*Last updated: 2026-01-18*
+*Last updated: 2026-01-19*
