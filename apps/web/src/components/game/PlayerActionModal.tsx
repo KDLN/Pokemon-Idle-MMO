@@ -29,7 +29,7 @@ export function PlayerActionModal({ player, onClose }: PlayerActionModalProps) {
   const [friendRequestSent, setFriendRequestSent] = useState(false)
 
   // Check if this player is already a friend
-  const isFriend = player.is_friend ?? friends.some(f => f.id === player.id)
+  const isFriend = player.is_friend ?? friends.some(f => f.friend_player_id === player.id)
 
   // Can invite if: I'm leader/officer, and target is not in a guild, and not myself
   const canInvite = guild && myGuildRole &&
