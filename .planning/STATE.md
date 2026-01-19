@@ -1,20 +1,20 @@
 # Project State: Pokemon Idle MMO - Guild Milestone
 
 **Last Updated:** 2026-01-19
-**Session:** Phase 4 Completion
+**Session:** Phase 5 Execution
 
 ## Project Reference
 
 **Core Value:** Guilds give players a reason to come back daily and feel part of something bigger than their solo grind.
 
-**Current Focus:** Phase 4 - Guild Bank (shared storage with role-based access)
+**Current Focus:** Phase 5 - Guild Quests (shared daily/weekly goals)
 
 ## Current Position
 
-**Phase:** 4 of 7 - Guild Bank
-**Plan:** 5 of 5 complete
-**Status:** Phase Complete
-**Last activity:** 2026-01-19 - Completed 04-05-PLAN.md (Complete Guild Bank Tabs)
+**Phase:** 5 of 7 - Guild Quests
+**Plan:** 1 of 6 complete (05-02 Shared Types)
+**Status:** In Progress
+**Last activity:** 2026-01-19 - Completed 05-02-PLAN.md (Shared Types for Guild Quests)
 
 **Progress:**
 ```
@@ -22,19 +22,19 @@ Phase 1: [==========] Guild Foundation (5/5 plans complete)
 Phase 2: [==========] Guild Invites (3/3 plans complete)
 Phase 3: [==========] Guild Chat (3/3 plans complete)
 Phase 4: [==========] Guild Bank (5/5 plans complete)
-Phase 5: [          ] Guild Quests (0/? plans)
+Phase 5: [==        ] Guild Quests (1/6 plans complete)
 Phase 6: [          ] Guild Shop & Statistics (0/? plans)
 Phase 7: [          ] Zone Content (0/? plans)
 ```
 
-**Overall:** Phase 4 COMPLETE - Ready for Phase 5
+**Overall:** Phase 5 IN PROGRESS - 05-02 complete, 05-01 (database) pending
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans Completed | 16 |
-| Tasks Completed | 45 |
+| Plans Completed | 17 |
+| Tasks Completed | 48 |
 | Phases Completed | 4 |
 | Days Elapsed | 2 |
 
@@ -71,6 +71,9 @@ Phase 7: [          ] Zone Content (0/? plans)
 | Flex-based action panels in modal | Better than absolute positioning for scrollable content | 2026-01-18 |
 | Grid/List/Card view modes for Pokemon | Different use cases - quick overview vs detailed info | 2026-01-19 |
 | Rarity-based point colors | Visual distinction for value assessment (gray/green/blue/purple/yellow) | 2026-01-19 |
+| Quest types extend base interface progressively | GuildQuest -> GuildQuestWithContribution -> GuildQuestDetailed for flexible data | 2026-01-19 |
+| Milestone union type (25/50/75/100) | Type-safe percentage markers for notifications | 2026-01-19 |
+| Separate daily/weekly reroll pools | Flexible limits for different quest periods | 2026-01-19 |
 
 ### Technical Notes
 
@@ -97,6 +100,11 @@ Phase 7: [          ] Zone Content (0/? plans)
 - BankPokemonTab: Grid/List/Card view modes, point cost display, slot expansion
 - BankLogsTab: Paginated with action/category/player filters
 - BankRequestsTab: Pending requests with fulfill/cancel actions
+- Quest types: QuestType ('catch_pokemon' | 'catch_type' | 'battle' | 'evolve'), QuestPeriod ('daily' | 'weekly')
+- Quest data types: GuildQuest, GuildQuestWithContribution, GuildQuestDetailed, GuildQuestHistory
+- Quest support types: QuestContribution (leaderboard), QuestRerollStatus, QuestResetTimes, GuildQuestsState
+- Quest client->server payloads: GetGuildQuestsPayload, GetQuestDetailsPayload, RerollQuestPayload, GetQuestHistoryPayload
+- Quest server->client payloads: progress, milestone, completed, rerolled, history, reset, error
 
 ### Patterns Established
 
@@ -125,6 +133,9 @@ Phase 7: [          ] Zone Content (0/? plans)
 - Role-based tab visibility in modals (Settings for leaders, Requests for officers+)
 - Split-view layout for bank operations (bank contents | player inventory)
 - Inline editing for settings configuration tables
+- Quest contribution leaderboard: QuestContribution[] with rank field
+- Quest reset notification includes new_quests and reset_times
+- Quest history includes top_contributors for leaderboard display in archives
 
 ### TODOs
 
@@ -148,6 +159,13 @@ Phase 7: [          ] Zone Content (0/? plans)
 - [x] Execute 04-03-PLAN.md (Game Server Handlers)
 - [x] Execute 04-04-PLAN.md (Frontend UI)
 - [x] Execute 04-05-PLAN.md (Complete Guild Bank Tabs)
+- [x] Create Phase 5 plans (Guild Quests)
+- [x] Execute 05-02-PLAN.md (Shared Types for Guild Quests)
+- [ ] Execute 05-01-PLAN.md (Database Schema for Guild Quests)
+- [ ] Execute 05-03-PLAN.md (Game Server Handlers)
+- [ ] Execute 05-04-PLAN.md (Frontend UI)
+- [ ] Execute 05-05-PLAN.md (Progress Tracking)
+- [ ] Execute 05-06-PLAN.md (Quest Reset Automation)
 
 ### Blockers
 
@@ -157,32 +175,22 @@ None currently.
 
 ### Last Session Summary
 
-Completed 04-05-PLAN.md (Complete Guild Bank Tabs):
-- Created BankPokemonTab with Grid/List/Card view modes
-- Created BankLogsTab with pagination and filters
-- Created BankRequestsTab with fulfill/cancel actions
-- Integrated all tabs into GuildBankModal (replacing placeholders)
-- Added Bank button to GuildPanel for modal access
-- Fixed blocking prerequisite: created BankCurrencyTab, BankItemsTab, BankSettingsTab
+Completed 05-02-PLAN.md (Shared Types for Guild Quests):
+- Added 10 quest data types to packages/shared/src/types/guild.ts
+- Added 13 WebSocket payload types for quest operations
+- Quest types: QuestType, QuestPeriod, GuildQuest, GuildQuestWithContribution, GuildQuestDetailed, etc.
+- Payloads cover: get quests, get details, reroll, history, progress, milestones, completion, reset
 
 ### Next Actions
 
-1. Create Phase 5 plans (Guild Quests)
-2. Execute Phase 5
-3. UAT testing for guild bank functionality
+1. Execute 05-01-PLAN.md (Database Schema for Guild Quests)
+2. Execute 05-03-PLAN.md (Game Server Handlers)
+3. Continue Phase 5 execution
 
 ### Files Modified This Session
 
-- `apps/web/src/components/game/guild/BankPokemonTab.tsx` (created)
-- `apps/web/src/components/game/guild/BankLogsTab.tsx` (created)
-- `apps/web/src/components/game/guild/BankRequestsTab.tsx` (created)
-- `apps/web/src/components/game/guild/BankCurrencyTab.tsx` (created - blocking prerequisite)
-- `apps/web/src/components/game/guild/BankItemsTab.tsx` (created - blocking prerequisite)
-- `apps/web/src/components/game/guild/BankSettingsTab.tsx` (created - blocking prerequisite)
-- `apps/web/src/components/game/guild/GuildBankModal.tsx` (modified - tab integration)
-- `apps/web/src/components/game/guild/GuildPanel.tsx` (modified - bank button)
-- `apps/web/src/components/game/guild/index.ts` (modified - exports)
-- `.planning/phases/04-guild-bank/04-05-SUMMARY.md` (created)
+- `packages/shared/src/types/guild.ts` (modified - added quest types and payloads)
+- `.planning/phases/05-guild-quests/05-02-SUMMARY.md` (created)
 - `.planning/STATE.md` (updated)
 
 ---
