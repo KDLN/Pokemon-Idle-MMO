@@ -6,7 +6,7 @@ import { gameSocket } from '@/lib/ws/gameSocket'
 import type { GuildBankItem } from '@pokemon-idle/shared'
 
 // Item categories matching inventory
-const ITEM_CATEGORIES = {
+const ITEM_CATEGORIES: Record<string, { name: string; items: string[] }> = {
   healing: { name: 'Healing', items: ['potion', 'super_potion', 'hyper_potion', 'max_potion', 'full_restore', 'revive', 'max_revive'] },
   balls: { name: 'Poke Balls', items: ['poke_ball', 'great_ball', 'ultra_ball', 'master_ball'] },
   evolution: { name: 'Evolution', items: ['fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone', 'moon_stone'] },
