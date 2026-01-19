@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon, BlockedPlayer, WildPokemon, Guild, GuildMember, GuildPreview, PlayerGuildInfo, GuildInvite, GuildOutgoingInvite, GuildMessageEntry, GuildRole, GuildBank, GuildBankRequest, GuildBankLog } from './types.js'
+import type { Player, Pokemon, Zone, EncounterTableEntry, PokemonSpecies, ChatChannel, ChatMessageEntry, Friend, FriendRequest, FriendStatus, Trade, TradeOffer, TradeRequest, TradeStatus, OutgoingTradeRequest, TradeHistoryEntry, TradeHistoryPokemon, BlockedPlayer, WildPokemon, Guild, GuildMember, GuildPreview, PlayerGuildInfo, GuildInvite, GuildOutgoingInvite, GuildMessageEntry, GuildRole, GuildBank, GuildBankRequest, GuildBankLog, GuildQuestsState, GuildQuestDetailed, GuildQuestWithContribution, QuestRerollStatus, GuildQuestHistory } from './types.js'
 import { calculateHP, calculateStat } from './game.js'
 
 let supabase: SupabaseClient
@@ -3336,5 +3336,154 @@ export async function removePlayerBankOverride(
     console.error('Error removing override:', error)
     return { success: false, error: 'Database error' }
   }
+  return data
+}
+
+// ================================
+// Guild Quest Functions
+// ================================
+
+/**
+ * Update quest progress for a specific activity type
+ * Returns updated quest(s) with milestone info for broadcasting
+ */
+export async function updateGuildQuestProgress(
+  guildId: string,
+  playerId: string,
+  questType: 'catch_pokemon' | 'catch_type' | 'battle' | 'evolve',
+  amount: number = 1,
+  typeFilter?: string  // For catch_type quests (e.g., 'water', 'fire')
+): Promise<{
+  quest_id: string
+  current_progress: number
+  target_count: number
+  is_completed: boolean
+  milestone: 25 | 50 | 75 | 100 | null
+  description: string
+  period: 'daily' | 'weekly'
+}[] | null> {
+  const { data, error } = await supabase.rpc('update_quest_progress', {
+    p_guild_id: guildId,
+    p_player_id: playerId,
+    p_quest_type: questType,
+    p_amount: amount,
+    p_type_filter: typeFilter || null
+  })
+
+  if (error) {
+    console.error('Error updating quest progress:', error)
+    return null
+  }
+
+  return data
+}
+
+/**
+ * Record guild activity for difficulty scaling
+ */
+export async function recordGuildActivity(
+  guildId: string,
+  activityType: 'catch' | 'battle' | 'evolve',
+  amount: number = 1
+): Promise<void> {
+  const { error } = await supabase.rpc('record_guild_activity', {
+    p_guild_id: guildId,
+    p_activity_type: activityType,
+    p_amount: amount
+  })
+
+  if (error) {
+    console.error('Error recording guild activity:', error)
+  }
+}
+
+/**
+ * Get all active quests for a guild (triggers lazy generation)
+ */
+export async function getGuildQuests(
+  guildId: string,
+  playerId: string
+): Promise<GuildQuestsState | null> {
+  const { data, error } = await supabase.rpc('get_guild_quests', {
+    p_guild_id: guildId,
+    p_player_id: playerId
+  })
+
+  if (error) {
+    console.error('Error getting guild quests:', error)
+    return null
+  }
+
+  return data
+}
+
+/**
+ * Get quest details with full contribution leaderboard
+ */
+export async function getQuestDetails(
+  questId: string,
+  playerId: string
+): Promise<GuildQuestDetailed | null> {
+  const { data, error } = await supabase.rpc('get_quest_details', {
+    p_quest_id: questId,
+    p_player_id: playerId
+  })
+
+  if (error) {
+    console.error('Error getting quest details:', error)
+    return null
+  }
+
+  return data
+}
+
+/**
+ * Reroll a quest (leader/officer only)
+ */
+export async function rerollQuest(
+  guildId: string,
+  playerId: string,
+  questId: string
+): Promise<{
+  new_quest: GuildQuestWithContribution
+  new_reroll_status: QuestRerollStatus
+} | { error: string }> {
+  const { data, error } = await supabase.rpc('reroll_quest', {
+    p_guild_id: guildId,
+    p_player_id: playerId,
+    p_quest_id: questId
+  })
+
+  if (error) {
+    console.error('Error rerolling quest:', error)
+    return { error: error.message }
+  }
+
+  return data
+}
+
+/**
+ * Get quest history (paginated)
+ */
+export async function getQuestHistory(
+  guildId: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<{
+  history: GuildQuestHistory[]
+  total: number
+  page: number
+} | null> {
+  const { data, error } = await supabase.rpc('get_quest_history', {
+    p_guild_id: guildId,
+    p_page: page,
+    p_limit: limit
+  })
+
+  if (error) {
+    console.error('Error getting quest history:', error)
+    return null
+  }
+
   return data
 }
