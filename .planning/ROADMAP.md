@@ -166,24 +166,24 @@ Plans:
 
 **Plans:** 6 plans
 
-**Status:** Planned
+**Status:** Complete (2026-01-19)
 
 Plans:
-- [ ] 05-01-PLAN.md - Database schema (quest tables, SECURITY DEFINER functions)
-- [ ] 05-02-PLAN.md - Shared types for quest system
-- [ ] 05-03-PLAN.md - Game server activity hooks (catches, battles, evolutions update progress)
-- [ ] 05-04-PLAN.md - Game server handlers (fetch quests, reroll, history)
-- [ ] 05-05-PLAN.md - Frontend state (Zustand store, WebSocket handlers)
-- [ ] 05-06-PLAN.md - Frontend UI (GuildQuestsModal, QuestCard, history, confetti)
+- [x] 05-01-PLAN.md - Database schema (quest tables, SECURITY DEFINER functions)
+- [x] 05-02-PLAN.md - Shared types for quest system
+- [x] 05-03-PLAN.md - Game server activity hooks (catches, battles, evolutions update progress)
+- [x] 05-04-PLAN.md - Game server handlers (fetch quests, reroll, history)
+- [x] 05-05-PLAN.md - Frontend state (Zustand store, WebSocket handlers)
+- [x] 05-06-PLAN.md - Frontend UI (GuildQuestsModal, QuestCard, history, confetti)
 
 **Success Criteria:**
-- [ ] Guild receives daily quests that reset at midnight UTC
-- [ ] Guild receives weekly quests that reset Monday midnight UTC
-- [ ] Quest types include: catch X Pokemon, catch X of specific type, battle X times, evolve X Pokemon
-- [ ] All member activity counts toward guild quest progress automatically
-- [ ] Quest progress is visible to all guild members in real-time
-- [ ] Completed quests reward guild bank with currency, items, or guild points
-- [ ] Rewards deposited automatically upon quest completion
+- [x] Guild receives daily quests that reset at midnight UTC
+- [x] Guild receives weekly quests that reset Monday midnight UTC
+- [x] Quest types include: catch X Pokemon, catch X of specific type, battle X times, evolve X Pokemon
+- [x] All member activity counts toward guild quest progress automatically
+- [x] Quest progress is visible to all guild members in real-time
+- [x] Completed quests reward guild bank with currency, items, or guild points
+- [x] Rewards deposited automatically upon quest completion
 
 ---
 
@@ -242,12 +242,12 @@ Plans:
 | 2 | Guild Invites | 5 | 3 | Complete |
 | 3 | Guild Chat | 3 | 3 | Complete |
 | 4 | Guild Bank | 18 | 5 | Complete |
-| 5 | Guild Quests | 6 | 6 | Planned |
+| 5 | Guild Quests | 6 | 6 | Complete |
 | 6 | Guild Shop & Statistics | 12 | 0 | Not Started |
 | 7 | Zone Content | 5 | 0 | Not Started |
 
 **Total:** 63 requirements mapped (55 v1 + 8 expanded success criteria)
-**Progress:** 40/55 requirements complete (73%)
+**Progress:** 46/55 requirements complete (84%)
 
 ---
 
