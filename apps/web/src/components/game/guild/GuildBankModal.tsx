@@ -6,6 +6,9 @@ import { gameSocket } from '@/lib/ws/gameSocket'
 import { BankCurrencyTab } from './BankCurrencyTab'
 import { BankItemsTab } from './BankItemsTab'
 import { BankSettingsTab } from './BankSettingsTab'
+import { BankPokemonTab } from './BankPokemonTab'
+import { BankLogsTab } from './BankLogsTab'
+import { BankRequestsTab } from './BankRequestsTab'
 
 type BankTab = 'currency' | 'items' | 'pokemon' | 'logs' | 'requests' | 'settings'
 
@@ -132,15 +135,9 @@ export function GuildBankModal({ isOpen, onClose }: GuildBankModalProps) {
             <>
               {selectedTab === 'currency' && <BankCurrencyTab />}
               {selectedTab === 'items' && <BankItemsTab />}
-              {selectedTab === 'pokemon' && (
-                <div className="p-4 text-slate-400 text-center">Pokemon tab coming soon</div>
-              )}
-              {selectedTab === 'logs' && (
-                <div className="p-4 text-slate-400 text-center">Logs tab coming soon</div>
-              )}
-              {selectedTab === 'requests' && (
-                <div className="p-4 text-slate-400 text-center">Requests tab coming soon</div>
-              )}
+              {selectedTab === 'pokemon' && <BankPokemonTab />}
+              {selectedTab === 'logs' && <BankLogsTab />}
+              {selectedTab === 'requests' && <BankRequestsTab />}
               {selectedTab === 'settings' && <BankSettingsTab />}
             </>
           )}
