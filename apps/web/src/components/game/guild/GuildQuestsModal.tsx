@@ -129,7 +129,7 @@ export function GuildQuestsModal({ isOpen, onClose }: GuildQuestsModalProps) {
           ) : (
             <div className="p-4 space-y-6">
               {/* Reroll status */}
-              {canReroll && (
+              {canReroll && guildQuests.reroll_status && (
                 <div className="flex gap-4 text-sm text-slate-400">
                   <span>
                     Daily rerolls: {guildQuests.reroll_status.daily_max - guildQuests.reroll_status.daily_used} remaining
@@ -146,18 +146,20 @@ export function GuildQuestsModal({ isOpen, onClose }: GuildQuestsModalProps) {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-medium text-white">Daily Quests</h3>
-                  <span className="text-sm text-slate-400">
-                    Resets in: {formatTimeUntil(guildQuests.reset_times.daily)}
-                  </span>
+                  {guildQuests.reset_times && (
+                    <span className="text-sm text-slate-400">
+                      Resets in: {formatTimeUntil(guildQuests.reset_times.daily)}
+                    </span>
+                  )}
                 </div>
                 <div className="grid gap-3">
-                  {guildQuests.daily.map((quest) => (
+                  {guildQuests.daily?.map((quest) => (
                     <QuestCard
                       key={quest.id}
                       quest={quest}
                       canReroll={canReroll}
-                      rerollCost={guildQuests.reroll_status.daily_cost}
-                      rerollsRemaining={guildQuests.reroll_status.daily_max - guildQuests.reroll_status.daily_used}
+                      rerollCost={guildQuests.reroll_status?.daily_cost ?? 500}
+                      rerollsRemaining={(guildQuests.reroll_status?.daily_max ?? 0) - (guildQuests.reroll_status?.daily_used ?? 0)}
                     />
                   ))}
                 </div>
@@ -167,18 +169,20 @@ export function GuildQuestsModal({ isOpen, onClose }: GuildQuestsModalProps) {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-medium text-white">Weekly Quests</h3>
-                  <span className="text-sm text-slate-400">
-                    Resets in: {formatTimeUntil(guildQuests.reset_times.weekly)}
-                  </span>
+                  {guildQuests.reset_times && (
+                    <span className="text-sm text-slate-400">
+                      Resets in: {formatTimeUntil(guildQuests.reset_times.weekly)}
+                    </span>
+                  )}
                 </div>
                 <div className="grid gap-3">
-                  {guildQuests.weekly.map((quest) => (
+                  {guildQuests.weekly?.map((quest) => (
                     <QuestCard
                       key={quest.id}
                       quest={quest}
                       canReroll={canReroll}
-                      rerollCost={guildQuests.reroll_status.weekly_cost}
-                      rerollsRemaining={guildQuests.reroll_status.weekly_max - guildQuests.reroll_status.weekly_used}
+                      rerollCost={guildQuests.reroll_status?.weekly_cost ?? 2000}
+                      rerollsRemaining={(guildQuests.reroll_status?.weekly_max ?? 0) - (guildQuests.reroll_status?.weekly_used ?? 0)}
                     />
                   ))}
                 </div>

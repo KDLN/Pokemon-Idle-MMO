@@ -4408,6 +4408,7 @@ export class GameHub {
 
     const result = await getQuestHistory(
       client.session.guild.id,
+      client.session.player.id,
       page,
       limit
     )

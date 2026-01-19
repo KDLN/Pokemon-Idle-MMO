@@ -3192,7 +3192,8 @@ export async function getBankRequests(
     console.error('Error getting requests:', error)
     return []
   }
-  return data || []
+  // Database returns { success, requests }, extract the array
+  return data?.requests || []
 }
 
 /**
@@ -3467,6 +3468,7 @@ export async function rerollQuest(
  */
 export async function getQuestHistory(
   guildId: string,
+  playerId: string,
   page: number = 1,
   limit: number = 20
 ): Promise<{
@@ -3476,6 +3478,7 @@ export async function getQuestHistory(
 } | null> {
   const { data, error } = await supabase.rpc('get_quest_history', {
     p_guild_id: guildId,
+    p_player_id: playerId,
     p_page: page,
     p_limit: limit
   })

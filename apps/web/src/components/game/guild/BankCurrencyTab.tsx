@@ -13,7 +13,7 @@ export function BankCurrencyTab() {
   const myGuildRole = useGameStore((state) => state.myGuildRole)
   const myBankLimits = useGameStore((state) => state.myBankLimits)
 
-  if (!guildBank) return null
+  if (!guildBank || !guildBank.currency) return null
 
   const { currency } = guildBank
   const playerBalance = pokedollars || 0

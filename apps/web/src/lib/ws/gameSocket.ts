@@ -1792,6 +1792,10 @@ class GameSocket {
 
   private handleGuildBuffPurchased = (payload: unknown) => {
     const data = payload as GuildBuffPurchasedPayload
+    if (!data.buff) {
+      console.error('Guild buff purchased payload missing buff data:', data)
+      return
+    }
     useGameStore.getState().updateGuildBuff(data.buff)
     // Add system message to guild chat
     const buffName = data.buff.buff_type.replace(/_/g, ' ')

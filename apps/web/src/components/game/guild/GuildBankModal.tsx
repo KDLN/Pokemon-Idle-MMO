@@ -54,7 +54,9 @@ export function GuildBankModal({ isOpen, onClose }: GuildBankModalProps) {
 
   if (!isVisible) return null
 
-  const pendingRequestCount = guildBankRequests.filter(r => r.status === 'pending').length
+  const pendingRequestCount = Array.isArray(guildBankRequests)
+    ? guildBankRequests.filter(r => r.status === 'pending').length
+    : 0
 
   const tabs: { id: BankTab; label: string; badge?: number; leaderOnly?: boolean }[] = [
     { id: 'currency', label: 'Currency' },
