@@ -1,174 +1,198 @@
 # Project Research Summary
 
-**Project:** Pokemon Idle MMO - Guild System
-**Domain:** MMO Guild/Clan Systems (Idle Game Context)
-**Researched:** 2026-01-18
+**Project:** Pokemon Idle MMO - UI/UX Polish v1.1
+**Domain:** UI/UX Polish, Design Systems, Real-Time Game Systems
+**Researched:** 2026-01-19
 **Confidence:** HIGH
 
 ## Executive Summary
 
-The guild system for Pokemon Idle MMO is a well-understood domain with 20+ years of established patterns from WoW, Clash of Clans, and idle game predecessors like AFK Arena and Idle Heroes. The recommended approach is to leverage the existing codebase patterns entirely: the WebSocket hub, Supabase PostgreSQL with RLS, and Zustand state management already handle all the technical requirements. No new dependencies are needed. The architecture should follow the proven patterns from the friends system, trading system, and chat system already in the codebase.
+The v1.1 milestone transforms an MVP into a polished idle game through systematic UI/UX improvements and a real-time battle system overhaul. Research confirms the existing codebase has a solid foundation: 2600+ lines of CSS with 66+ design tokens already defined, Tailwind 4 integration, server-authoritative game logic, and proven patterns like `pendingEncounterRewards` for animation/state synchronization. The strategy should be **formalize and extend, not replace** - migrating existing patterns into a proper design system rather than creating parallel structures.
 
-The key risk is race conditions in the guild bank, which can cause item or Pokemon duplication. This is the most common and severe guild system exploit across MMO games. The existing trade system demonstrates the correct mitigation pattern with `FOR UPDATE` row locking and atomic database functions. All bank operations must follow this pattern from day one. Secondary risks include permission bypass during role changes and leadership transfer race conditions, both solvable with proper transaction design.
+The recommended approach uses Storybook 10 + CVA (class-variance-authority) for component documentation and variants, @dnd-kit for drag-to-reorder party (React 19 compatible with "use client"), and Motion v12 for gesture-based animations while preserving the extensive CSS keyframe animations already in place. The battle system requires the most significant architectural change: shifting from pre-computed "playback theater" to progressive server-client synchronization where turns are calculated and revealed incrementally, maintaining server authority while creating true uncertainty.
 
-Build order should follow dependency chains: Core Schema (guilds, members) -> Membership Flow (invites, join/leave) -> Guild Chat (validates broadcast pattern) -> Guild Bank (complex, needs locking) -> Guild Quests (depends on tracking hooks) -> Guild Shop (depends on quest points). This order ensures each phase builds on verified foundation components.
+Key risks center on scope creep during polish (fix what was scoped, log other issues for later), animation performance (only animate transform/opacity for 60fps, keep animations under 800ms to fit within tick budget), and state management during drag operations (use refs for animation state, memoize components heavily). The existing `pendingEncounterRewards` pattern proves the team understands server-authoritative state management - this pattern must extend to all battle state to prevent race conditions.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The guild system requires no new dependencies. The existing stack handles all requirements.
+The stack leverages existing infrastructure while adding targeted libraries for new capabilities. All additions are React 19 compatible and work with the existing Next.js 16 + Tailwind 4 setup.
 
 **Core technologies:**
-- **Supabase PostgreSQL**: Guild data storage with RLS policies for membership scoping (matches existing friends/trades patterns)
-- **WebSocket (ws 8.18.0)**: Real-time guild events and chat via `broadcastToGuild()` pattern (extends existing hub.ts)
-- **Database ENUMs**: `guild_role` (leader/officer/member), `guild_member_status` for clean state management (matches friend_status pattern)
-- **Zustand**: Frontend guild state management with persistence (extends existing gameStore.ts)
-- **SECURITY DEFINER functions**: Atomic guild operations like `create_guild`, `leave_guild`, `withdraw_from_bank` (matches complete_trade pattern)
+- **Storybook 10** (@storybook/nextjs-vite): Component showcase and documentation with official Next.js 16 + Tailwind 4 support
+- **class-variance-authority** (^0.7.1): Component variants without conditional class spaghetti - used by shadcn/ui, integrates with existing Tailwind
+- **@dnd-kit/core + @dnd-kit/sortable**: Drag-to-reorder party - 10kb, accessible (keyboard support), works with React 19 via "use client"
+- **Motion v12** (motion package): Interactive animations and gestures - React 19 native support, complements existing CSS animations
+- **tailwind-merge** (^3.0.0): Bulletproof component class overrides without duplication conflicts
+
+**Avoid:**
+- react-beautiful-dnd (deprecated), @dnd-kit/react experimental (unresolved issues)
+- framer-motion old package (superseded by motion, React 19 type conflicts)
+- Heavy component libraries (Radix, Chakra, MUI) - incompatible with existing Pokemon aesthetic
 
 ### Expected Features
 
 **Must have (table stakes):**
-- Guild creation (name, tag, description, 50-member cap)
-- Join/leave mechanics with invite system
-- Member roster with online status and roles
-- Three-tier roles: Leader, Officer, Member
-- Guild chat channel (dedicated to members)
-- Guild bank (currency and items) with role-based permissions
-- Guild statistics and leaderboard
+- 16px minimum body text, 14px for secondary (currently reported as "too small")
+- 44-48px minimum touch targets on all interactive elements
+- Instant tap/click feedback with visual response
+- Smooth HP/XP bar animations (not instant jumps)
+- Loading indicators for async operations
+- Consistent hover states on desktop
 
-**Should have (competitive):**
-- Daily/weekly guild quests ("catch 100 Water Pokemon")
-- Guild shop spending bank funds on buffs
-- Transaction logs for bank trust
-- Withdrawal limits per role
-- Guild Pokedex display
+**Should have (differentiators):**
+- Drag-to-reorder party (Pokemon-standard UX)
+- Screen shake on critical hits, particle effects on catches
+- Battle anticipation timing (pokeball shakes, HP depletes with tension)
+- Smart activity log with collapsible sections and virtual scrolling
+- Active buff indicators near player info
+- Type effectiveness visual flair
 
 **Defer (v2+):**
-- Guild levels and perks tree (complex balance)
-- Guild bosses/raids (requires new battle system)
-- Guild zones with exclusive spawns
-- Seasonal rankings and achievements
-- Guild Pokemon bank (high trust/abuse risk)
+- Full theme customization system
+- Sound design integration
+- Time-warp offline visualization
+- Complex gesture navigation (swipe zones)
 
 ### Architecture Approach
 
-The guild system extends existing patterns rather than introducing new ones. Core tables (`guilds`, `guild_members`) follow the friends/blocks schema pattern with ENUMs for status. A `broadcastToGuild(guildId)` method in hub.ts efficiently sends messages to online guild members using cached `session.guild.id`. Guild state loads on WebSocket connect and updates via targeted messages. Permission checks use simple numeric role levels (Member=1, Officer=2, Leader=3) with centralized helper functions.
+The battle system requires transitioning from pre-computed playback to progressive revelation. Currently, the server calculates entire battle outcomes upfront and sends complete `BattleSequence` data - the client animation is purely theatrical. This prevents true uncertainty and creates potential disconnect exploits.
 
-**Major components:**
-1. **Guild Tables** (guilds, guild_members, guild_join_requests, guild_invites) — Membership and configuration storage
-2. **Guild Bank Tables** (guild_bank, guild_bank_log) — Item storage with audit trail
-3. **Guild Activity Tables** (guild_quests, guild_quest_contributions, guild_shop_items) — Engagement loop mechanics
-4. **WebSocket Handlers** — Message routing for all guild operations with permission validation
-5. **PlayerSession.guild** — Cached guild state for O(1) membership checks
+**Major components (battle system change):**
+1. **Server Battle State Machine** (hub.ts) - Manages battle phases (starting, turn_pending, turn_sent, catch_thrown, completed), handles disconnect protection via timeouts, auto-resolves abandoned battles
+2. **Progressive Protocol** - New message types: `battle_start`, `battle_turn`, `catch_shake`, `catch_result` sent incrementally instead of all-at-once
+3. **Client Animation Hook** - Modified `useBattleAnimation` responds to incoming turns, sends `battle_ready` acknowledgment when animation completes
+4. **Disconnect Protection** - Server commits damage immediately to session, auto-resolves battles after 30-second timeout, reconnect receives current/final state
+
+**Key principle:** Client animates what server sends, requests next action when ready. Server never waits for client; timeout triggers auto-resolution.
 
 ### Critical Pitfalls
 
-1. **Guild Bank Race Conditions** — Use `FOR UPDATE` row locking and atomic UPDATE with quantity checks. Follow the `complete_trade` pattern in `009_trades.sql`. Never do SELECT-then-UPDATE for bank operations.
+1. **Over-Customizing Existing Tokens (DS-1)** - The codebase has 66+ CSS variables. Creating a "new" design system risks duplicate definitions and conflicts. **Prevention:** Audit existing tokens first, migrate/rename rather than duplicate, keep single source of truth in globals.css.
 
-2. **Permission Bypass During Role Change** — Re-verify permissions inside the database transaction, not just at request start. Lock member row when checking role.
+2. **Layout-Triggering Animations (AN-1)** - Animating width/height/left/top causes reflow and jank. Some HP bar transitions use `width` instead of `scaleX`. **Prevention:** Only animate `transform` and `opacity` for 60fps, audit all existing transitions.
 
-3. **Leadership Transfer Race Condition** — Add partial unique index: `CREATE UNIQUE INDEX ... ON guild_members(guild_id) WHERE role = 'leader'`. Lock both source and target member rows during transfer.
+3. **Race Conditions Client/Server (RT-1)** - Optimistic UI updates during battle cause flicker when server response differs. **Prevention:** Never show optimistic battle results - always wait for server confirmation, extend `pendingEncounterRewards` pattern to all battle state.
 
-4. **Cascade Delete Destroys Bank** — Use `ON DELETE RESTRICT` on bank tables, not CASCADE. Guild deletion requires empty bank or explicit item return.
+4. **Re-render Cascade on Drag (DD-1)** - Party reorder can trigger cascading re-renders if drag state is in global store. **Prevention:** Keep drag position in local state/ref, memoize PokemonCard with React.memo, use CSS transforms during drag.
 
-5. **Pokemon Multi-Location Bug** — If implementing guild Pokemon bank, add location state column or enum to prevent Pokemon existing in party, trade, and bank simultaneously.
+5. **Scope Creep During Polish (PP-1)** - "Fix this scroll" becomes "rewrite the grid layout." **Prevention:** Define explicit scope boundaries per task, log discovered issues for future phases, time-box work with clear acceptance criteria.
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure:
+Based on research, suggested phase structure with rationale:
 
-### Phase 1: Core Schema & Membership
-**Rationale:** Everything depends on guilds and guild_members tables. Cannot test any feature without membership working.
-**Delivers:** Create guild, join/leave, member roster, basic roles
-**Addresses:** Foundation Layer features (creation, joining, roster, roles)
-**Avoids:** Leadership race condition (add partial unique index from start)
+### Phase 1: Bug Fixes
+**Rationale:** Clear low-hanging fruit before larger changes; establishes baseline stability
+**Delivers:** Guild Quest contributor display, Guild Bank view toggle functionality
+**Addresses:** Table stakes expectation of working features
+**Avoids:** PP-2 (regression risk) by isolating bug fixes before CSS refactoring
 
-### Phase 2: Invitations & Moderation
-**Rationale:** Control who joins is essential before adding valuable features like bank
-**Delivers:** Invite system, kick/ban, join requests, cooldowns
-**Addresses:** Expected Expansion features (invite, officer role, kick/ban)
-**Avoids:** Invitation spam (integrate with existing block system)
+### Phase 2: Design System Foundation
+**Rationale:** Must establish design tokens, component patterns, and Storybook before visual polish work; prevents DS-1 (duplicate tokens)
+**Delivers:** Formalized token system, CVA-based component variants (Button, Badge, Card, ProgressBar), Storybook setup
+**Uses:** Storybook 10, CVA, tailwind-merge
+**Avoids:** DS-1 (token duplication), DS-3 (className leaking)
+**Note:** Starts with audit of existing 66+ CSS variables, not greenfield design
 
-### Phase 3: Guild Chat
-**Rationale:** Simpler than bank, validates the broadcastToGuild pattern before complex features
-**Delivers:** Guild chat channel with persistence and history
-**Addresses:** Foundation Layer (guild chat)
-**Avoids:** Memory leak (use database persistence like existing chat)
+### Phase 3: Responsive Layout Fixes
+**Rationale:** Layout must be stable before animation and interaction work; depends on Phase 2 design tokens
+**Delivers:** Fixed typography scale (16px body), touch-friendly targets (44px+), fluid layouts replacing fixed px values
+**Addresses:** "Font too small", tablet gap (768-1024px), touch target violations
+**Avoids:** RD-1 (fixed units), RD-2 (mobile-first reversal), RD-3 (touch targets)
+**Note:** Maintain existing desktop-first pattern, don't refactor to mobile-first
 
-### Phase 4: Guild Bank
-**Rationale:** Core value proposition, but needs tested membership and broadcast patterns first
-**Delivers:** Currency/item deposits, withdrawals, transaction logs
-**Addresses:** Resource Sharing features (bank, logs, limits)
-**Avoids:** Duplication exploit (FOR UPDATE locking), permission bypass (in-transaction role verification)
+### Phase 4: UI Polish Pass
+**Rationale:** With design system and responsive foundation, polish individual components; depends on Phase 2-3
+**Delivers:** Navigation order matching travel direction, Boosts rename, bank display improvements, activity log collapsibility
+**Addresses:** Navigation ordering, activity log cut-off, power-ups visibility
+**Avoids:** PP-1 (scope creep) - strict boundaries per component
 
-### Phase 5: Guild Quests
-**Rationale:** Requires game event hooks (catch, battle) which need bank to store rewards
-**Delivers:** Daily/weekly quests, automatic contribution tracking, progress display
-**Addresses:** Engagement Loop features (quests, rewards)
-**Uses:** Existing tick loop for contribution events
+### Phase 5: Drag-to-Reorder Party
+**Rationale:** New interaction pattern requires stable components from Phase 2; complex enough to isolate
+**Delivers:** Touch-and-hold party reordering with keyboard accessibility
+**Uses:** @dnd-kit/core, @dnd-kit/sortable
+**Avoids:** DD-1 (re-render cascade) via memoization and local drag state, DD-2 (library lock-in) by using maintained library
 
-### Phase 6: Guild Shop & Leaderboard
-**Rationale:** Shop spends quest points, leaderboard aggregates all prior activity
-**Delivers:** Guild shop items, buff purchases, guild rankings
-**Addresses:** Competition Layer and engagement loop completion
-**Implements:** Points economy from quests -> shop spending
+### Phase 6: Map Overhaul
+**Rationale:** Map is visually distinct system; benefits from design tokens (Phase 2) and responsive patterns (Phase 3)
+**Delivers:** Visual styling refresh, improved interactions, clear zone connections, return-to-position helpers
+**Addresses:** "Map looks MVP/buggy", navigation issues
+**Avoids:** AN-1 by using transform-based pan/zoom
+
+### Phase 7: Real-Time Battle System
+**Rationale:** Most complex change, requires stable foundation; isolated backend change with frontend animation work
+**Delivers:** Progressive turn-by-turn reveal, anticipation timing, disconnect protection, catch-at-throw calculation
+**Uses:** Motion v12 for battle animations, existing useBattleAnimation hook refactored
+**Implements:** Server battle state machine, progressive WebSocket protocol
+**Avoids:** RT-1 (race conditions), RT-2 (tick drift), RT-3 (client-side calculations)
+**Note:** 6-phase migration path documented in ARCHITECTURE-REALTIME-BATTLES.md
+
+### Phase 8: Theme Exploration
+**Rationale:** Final phase after all components are polished; uses Storybook for side-by-side comparison
+**Delivers:** Component showcase page, mock screens, theme comparison tooling
+**Uses:** Storybook built in Phase 2
+**Note:** Exploration only - full theme system deferred to v2+
 
 ### Phase Ordering Rationale
 
-- **Dependency chain:** Core -> Membership -> Chat -> Bank -> Quests -> Shop follows strict dependencies
-- **Risk gradient:** Simpler features first (chat) before complex ones (bank with race conditions)
-- **Pattern validation:** Chat validates broadcast pattern before bank relies on it
-- **Value delivery:** Each phase delivers usable functionality even if later phases are delayed
-- **Pitfall timing:** Database constraints (unique leader index, RESTRICT cascade) go in Phase 1 before any dependent code
+- **Design System before Polish:** Attempting visual polish without formalized tokens leads to DS-1 (duplicate tokens) and inconsistent results
+- **Responsive before Interactions:** Drag-to-reorder and animations require stable layouts to measure and animate correctly
+- **Battle System late:** Highest complexity change benefits from team velocity established in earlier phases; can be descoped if milestone timeline pressured
+- **Map isolated:** Self-contained system that doesn't block other work
+- **Theme Exploration last:** Requires all components to be in final state for meaningful comparison
 
 ### Research Flags
 
 Phases likely needing deeper research during planning:
-- **Phase 4 (Guild Bank):** High-risk for race conditions. Recommend code review of trade system locking patterns before implementation.
-- **Phase 5 (Guild Quests):** Quest definition and reward balance needs game design input. Research may need designer consultation.
+- **Phase 7 (Battle System):** Complex state machine, needs prototype of progressive protocol before full implementation; open questions about gym battles, animation timing, reconnect behavior documented in ARCHITECTURE
+- **Phase 6 (Map Overhaul):** Visual design decisions need mockups; interaction patterns (zoom/pan) need performance testing
 
 Phases with standard patterns (skip research-phase):
-- **Phase 1 (Core Schema):** Well-documented, matches existing friends/trades migrations
-- **Phase 2 (Invitations):** Standard pattern, existing friend request flow is template
-- **Phase 3 (Guild Chat):** Existing chat system provides complete template
+- **Phase 2 (Design System):** Well-documented CVA + Storybook patterns, official recipes exist
+- **Phase 5 (Drag-Reorder):** @dnd-kit has excellent docs and examples for sortable lists
+- **Phase 3 (Responsive):** Standard Tailwind 4 patterns, container queries documented
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Uses existing codebase patterns exclusively; no new dependencies |
-| Features | HIGH | 20+ year mature design space; table stakes well-established across WoW, idle games |
-| Architecture | HIGH | Based on direct analysis of existing codebase (hub.ts, db.ts, migrations) |
-| Pitfalls | MEDIUM | Core pitfalls from training data; recommend validating bank race conditions against current resources |
+| Stack | HIGH | Official Next.js 16/React 19 compatibility verified, active maintenance on all libraries |
+| Features | HIGH | Industry standards (WCAG, Apple/Google HIG) and established idle game patterns |
+| Architecture | HIGH | Codebase analysis confirms feasibility; progressive revelation is standard game pattern |
+| Pitfalls | HIGH | Direct codebase inspection + verified industry sources; existing patterns (pendingRewards) validate approach |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Guild Quests Balance:** Quest targets (e.g., "catch 100 Pokemon") and reward amounts need game designer input. Research identified the structure but not specific values.
-- **Guild Shop Items:** What items/buffs to sell and at what point costs needs design validation. Consider starting with small set and expanding.
-- **Pokemon Bank Deferral:** Guild Pokemon bank was flagged as high complexity and abuse risk. Confirm this deferral is acceptable or scope alternative implementation.
-- **Multi-Server Future:** If scaling to multiple game servers, guild broadcasts need pub/sub (Redis) instead of in-memory. Current design assumes single server.
+- **Gym battle architecture:** Should gym battles remain pre-computed or also go progressive? Recommend: keep pre-computed for v1.1 simplicity, reconsider for v2
+- **Animation timing budget:** 800ms max per turn assumed; needs validation against actual battle animation designs
+- **Reconnect behavior:** Should player see animation of missed turns or just final state? Recommend: final state only for simplicity
+- **Storybook Tailwind 4 integration:** Newer pattern, may need troubleshooting during setup
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- **Existing Codebase:**
-  - `supabase/migrations/007_friends.sql` - Social table patterns, RLS policies
-  - `supabase/migrations/009_trades.sql` - Atomic operations, FOR UPDATE locking, SECURITY DEFINER
-  - `supabase/migrations/018_week5_social.sql` - Block system integration
-  - `apps/game-server/src/hub.ts` - WebSocket broadcast patterns, session management
-  - `apps/game-server/src/db.ts` - Query patterns, optimistic locking
-  - `.planning/codebase/ARCHITECTURE.md` - System architecture reference
+- Direct codebase analysis: hub.ts, game.ts, globals.css, gameStore.ts, useBattleAnimation.ts
+- [Storybook 10 Official Release](https://storybook.js.org/blog/storybook-10/)
+- [Motion for React Documentation](https://motion.dev/docs/react-installation)
+- [dnd-kit Official Documentation](https://docs.dndkit.com/)
+- [WCAG Accessibility Guidelines](https://www.a11y-collective.com/blog/wcag-minimum-font-size/)
+- [Apple/Google Touch Target Guidelines](https://devoq.medium.com/designing-for-touch-mobile-ui-ux-best-practices-c0c71aa615ee)
 
 ### Secondary (MEDIUM confidence)
-- **Training Data:** Guild system patterns from WoW, Clash of Clans, AFK Arena, Idle Heroes
-- **Game Design Principles:** Three-tier role hierarchy, bank withdrawal limits, daily/weekly quest cadence
+- [Class Variance Authority Docs](https://cva.style/docs)
+- [Tailwind CSS 4 Responsive Design](https://tailwindcss.com/docs/responsive-design)
+- [Game UI Database - Pokemon References](https://gameuidatabase.com/gameData.php?id=30)
+- [Client-Side Prediction and Server Reconciliation](https://www.gabrielgambetta.com/client-side-prediction-server-reconciliation.html)
+- [Top 5 Drag-and-Drop Libraries 2026](https://puckeditor.com/blog/top-5-drag-and-drop-libraries-for-react)
 
-### Tertiary (LOW confidence)
-- **WebSearch unavailable:** Pitfall validations (especially bank race conditions) should be cross-referenced with 2025/2026 game development resources during implementation
+### Tertiary (LOW confidence - needs validation)
+- Storybook 10 + Tailwind 4 @source directive configuration (documented but newer pattern)
+- @dnd-kit stable packages + React 19 "use client" requirement (works but may need testing)
 
 ---
-*Research completed: 2026-01-18*
+*Research completed: 2026-01-19*
 *Ready for roadmap: yes*
