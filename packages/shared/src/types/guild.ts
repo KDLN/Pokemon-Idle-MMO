@@ -411,3 +411,194 @@ export interface GuildBankRequestDetails {
   pokemon_name?: string
   pokemon_level?: number
 }
+
+// ================================
+// Guild Bank WebSocket Payloads
+// ================================
+
+// Client -> Server payloads
+
+// Get full bank state
+export interface GetGuildBankPayload {
+  // Empty - requests full bank data
+}
+
+// Currency operations
+export interface DepositCurrencyPayload {
+  amount: number
+}
+
+export interface WithdrawCurrencyPayload {
+  amount: number
+}
+
+// Item operations
+export interface DepositItemPayload {
+  item_id: string
+  quantity: number
+}
+
+export interface WithdrawItemPayload {
+  item_id: string
+  quantity: number
+}
+
+// Pokemon operations
+export interface DepositPokemonPayload {
+  pokemon_id: string
+}
+
+export interface WithdrawPokemonPayload {
+  pokemon_id: string
+}
+
+// Request operations
+export interface CreateBankRequestPayload {
+  request_type: BankCategory
+  details: GuildBankRequestDetails
+  note?: string
+}
+
+export interface FulfillBankRequestPayload {
+  request_id: string
+}
+
+export interface CancelBankRequestPayload {
+  request_id: string
+}
+
+// Get transaction logs
+export interface GetBankLogsPayload {
+  page?: number
+  limit?: number
+  filter_player?: string  // player_id
+  filter_action?: BankAction
+  filter_category?: BankCategory
+}
+
+// Get pending requests (for officers)
+export interface GetBankRequestsPayload {
+  include_expired?: boolean
+}
+
+// Permission configuration (leader only)
+export interface SetBankPermissionPayload {
+  category: BankCategory
+  role: GuildRole
+  can_deposit: boolean
+  can_withdraw: boolean
+}
+
+export interface SetBankLimitPayload {
+  role: GuildRole
+  category: BankCategory
+  daily_limit: number
+  pokemon_points_limit?: number
+}
+
+export interface SetPlayerOverridePayload {
+  player_id: string
+  category: BankCategory
+  custom_limit: number
+}
+
+export interface RemovePlayerOverridePayload {
+  player_id: string
+  category: BankCategory
+}
+
+// Slot expansion
+export interface ExpandPokemonSlotsPayload {
+  // Empty - just triggers expansion
+}
+
+// Server -> Client payloads
+
+// Full bank data response
+export interface GuildBankDataPayload {
+  bank: GuildBank
+}
+
+// Currency update broadcast
+export interface GuildBankCurrencyUpdatedPayload {
+  balance: number
+  max_capacity: number
+  player_id: string
+  player_username: string
+  amount: number
+  action: 'deposit' | 'withdraw'
+}
+
+// Item update broadcast
+export interface GuildBankItemUpdatedPayload {
+  item: GuildBankItem
+  player_id: string
+  player_username: string
+  quantity_changed: number
+  action: 'deposit' | 'withdraw'
+}
+
+// Pokemon update broadcast
+export interface GuildBankPokemonAddedPayload {
+  pokemon: GuildBankPokemon
+  player_id: string
+  player_username: string
+}
+
+export interface GuildBankPokemonRemovedPayload {
+  pokemon_id: string
+  slot: number
+  player_id: string
+  player_username: string
+}
+
+// Slots expanded broadcast
+export interface GuildBankSlotsExpandedPayload {
+  new_total: number
+  next_price: number
+  expanded_by: string
+  expanded_by_username: string
+}
+
+// Transaction logs response
+export interface GuildBankLogsPayload {
+  logs: GuildBankLog[]
+  total: number
+  page: number
+}
+
+// Requests response
+export interface GuildBankRequestsPayload {
+  requests: GuildBankRequest[]
+}
+
+// New request notification (to officers/leaders)
+export interface GuildBankRequestCreatedPayload {
+  request: GuildBankRequest
+}
+
+// Request fulfilled notification
+export interface GuildBankRequestFulfilledPayload {
+  request_id: string
+  fulfilled_by: string
+  fulfilled_by_username: string
+}
+
+// My remaining limits response
+export interface GuildBankMyLimitsPayload {
+  currency: number
+  items: number
+  pokemon_points: number
+}
+
+// Error response
+export interface GuildBankErrorPayload {
+  error: string
+  code?: string
+}
+
+// Generic success response
+export interface GuildBankSuccessPayload {
+  success: true
+  message?: string
+}
