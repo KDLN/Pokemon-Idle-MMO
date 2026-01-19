@@ -9,8 +9,8 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 ### Bug Fixes
 
-- [ ] **BUG-01**: Guild Quest "Show contributors" button works without error
-- [ ] **BUG-02**: Guild Bank view/layout toggle switches display mode correctly
+- [x] **BUG-01**: Guild Quest "Show contributors" button works without error
+- [x] **BUG-02**: Guild Bank view/layout toggle switches display mode correctly
 
 ### Design System
 
@@ -102,8 +102,8 @@ Which phases cover which requirements.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUG-01 | Phase 8 | Pending |
-| BUG-02 | Phase 8 | Pending |
+| BUG-01 | Phase 8 | Complete |
+| BUG-02 | Phase 8 | Complete |
 | DS-01 | Phase 9 | Pending |
 | DS-02 | Phase 9 | Pending |
 | DS-03 | Phase 9 | Pending |

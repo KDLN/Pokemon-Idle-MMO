@@ -11,7 +11,7 @@ This milestone transforms the functional MVP into a polished product through sys
 
 ## Phases
 
-- [ ] **Phase 8: Bug Fixes** - Fix Guild Quest contributors and Bank view toggle
+- [x] **Phase 8: Bug Fixes** - Fix Guild Quest contributors and Bank view toggle
 - [ ] **Phase 9: Design System** - Formalize tokens, set up Storybook, create CVA components
 - [ ] **Phase 10: Layout & Responsiveness** - Typography scale, touch targets, viewport support
 - [ ] **Phase 11: UI Polish** - Navigation order, naming, display improvements
@@ -33,8 +33,8 @@ This milestone transforms the functional MVP into a polished product through sys
 **Plans**: 2 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — Fix missing get_quest_details SQL function for contributor display
-- [ ] 08-02-PLAN.md — Fix Guild Bank view toggle and add persistence via Zustand
+- [x] 08-01-PLAN.md — Fix missing get_quest_details SQL function for contributor display
+- [x] 08-02-PLAN.md — Fix Guild Bank view toggle and add persistence via Zustand
 
 ### Phase 9: Design System
 **Goal**: Formalize existing design tokens and establish component patterns for consistent visual work
@@ -146,7 +146,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 8. Bug Fixes | v1.1 | 0/2 | Planned | - |
+| 8. Bug Fixes | v1.1 | 2/2 | ✓ Complete | 2026-01-19 |
 | 9. Design System | v1.1 | 0/? | Not started | - |
 | 10. Layout & Responsiveness | v1.1 | 0/? | Not started | - |
 | 11. UI Polish | v1.1 | 0/? | Not started | - |
