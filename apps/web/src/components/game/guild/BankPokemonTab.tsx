@@ -1,11 +1,9 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import type { GuildBankPokemon } from '@pokemon-idle/shared'
-
-type ViewMode = 'grid' | 'list' | 'card'
 
 // Type colors for badges
 const TYPE_COLORS: Record<string, string> = {
@@ -39,7 +37,6 @@ const POINT_TIER_COLORS: Record<number, string> = {
 }
 
 export function BankPokemonTab() {
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [selectedPokemon, setSelectedPokemon] = useState<GuildBankPokemon | null>(null)
   const [selectedOwnPokemon, setSelectedOwnPokemon] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -48,6 +45,8 @@ export function BankPokemonTab() {
   const myPokemon = useGameStore((state) => state.box)
   const myGuildRole = useGameStore((state) => state.myGuildRole)
   const myBankLimits = useGameStore((state) => state.myBankLimits)
+  const viewMode = useGameStore((state) => state.guildBankViewMode)
+  const setViewMode = useGameStore((state) => state.setGuildBankViewMode)
 
   const canWithdraw = myGuildRole === 'leader' || myGuildRole === 'officer'
   const remainingPoints = myBankLimits?.pokemon_points ?? -1
@@ -131,7 +130,7 @@ export function BankPokemonTab() {
 
           {/* View Mode Toggle */}
           <div className="flex bg-slate-700 rounded overflow-hidden">
-            {(['grid', 'list', 'card'] as ViewMode[]).map((mode) => (
+            {(['grid', 'list', 'card'] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setViewMode(mode)}
