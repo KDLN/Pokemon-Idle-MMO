@@ -2748,6 +2748,8 @@ html {
 /* Map Frame Styles   */
 /* ================== */
 
+@layer components {
+
 /* Main frame container - Pokemon handheld device aesthetic */
 .map-frame {
   position: relative;
@@ -2951,3 +2953,5 @@ html {
     rgba(0, 0, 0, 0.3) 100%
   );
 }
+
+} /* End @layer components for map styles */
