@@ -11,6 +11,8 @@ export { MapCanvas } from './MapCanvas'
 export { MapControls } from './MapControls'
 export { ConnectionLayer } from './ConnectionLayer'
 export { ZoneConnection } from './ZoneConnection'
+export { ZoneNode } from './ZoneNode'
+export { ZoneTooltip } from './ZoneTooltip'
 
 // Types
 export type {
@@ -27,3 +29,7 @@ export type { ZoneConnectionProps } from './ZoneConnection'
 export type { ConnectionLayerProps, RawConnectionData } from './ConnectionLayer'
 
 export { DIRECTION_VECTORS } from './mapTypes'
+
+// Utilities
+export { calculateZonePositions, getCanvasBounds, ZONE_SPACING } from './mapUtils'
+export type { ZoneConnection as ZoneConnectionData, CanvasBounds } from './mapUtils'
