@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 Phase: 13 of 15 (Map Overhaul)
 Plan: 3 of 8 in current phase
 Status: In progress
-Last activity: 2026-01-20 — Completed 13-03-PLAN.md (Zone Connection Lines)
+Last activity: 2026-01-20 — Completed 13-02-PLAN.md (Zone Nodes and Position)
 
 Progress: [████████░] 76%
 
@@ -21,7 +21,7 @@ Progress: [████████░] 76%
 **Velocity:**
 - Total plans completed: 23 (v1.1)
 - Average duration: 2.7 min
-- Total execution time: 64 min
+- Total execution time: 69 min
 
 **By Phase:**
 
@@ -32,11 +32,11 @@ Progress: [████████░] 76%
 | 10-layout-responsiveness | 6 | 14 min | 2.3 min |
 | 11-ui-polish | 4 | 8 min | 2 min |
 | 12-party-reordering | 3 | 10 min | 3.3 min |
-| 13-map-overhaul | 3 | 10 min | 3.3 min |
+| 13-map-overhaul | 3 | 15 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 12-01 (4 min), 12-02 (3 min), 12-03 (3 min), 13-01 (4 min), 13-03 (3 min)
-- Trend: Phase 13 map overhaul progressing with connection lines
+- Last 5 plans: 12-02 (3 min), 12-03 (3 min), 13-01 (4 min), 13-03 (3 min), 13-02 (5 min)
+- Trend: Phase 13 map overhaul progressing with zone nodes
 
 *Updated after each plan completion*
 
@@ -86,6 +86,9 @@ Recent decisions affecting current work:
 - 13-01: Solid dark gradient background for map canvas (Claude's discretion)
 - 13-01: Zoom limits 0.5x-2x for whole map to detail view range
 - 13-01: Double-click zoom disabled to prevent accidental zoom when clicking zones
+- 13-02: CSS transform for zone node centering (-translate-x/y-1/2)
+- 13-02: Town nodes larger than route nodes (48px vs 40px) for visual hierarchy
+- 13-02: Zone type colors: amber (town), green (route), stone (cave), emerald (forest)
 - 13-03: SVG filter for glow effect on active connections
 - 13-03: Dashed stroke for inactive connections, solid for active
 - 13-03: Connection deduplication via min/max zone ID normalized keys
@@ -103,8 +106,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 13-03-PLAN.md (Zone Connection Lines)
+Stopped at: Completed 13-02-PLAN.md (Zone Nodes and Position)
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after 13-03-PLAN.md completion*
+*State updated: 2026-01-20 after 13-02-PLAN.md completion*
