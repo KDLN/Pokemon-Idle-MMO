@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 13 of 15 (Map Overhaul)
-Plan: 5 of 8 in current phase
+Plan: 6 of 8 in current phase
 Status: In progress
-Last activity: 2026-01-20 — Completed 13-05-PLAN.md (Map Centering and Location)
+Last activity: 2026-01-20 — Completed 13-06-PLAN.md (Zone Click Interaction)
 
-Progress: [████████░] 80%
+Progress: [████████░] 83%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 25 (v1.1)
+- Total plans completed: 26 (v1.1)
 - Average duration: 2.8 min
-- Total execution time: 77 min
+- Total execution time: 82 min
 
 **By Phase:**
 
@@ -32,11 +32,11 @@ Progress: [████████░] 80%
 | 10-layout-responsiveness | 6 | 14 min | 2.3 min |
 | 11-ui-polish | 4 | 8 min | 2 min |
 | 12-party-reordering | 3 | 10 min | 3.3 min |
-| 13-map-overhaul | 5 | 23 min | 4.6 min |
+| 13-map-overhaul | 6 | 28 min | 4.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 13-01 (4 min), 13-03 (3 min), 13-02 (5 min), 13-04 (4 min), 13-05 (4 min)
-- Trend: Phase 13 map centering and visibility features
+- Last 5 plans: 13-03 (3 min), 13-02 (5 min), 13-04 (4 min), 13-05 (4 min), 13-06 (5 min)
+- Trend: Phase 13 travel click interactions
 
 *Updated after each plan completion*
 
@@ -100,6 +100,10 @@ Recent decisions affecting current work:
 - 13-05: setTransform with 300ms easeOut animation for smooth centering
 - 13-05: Calculate initial position based on estimated viewport (640x400)
 - 13-05: Use previousZoneIdRef to detect zone changes for re-centering
+- 13-06: Validate travel against connectedZoneIds Set (client-side before server)
+- 13-06: Use invisible 20px stroke-width line for path click targets
+- 13-06: Calculate targetZoneId as "zone that's NOT current"
+- 13-06: Keep pointer-events none on inactive paths
 
 ### Pending Todos
 
@@ -114,8 +118,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 13-05-PLAN.md (Map Centering and Location)
+Stopped at: Completed 13-06-PLAN.md (Zone Click Interaction)
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after 13-05-PLAN.md completion*
+*State updated: 2026-01-20 after 13-06-PLAN.md completion*
