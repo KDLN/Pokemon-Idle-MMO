@@ -10,16 +10,36 @@
   --font-family-pixel: var(--font-pixel), 'Press Start 2P', monospace;
 
   /* ========== FONT SIZES ========== */
-  --font-size-xs: 0.625rem;   /* 10px */
-  --font-size-sm: 0.75rem;    /* 12px */
-  --font-size-base: 0.875rem; /* 14px */
+  /*
+   * Accessible body text sizes (16px minimum)
+   * These tokens use CSS clamp() for fluid scaling from 375px to 1280px viewport
+   */
+
+  /* Body text: 16px min (375px) to 18px max (1280px+) - primary readable text */
+  --font-size-body: clamp(1rem, calc(0.9375rem + 0.3125vw), 1.125rem);
+
+  /* Base text: 16px min to 18px max - same as body, for general use */
+  --font-size-base: clamp(1rem, calc(0.9375rem + 0.3125vw), 1.125rem);
+
+  /* Small text: 14px min to 16px max - secondary info, captions */
+  --font-size-sm: clamp(0.875rem, calc(0.8125rem + 0.3125vw), 1rem);
+
+  /* Extra small: 10px fixed - ONLY for decorative labels, timestamps, badges
+   * NOT for body text. Use sparingly for non-essential UI elements. */
+  --font-size-xs: 0.625rem;   /* 10px - decorative use only */
+
+  /* Fixed sizes for headings and larger text */
   --font-size-md: 1rem;       /* 16px */
   --font-size-lg: 1.125rem;   /* 18px */
   --font-size-xl: 1.25rem;    /* 20px */
   --font-size-2xl: 1.5rem;    /* 24px */
   --font-size-3xl: 1.875rem;  /* 30px */
 
-  /* Pixel font sizes (smaller for legibility) */
+  /*
+   * Pixel font sizes (intentionally small for retro aesthetic)
+   * These are EXEMPT from the 16px minimum - pixel fonts are designed
+   * to be rendered at small sizes for authentic retro appearance.
+   */
   --font-size-pixel-xs: 0.5rem;    /* 8px */
   --font-size-pixel-sm: 0.625rem;  /* 10px */
   --font-size-pixel-base: 0.75rem; /* 12px */
