@@ -92,6 +92,10 @@ Recent decisions affecting current work:
 - 13-03: SVG filter for glow effect on active connections
 - 13-03: Dashed stroke for inactive connections, solid for active
 - 13-03: Connection deduplication via min/max zone ID normalized keys
+- 13-04: Start with zone 1 (Pallet Town) visited by default
+- 13-04: Auto-mark zones visited in setZone action
+- 13-04: 3-second pulse animation for mystery zones
+- 13-04: Hide connections where either zone is hidden
 - 13-05: Use 50px margin buffer for viewport visibility detection
 - 13-05: setTransform with 300ms easeOut animation for smooth centering
 - 13-05: Calculate initial position based on estimated viewport (640x400)
