@@ -188,8 +188,8 @@ export function MapCanvas({
         'relative',
         // GPU layer promotion for smooth transforms
         'will-change-transform',
-        // Dark solid background (user decision from CONTEXT.md)
-        'bg-gradient-to-b from-[#152020] via-[#101820] to-[#0a1015]'
+        // Dark solid background with slight gradient (user decision from CONTEXT.md)
+        'bg-gradient-to-b from-[#1a2525] via-[#121c22] to-[#0c1218]'
       )}
       style={{
         width: `${width}px`,
@@ -198,15 +198,15 @@ export function MapCanvas({
         transform: 'translateZ(0)',
       }}
     >
-      {/* Grid pattern overlay for visual interest */}
+      {/* Grid pattern overlay for visual interest - subtle terrain feel */}
       <div
-        className="absolute inset-0 opacity-[0.03] pointer-events-none"
+        className="absolute inset-0 opacity-[0.04] pointer-events-none"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+            linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)
           `,
-          backgroundSize: '50px 50px',
+          backgroundSize: '40px 40px',
         }}
       />
 
@@ -241,6 +241,9 @@ export function MapCanvas({
         ))}
         {children}
       </div>
+
+      {/* Vignette effect overlay for depth */}
+      <div className="map-canvas-vignette" aria-hidden="true" />
     </div>
   )
 }

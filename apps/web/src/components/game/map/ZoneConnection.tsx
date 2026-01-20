@@ -24,12 +24,13 @@ export interface ZoneConnectionProps {
 }
 
 /**
- * ZoneConnection - SVG line with direction arrow between zones
+ * ZoneConnection - SVG line with direction arrow between zones (Gen 4-5 style)
  *
  * Renders a connection path between two zones with:
- * - Line connecting the zone centers
- * - Direction arrow at midpoint
- * - Active state styling for paths to current zone
+ * - Soft road-like appearance with rounded linecaps
+ * - Thicker lines for better visibility
+ * - Direction arrow at midpoint (larger, more stylized)
+ * - Active state with glow effect
  * - Muted styling for unreachable paths
  */
 export const ZoneConnection = memo(function ZoneConnection({
@@ -49,16 +50,22 @@ export const ZoneConnection = memo(function ZoneConnection({
   // Arrow points from 'from' to 'to'
   const angle = Math.atan2(to.y - from.y, to.x - from.x) * (180 / Math.PI)
 
-  // Color based on active state
+  // Color based on active state - warmer tones for Gen 4-5 feel
   const strokeColor = isActive
-    ? 'var(--color-lb-accent, #60a5fa)' // lb-accent for active
-    : 'var(--color-gray-500, #6b7280)'  // gray for inactive
+    ? '#60a5fa' // Bright blue for active paths
+    : '#4b5563' // Softer gray for inactive
+
+  // Road-like darker outline color
+  const outlineColor = isActive
+    ? '#1e40af' // Dark blue outline
+    : '#1f2937' // Dark gray outline
 
   // Opacity based on reachability
-  const opacity = isReachable ? 1 : 0.3
+  const opacity = isReachable ? 1 : 0.25
 
-  // Stroke width based on active state
-  const strokeWidth = isActive ? 3 : 2
+  // Stroke width based on active state (thicker for road-like feel)
+  const strokeWidth = isActive ? 5 : 4
+  const outlineWidth = strokeWidth + 2
 
   // Filter for glow effect on active paths
   const filterId = `glow-${from.id}-${to.id}`
@@ -92,7 +99,7 @@ export const ZoneConnection = memo(function ZoneConnection({
       {isActive && (
         <defs>
           <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
             <feMerge>
               <feMergeNode in="coloredBlur" />
               <feMergeNode in="SourceGraphic" />
@@ -109,13 +116,27 @@ export const ZoneConnection = memo(function ZoneConnection({
           x2={to.x}
           y2={to.y}
           stroke="transparent"
-          strokeWidth={20}
+          strokeWidth={24}
           strokeLinecap="round"
           className="cursor-pointer"
         />
       )}
 
-      {/* Connection line */}
+      {/* Road outline (darker border for depth) */}
+      <line
+        x1={from.x}
+        y1={from.y}
+        x2={to.x}
+        y2={to.y}
+        stroke={outlineColor}
+        strokeWidth={outlineWidth}
+        strokeLinecap="round"
+        strokeDasharray={isActive ? 'none' : '8 6'}
+        className="transition-all duration-200"
+        style={{ pointerEvents: 'none' }}
+      />
+
+      {/* Main road/path line */}
       <line
         x1={from.x}
         y1={from.y}
@@ -124,22 +145,32 @@ export const ZoneConnection = memo(function ZoneConnection({
         stroke={strokeColor}
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        strokeDasharray={isActive ? 'none' : '6 4'}
+        strokeDasharray={isActive ? 'none' : '8 6'}
         filter={isActive ? `url(#${filterId})` : undefined}
-        className={`transition-all duration-200 ${isClickable ? 'group-hover:stroke-[4px]' : ''}`}
-        style={isClickable ? { pointerEvents: 'none' } : undefined}
+        className={`transition-all duration-200 ${isClickable ? 'group-hover:stroke-[6px]' : ''}`}
+        style={{ pointerEvents: 'none' }}
       />
 
-      {/* Direction arrow at midpoint */}
+      {/* Direction arrow at midpoint - larger and more stylized */}
       {direction && (
-        <polygon
-          points="-6,-4 6,0 -6,4"
-          fill={strokeColor}
-          transform={`translate(${midX}, ${midY}) rotate(${angle})`}
-          filter={isActive ? `url(#${filterId})` : undefined}
-          className="transition-all duration-200"
-          style={isClickable ? { pointerEvents: 'none' } : undefined}
-        />
+        <g transform={`translate(${midX}, ${midY}) rotate(${angle})`}>
+          {/* Arrow shadow/outline for depth */}
+          <polygon
+            points="-8,-5 8,0 -8,5"
+            fill={outlineColor}
+            transform="translate(0.5, 0.5)"
+            className="transition-all duration-200"
+            style={{ pointerEvents: 'none' }}
+          />
+          {/* Main arrow */}
+          <polygon
+            points="-8,-5 8,0 -8,5"
+            fill={strokeColor}
+            filter={isActive ? `url(#${filterId})` : undefined}
+            className="transition-all duration-200"
+            style={{ pointerEvents: 'none' }}
+          />
+        </g>
       )}
     </g>
   )

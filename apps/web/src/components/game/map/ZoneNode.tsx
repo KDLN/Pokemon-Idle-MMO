@@ -31,15 +31,16 @@ interface ZoneNodeProps {
 }
 
 /**
- * ZoneNode - Individual zone button on the map
+ * ZoneNode - Individual zone button on the map (Gen 4-5 style)
  *
  * Features:
  * - Absolute positioning at calculated (x, y)
- * - Color coding by zone type (amber = town, green = route)
- * - Current zone has yellow ring and player icon
+ * - Color coding by zone type with gradient styling
+ * - Current zone has yellow glow ring and animated player icon
  * - Hover shows tooltip with zone info
  * - Touch targets at least 44px
- * - Town names always visible as labels
+ * - Town names always visible as labels with pixel font
+ * - Rounded corners (rounded-xl) for softer Gen 4-5 aesthetic
  */
 export function ZoneNode({
   id,
@@ -73,32 +74,25 @@ export function ZoneNode({
     }
   }
 
-  // Determine node color based on zone type
-  const getZoneClasses = () => {
-    if (isUnknown) {
-      // Mystery zone: muted gray with subtle pulse animation
-      return 'bg-gray-700/60 border border-gray-500/30'
-    }
+  // Get zone type CSS class for gradient styling
+  const getZoneTypeClass = () => {
+    if (isUnknown) return ''
     switch (zoneType) {
       case 'town':
-        return 'bg-amber-500/80 hover:bg-amber-400'
+        return 'zone-node-town'
       case 'route':
-        return 'bg-green-500/80 hover:bg-green-400'
+        return 'zone-node-route'
       case 'forest':
-        return 'bg-emerald-600/80 hover:bg-emerald-500'
+        return 'zone-node-forest'
       case 'cave':
-        return 'bg-stone-600/80 hover:bg-stone-500'
-      case 'gym':
-        return 'bg-red-500/80 hover:bg-red-400'
-      case 'special':
-        return 'bg-purple-500/80 hover:bg-purple-400'
+        return 'zone-node-cave'
       default:
-        return 'bg-gray-500/80 hover:bg-gray-400'
+        return 'zone-node-route'
     }
   }
 
-  // Node sizes: towns are larger than routes
-  const sizeClasses = isTown ? 'w-12 h-12' : 'w-10 h-10'
+  // Node sizes: towns are larger than routes (increased for better visibility)
+  const sizeClasses = isTown ? 'w-14 h-14' : 'w-11 h-11'
 
   const nodeContent = (
     <button
@@ -106,19 +100,25 @@ export function ZoneNode({
       disabled={isUnknown}
       aria-disabled={!canTravel && !isCurrent && visibility === 'visited'}
       className={cn(
-        'absolute rounded-lg transition-all duration-200',
+        'absolute transition-all duration-200',
         // Center the node on its position
         '-translate-x-1/2 -translate-y-1/2',
         // Size
         sizeClasses,
-        // Colors
-        getZoneClasses(),
-        // Current zone indicator
-        isCurrent && 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-[#101820]',
+        // Rounder corners for Gen 4-5 aesthetic
+        'rounded-xl',
+        // Base polished styling (gradient overlay, shadows)
+        !isUnknown && 'zone-node-polished',
+        // Zone type gradient colors
+        getZoneTypeClass(),
+        // Unknown zone styling
+        isUnknown && 'bg-gray-700/60 border border-gray-500/30 rounded-lg',
+        // Current zone enhanced glow
+        isCurrent && 'zone-node-current',
         // Connected zones: interactive cursor and scale effect
-        canTravel && 'cursor-pointer hover:scale-110 active:scale-95',
+        canTravel && 'cursor-pointer hover:scale-110 hover:brightness-110 active:scale-95',
         // Visited but not connected: show as visited but dimmed
-        visibility === 'visited' && !isCurrent && !isConnected && 'opacity-60 cursor-default',
+        visibility === 'visited' && !isCurrent && !isConnected && 'opacity-50 cursor-default',
         // Disabled state for unknown zones with subtle pulse
         isUnknown && 'cursor-not-allowed animate-pulse',
         // Focus styling
@@ -151,41 +151,41 @@ export function ZoneNode({
 
       {/* Unknown zone marker */}
       {isUnknown && (
-        <span className="text-lg font-bold text-gray-300">?</span>
+        <span className="text-xl font-bold text-gray-300/80 drop-shadow-md">?</span>
       )}
 
-      {/* Player icon for current zone */}
+      {/* Player icon for current zone - animated bounce */}
       {isCurrent && !isUnknown && (
         <span
-          className="absolute inset-0 flex items-center justify-center text-lg"
+          className="absolute inset-0 flex items-center justify-center player-marker-animated"
           aria-label="You are here"
         >
           <svg
             viewBox="0 0 24 24"
-            className="w-6 h-6 fill-white drop-shadow-md"
+            className="w-7 h-7 fill-white drop-shadow-lg"
             aria-hidden="true"
           >
             {/* Simple trainer/person silhouette */}
-            <circle cx="12" cy="8" r="4" />
-            <path d="M12 14c-4 0-6 2-6 4v2h12v-2c0-2-2-4-6-4z" />
+            <circle cx="12" cy="7" r="4" />
+            <path d="M12 13c-4.5 0-7 2.5-7 5v2h14v-2c0-2.5-2.5-5-7-5z" />
           </svg>
         </span>
       )}
     </button>
   )
 
-  // Town labels are always visible, route labels only on hover (via tooltip)
+  // Town labels are always visible with pixel font styling
   const townLabel = isTown && !isUnknown && (
     <div
       className="absolute text-center pointer-events-none"
       style={{
         left: position.x,
-        // Position label below the node
-        top: position.y + 30,
+        // Position label below the node (adjusted for larger node)
+        top: position.y + 34,
         transform: 'translateX(-50%)',
       }}
     >
-      <span className="font-pixel text-[10px] text-white/80 uppercase tracking-wide whitespace-nowrap drop-shadow-md">
+      <span className="zone-label">
         {name}
       </span>
     </div>
