@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 11 of 15 (UI Polish)
-Plan: 1 of ? in current phase
+Plan: 2 of ? in current phase
 Status: In progress
-Last activity: 2026-01-20 — Completed 11-01-PLAN.md (Zone Directions)
+Last activity: 2026-01-20 — Completed 11-02-PLAN.md (Navigation Directions)
 
-Progress: [█████░░░] 53%
+Progress: [█████░░░] 55%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14 (v1.1)
-- Average duration: 2.8 min
-- Total execution time: 39 min
+- Total plans completed: 15 (v1.1)
+- Average duration: 2.7 min
+- Total execution time: 41 min
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: [█████░░░] 53%
 | 08-bug-fixes | 2 | 4 min | 2 min |
 | 09-design-system | 5 | 18 min | 3.6 min |
 | 10-layout-responsiveness | 6 | 14 min | 2.3 min |
-| 11-ui-polish | 1 | 3 min | 3 min |
+| 11-ui-polish | 2 | 5 min | 2.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 10-03 (2 min), 10-04 (2 min), 10-05 (1 min), 10-06 (2 min), 11-01 (3 min)
-- Trend: Database/backend plans slightly longer than pure frontend
+- Last 5 plans: 10-04 (2 min), 10-05 (1 min), 10-06 (2 min), 11-01 (3 min), 11-02 (2 min)
+- Trend: UI polish plans executing quickly
 
 *Updated after each plan completion*
 
@@ -67,6 +67,8 @@ Recent decisions affecting current work:
 - 10-06: Use bottom-20 lg:bottom-4 for fixed buttons to clear mobile tab bar
 - 11-01: Direction is from perspective of from_zone_id (travel direction to reach destination)
 - 11-01: Use single-letter codes (N/S/E/W) for compact storage
+- 11-02: Use stable sort by id as secondary key when directions match
+- 11-02: Display direction arrows before zone icon for visual hierarchy
 
 ### Pending Todos
 
@@ -81,8 +83,8 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 11-01-PLAN.md (Zone Directions)
+Stopped at: Completed 11-02-PLAN.md (Navigation Directions)
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after 11-01 completion*
+*State updated: 2026-01-20 after 11-02 completion*
