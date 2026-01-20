@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 10 of 15 (Layout & Responsiveness)
-Plan: 2 of ? in current phase
+Plan: 2 of ? in current phase (01 and 02 complete)
 Status: In progress
-Last activity: 2026-01-20 — Completed 10-02-PLAN.md (Touch Targets)
+Last activity: 2026-01-20 — Completed 10-01-PLAN.md (Responsive Typography) and 10-02-PLAN.md (Touch Targets)
 
 Progress: [███_____] 30%
 
@@ -55,6 +55,8 @@ Recent decisions affecting current work:
 - 09-03: Import cn from '@/lib/ui/cn' for explicit path
 - 09-04: Use render functions for multi-component stories, include contextual usage examples
 - 09-05: Use Storybook ColorPalette blocks for colors, inline JSX for spacing/typography
+- 10-01: Use CSS clamp() for fluid typography: 16px min at 375px to 18px max at 1280px
+- 10-01: Keep pixel font sizes unchanged for intentional retro aesthetic
 - 10-02: Add min-h-[44px] to Button base classes for WCAG touch target compliance
 - 10-02: Use ::before pseudo-element on map dots to expand touch area without affecting visual size
 
@@ -70,8 +72,8 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 10-02-PLAN.md (Touch Targets)
+Stopped at: Completed 10-01-PLAN.md (Responsive Typography)
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after 10-02 completion*
+*State updated: 2026-01-20 after 10-01 completion*
