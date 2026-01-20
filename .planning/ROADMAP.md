@@ -85,10 +85,13 @@ Plans:
   3. Active boosts display in Boosts panel with remaining duration visible
   4. Guild Bank Pokemon display shows sprite and name (not numeric ID)
   5. Guild Bank transaction logs show human-readable format (not raw JSON)
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 11-01: TBD
+- [ ] 11-01-PLAN.md — Add direction data to zone connections (database migration + backend)
+- [ ] 11-02-PLAN.md — Implement navigation direction sorting and rename Power-Ups to Boosts
+- [ ] 11-03-PLAN.md — Create active boosts display with countdown timers and expiry notifications
+- [ ] 11-04-PLAN.md — Enhance Guild Bank with Pokemon sprites, sorting, and relative timestamps
 
 ### Phase 12: Party Reordering
 **Goal**: Enable players to organize their party through intuitive drag-and-drop
@@ -158,7 +161,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 8. Bug Fixes | v1.1 | 2/2 | Complete | 2026-01-19 |
 | 9. Design System | v1.1 | 5/5 | Complete | 2026-01-19 |
 | 10. Layout & Responsiveness | v1.1 | 6/6 | Complete | 2026-01-20 |
-| 11. UI Polish | v1.1 | 0/? | Not started | - |
+| 11. UI Polish | v1.1 | 0/4 | Ready | - |
 | 12. Party Reordering | v1.1 | 0/? | Not started | - |
 | 13. Map Overhaul | v1.1 | 0/? | Not started | - |
 | 14. Battle System | v1.1 | 0/? | Not started | - |
