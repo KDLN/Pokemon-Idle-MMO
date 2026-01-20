@@ -28,6 +28,9 @@ import { countOnlineFriends } from '@/lib/utils/friendUtils'
 import type { ActiveTradeSession } from '@/types/trade'
 import { GuildPanel } from './guild'
 import { PlayerActionModal } from './PlayerActionModal'
+import { BoostCard } from './BoostCard'
+import { BoostExpiredToast } from './BoostExpiredToast'
+import type { GuildBuffType } from '@pokemon-idle/shared'
 
 // ============================================================================
 // LAYOUT-B: Compact 3-Column Grid Layout
@@ -40,17 +43,6 @@ interface Zone {
   connections: string[]
   mapX: number
   mapY: number
-}
-
-interface Boost {
-  id: string
-  name: string
-  icon: string
-  desc: string
-  duration: string
-  cost: number
-  active: boolean
-  timeLeft?: string
 }
 
 // Direction priority for sorting (lower = higher priority)
@@ -85,14 +77,6 @@ const KANTO_ZONES: Zone[] = [
 // These are static placeholders to demonstrate the UI layout
 const NEWS_ITEMS = [
   { id: 1, type: 'event' as const, title: 'Coming Soon', desc: 'News and events will appear here', time: '' },
-]
-
-// TODO: Replace with real buff/boost system when implemented
-// These are static placeholders to demonstrate the UI layout
-// Note: When implementing dynamic content, ensure all user-generated or backend
-// content is properly escaped (React's default behavior) or sanitized
-const AVAILABLE_BOOSTS: Boost[] = [
-  { id: 'placeholder', name: 'Boosts', icon: '⚡', desc: 'Coming soon...', duration: '', cost: 0, active: false },
 ]
 
 // ===== MAP SIDEBAR COMPONENT =====
@@ -415,11 +399,25 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
 // ===== PARTY COLUMN COMPONENT =====
 function PartyColumn({ className = '' }: { className?: string }) {
   const worldLog = useGameStore((state) => state.worldLog)
+  const guildActiveBuffs = useGameStore((state) => state.guildActiveBuffs)
+  const addExpiredBoost = useGameStore((state) => state.addExpiredBoost)
+  const clearExpiredBuff = useGameStore((state) => state.clearExpiredBuff)
+
+  const handleBoostExpire = (buffType: GuildBuffType) => {
+    addExpiredBoost(buffType)
+    clearExpiredBuff(buffType)
+  }
+
+  const hasActiveBoosts = guildActiveBuffs && (
+    guildActiveBuffs.xp_bonus ||
+    guildActiveBuffs.catch_rate ||
+    guildActiveBuffs.encounter_rate
+  )
 
   return (
     <div className={`party-column ${className}`}>
       <div className="party-header">
-        <span>⚔️</span>
+        <span>{'\u2694\uFE0F'}</span>
         <span className="party-title">Party</span>
       </div>
       <div className="party-content">
@@ -428,31 +426,46 @@ function PartyColumn({ className = '' }: { className?: string }) {
 
       <div className="buffs-section">
         <div className="buffs-header">
-          <span>⚡</span>
+          <span>{'\u26A1'}</span>
           <span className="buffs-title">Boosts</span>
         </div>
         <div className="buffs-list">
-          {AVAILABLE_BOOSTS.map(buff => (
-            <button
-              key={buff.id}
-              className={`buff-item ${buff.active ? 'active' : ''}`}
-              aria-label={`${buff.name}: ${buff.desc}`}
-            >
-              <span className="buff-icon">{buff.icon}</span>
-              <span className="buff-info">
-                <span className="buff-name">{buff.name}</span>
-                {buff.active && buff.timeLeft && (
-                  <span className="buff-timer">{buff.timeLeft}</span>
-                )}
-              </span>
-            </button>
-          ))}
+          {guildActiveBuffs && (
+            <>
+              {guildActiveBuffs.xp_bonus && (
+                <BoostCard
+                  key="xp_bonus"
+                  buff={guildActiveBuffs.xp_bonus}
+                  onExpire={() => handleBoostExpire('xp_bonus')}
+                />
+              )}
+              {guildActiveBuffs.catch_rate && (
+                <BoostCard
+                  key="catch_rate"
+                  buff={guildActiveBuffs.catch_rate}
+                  onExpire={() => handleBoostExpire('catch_rate')}
+                />
+              )}
+              {guildActiveBuffs.encounter_rate && (
+                <BoostCard
+                  key="encounter_rate"
+                  buff={guildActiveBuffs.encounter_rate}
+                  onExpire={() => handleBoostExpire('encounter_rate')}
+                />
+              )}
+            </>
+          )}
+          {!hasActiveBoosts && (
+            <div className="text-xs text-[#606080] text-center py-4">
+              Use a boost from your guild shop to enhance your training!
+            </div>
+          )}
         </div>
       </div>
 
       <div className="activity-section">
         <div className="activity-header">
-          <span>📋</span>
+          <span>{'\uD83D\uDCCB'}</span>
           <span className="activity-title">Activity</span>
         </div>
         <div className="activity-log">
@@ -656,6 +669,7 @@ export function GameShell({ accessToken }: GameShellProps) {
         <GymBattlePanel />
         <MuseumPanel />
         <LevelUpToast />
+        <BoostExpiredToast />
         <EvolutionModal />
         <TradeModal isOpen={isTradeModalOpen} onClose={handleCloseTrade} />
       </>
@@ -699,6 +713,7 @@ export function GameShell({ accessToken }: GameShellProps) {
       <GymBattlePanel />
       <MuseumPanel />
       <LevelUpToast />
+      <BoostExpiredToast />
       <EvolutionModal />
       <TradeModal isOpen={isTradeModalOpen} onClose={handleCloseTrade} />
       <GlobalPlayerModal />

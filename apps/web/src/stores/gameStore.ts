@@ -371,6 +371,11 @@ interface GameStore {
   setGuildStatistics: (statistics: GuildStatistics | null) => void
   setGuildLeaderboard: (leaderboard: { metric: LeaderboardMetric; entries: GuildLeaderboardEntry[]; myGuildRank: GuildRankInfo | null } | null) => void
 
+  // Expired boosts for toast notification
+  expiredBoosts: GuildBuffType[]
+  addExpiredBoost: (buffType: GuildBuffType) => void
+  clearExpiredBoosts: () => void
+
   // Guild bank view preference
   guildBankViewMode: GuildBankViewMode
   setGuildBankViewMode: (mode: GuildBankViewMode) => void
@@ -506,6 +511,8 @@ const initialState = {
   guildActiveBuffs: null as ActiveGuildBuffs | null,
   guildStatistics: null as GuildStatistics | null,
   guildLeaderboard: null as { metric: LeaderboardMetric; entries: GuildLeaderboardEntry[]; myGuildRank: GuildRankInfo | null } | null,
+  // Expired boosts for toast notification
+  expiredBoosts: [] as GuildBuffType[],
   // Guild bank view preference (persisted)
   guildBankViewMode: 'grid' as GuildBankViewMode,
 }
@@ -1294,6 +1301,12 @@ export const useGameStore = create<GameStore>()(
   setGuildStatistics: (statistics) => set({ guildStatistics: statistics }),
 
   setGuildLeaderboard: (leaderboard) => set({ guildLeaderboard: leaderboard }),
+
+  // Expired boosts actions
+  addExpiredBoost: (buffType) => set((state) => ({
+    expiredBoosts: [...state.expiredBoosts, buffType]
+  })),
+  clearExpiredBoosts: () => set({ expiredBoosts: [] }),
 
   // Guild bank view preference
   setGuildBankViewMode: (mode) => set({ guildBankViewMode: mode }),
