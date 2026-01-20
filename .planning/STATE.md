@@ -52,6 +52,7 @@ Recent decisions affecting current work:
 - 09-02: Maintain backward compatibility via legacy aliases referencing new tokens
 - 09-03: Handle Pokemon type badges separately from CVA (dynamic color via style prop)
 - 09-03: Import cn from '@/lib/ui/cn' for explicit path
+- 09-04: Use render functions for multi-component stories, include contextual usage examples
 - 09-05: Use Storybook ColorPalette blocks for colors, inline JSX for spacing/typography
 
 ### Pending Todos
