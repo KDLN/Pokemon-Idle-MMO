@@ -42,7 +42,7 @@ interface Zone {
   mapY: number
 }
 
-interface PowerUp {
+interface Boost {
   id: string
   name: string
   icon: string
@@ -51,6 +51,18 @@ interface PowerUp {
   cost: number
   active: boolean
   timeLeft?: string
+}
+
+// Direction priority for sorting (lower = higher priority)
+const DIRECTION_ORDER: Record<string, number> = {
+  'N': 0, 'E': 1, 'S': 2, 'W': 3,
+  'NE': 4, 'SE': 5, 'SW': 6, 'NW': 7
+}
+
+// Arrow symbols for each direction
+const DIRECTION_ARROWS: Record<string, string> = {
+  'N': '\u2191', 'S': '\u2193', 'E': '\u2192', 'W': '\u2190',
+  'NE': '\u2197', 'SE': '\u2198', 'SW': '\u2199', 'NW': '\u2196'
 }
 
 // Zone coordinates for the CSS-based map display (percentage-based positioning)
@@ -75,12 +87,12 @@ const NEWS_ITEMS = [
   { id: 1, type: 'event' as const, title: 'Coming Soon', desc: 'News and events will appear here', time: '' },
 ]
 
-// TODO: Replace with real buff/power-up system when implemented
+// TODO: Replace with real buff/boost system when implemented
 // These are static placeholders to demonstrate the UI layout
 // Note: When implementing dynamic content, ensure all user-generated or backend
 // content is properly escaped (React's default behavior) or sanitized
-const AVAILABLE_BUFFS: PowerUp[] = [
-  { id: 'placeholder', name: 'Power-Ups', icon: '⚡', desc: 'Coming soon...', duration: '', cost: 0, active: false },
+const AVAILABLE_BOOSTS: Boost[] = [
+  { id: 'placeholder', name: 'Boosts', icon: '⚡', desc: 'Coming soon...', duration: '', cost: 0, active: false },
 ]
 
 // ===== MAP SIDEBAR COMPONENT =====
@@ -94,6 +106,15 @@ function MapSidebar({ className = '' }: { className?: string }) {
   }, [currentZone])
 
   const connectedZoneNames = useMemo(() => connectedZones.map(z => z.name), [connectedZones])
+
+  // Sort connected zones by direction (N first, then E, S, W, then diagonals)
+  const sortedConnectedZones = useMemo(() => {
+    return [...connectedZones].sort((a, b) => {
+      const orderA = DIRECTION_ORDER[a.direction || ''] ?? 99
+      const orderB = DIRECTION_ORDER[b.direction || ''] ?? 99
+      return orderA - orderB || a.id - b.id  // Stable sort by id when same direction
+    })
+  }, [connectedZones])
 
   // Memoize zone button props to avoid recalculating on every render
   const zoneButtonProps = useMemo(() =>
@@ -168,12 +189,17 @@ function MapSidebar({ className = '' }: { className?: string }) {
       <div className="travel-section">
         <div className="section-label">Travel to</div>
         <div className="travel-list">
-          {connectedZones.map(zone => (
+          {sortedConnectedZones.map(zone => (
             <button
               key={zone.id}
               className="travel-btn"
               onClick={() => gameSocket.moveToZone(zone.id)}
             >
+              {zone.direction && (
+                <span className="direction-arrow text-[#a0a0c0]">
+                  {DIRECTION_ARROWS[zone.direction]}
+                </span>
+              )}
               <span className="zone-icon">{zone.zone_type === 'town' ? '🏠' : '🌿'}</span>
               <span className="zone-name">{zone.name}</span>
             </button>
@@ -403,10 +429,10 @@ function PartyColumn({ className = '' }: { className?: string }) {
       <div className="buffs-section">
         <div className="buffs-header">
           <span>⚡</span>
-          <span className="buffs-title">Power-Ups</span>
+          <span className="buffs-title">Boosts</span>
         </div>
         <div className="buffs-list">
-          {AVAILABLE_BUFFS.map(buff => (
+          {AVAILABLE_BOOSTS.map(buff => (
             <button
               key={buff.id}
               className={`buff-item ${buff.active ? 'active' : ''}`}
