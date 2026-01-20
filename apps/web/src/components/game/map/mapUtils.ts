@@ -192,5 +192,55 @@ export function getCanvasBounds(
   }
 }
 
+/**
+ * Transform state from react-zoom-pan-pinch
+ */
+export interface TransformState {
+  scale: number
+  positionX: number
+  positionY: number
+}
+
+/**
+ * Viewport dimensions
+ */
+export interface ViewportSize {
+  width: number
+  height: number
+}
+
+/**
+ * Check if a zone position is visible within the current viewport.
+ * Used to determine when to show the "Center on me" button.
+ *
+ * @param zonePosition - The zone's position in canvas coordinates
+ * @param transformState - Current transform state (scale, positionX, positionY)
+ * @param viewportSize - Viewport dimensions (width, height)
+ * @param margin - Buffer around viewport edges (default 50px)
+ * @returns true if zone is visible in viewport, false if scrolled out of view
+ */
+export function isZoneInViewport(
+  zonePosition: { x: number; y: number },
+  transformState: TransformState,
+  viewportSize: ViewportSize,
+  margin = 50
+): boolean {
+  const { scale, positionX, positionY } = transformState
+  const { width, height } = viewportSize
+
+  // Calculate the zone's position in screen coordinates
+  // The transform applies as: screenPos = zonePos * scale + position
+  const transformedX = zonePosition.x * scale + positionX
+  const transformedY = zonePosition.y * scale + positionY
+
+  // Check if within viewport bounds (with margin buffer)
+  const inHorizontalBounds =
+    transformedX >= -margin && transformedX <= width + margin
+  const inVerticalBounds =
+    transformedY >= -margin && transformedY <= height + margin
+
+  return inHorizontalBounds && inVerticalBounds
+}
+
 // Re-export DIRECTION_VECTORS for convenience
 export { DIRECTION_VECTORS } from './mapTypes'
