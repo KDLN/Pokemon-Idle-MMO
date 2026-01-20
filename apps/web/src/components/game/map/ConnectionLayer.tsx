@@ -29,6 +29,8 @@ export interface ConnectionLayerProps {
   width?: number
   /** Height of the SVG canvas */
   height?: number
+  /** Callback when a path is clicked for travel */
+  onPathClick?: (targetZoneId: number) => void
 }
 
 /**
@@ -48,6 +50,7 @@ export function ConnectionLayer({
   zoneVisibilities,
   width = 800,
   height = 600,
+  onPathClick,
 }: ConnectionLayerProps) {
   // Deduplicate connections - each physical path appears twice (A->B and B->A)
   // Only render each unique pair once
@@ -70,11 +73,12 @@ export function ConnectionLayer({
 
   return (
     <svg
-      className="absolute inset-0 z-0 pointer-events-none"
+      className="absolute inset-0 z-0"
       width={width}
       height={height}
       viewBox={`0 0 ${width} ${height}`}
       aria-hidden="true"
+      style={{ pointerEvents: onPathClick ? 'auto' : 'none' }}
     >
       {uniqueConnections.map((conn) => {
         const fromPos = positions.get(conn.from_zone_id)
@@ -108,6 +112,17 @@ export function ConnectionLayer({
         // Connection is to unknown if connecting to an adjacent (undiscovered) zone
         const isToUnknown = fromVisibility === 'adjacent' || toVisibility === 'adjacent'
 
+        // Calculate target zone for travel (the zone that's NOT current)
+        // Only set for active, reachable paths
+        let targetZoneId: number | undefined
+        if (isActive && !isToUnknown) {
+          if (conn.from_zone_id === currentZoneId) {
+            targetZoneId = conn.to_zone_id
+          } else if (conn.to_zone_id === currentZoneId) {
+            targetZoneId = conn.from_zone_id
+          }
+        }
+
         return (
           <ZoneConnection
             key={`${conn.from_zone_id}-${conn.to_zone_id}`}
@@ -116,6 +131,8 @@ export function ConnectionLayer({
             direction={conn.direction}
             isActive={isActive}
             isReachable={!isToUnknown}
+            targetZoneId={targetZoneId}
+            onClick={onPathClick}
           />
         )
       })}

@@ -17,6 +17,10 @@ export interface ZoneConnectionProps {
   isActive: boolean
   /** True if the player can travel this path */
   isReachable: boolean
+  /** Target zone ID to travel to when clicked (only set for active paths) */
+  targetZoneId?: number
+  /** Click handler for travel */
+  onClick?: (targetZoneId: number) => void
 }
 
 /**
@@ -34,6 +38,8 @@ export const ZoneConnection = memo(function ZoneConnection({
   direction,
   isActive,
   isReachable,
+  targetZoneId,
+  onClick,
 }: ZoneConnectionProps) {
   // Calculate midpoint for arrow placement
   const midX = (from.x + to.x) / 2
@@ -57,10 +63,30 @@ export const ZoneConnection = memo(function ZoneConnection({
   // Filter for glow effect on active paths
   const filterId = `glow-${from.id}-${to.id}`
 
+  // Can click if active and has a target zone
+  const isClickable = isActive && targetZoneId !== undefined && onClick
+
+  // Handle path click for travel
+  const handleClick = () => {
+    if (isClickable && targetZoneId !== undefined) {
+      onClick(targetZoneId)
+    }
+  }
+
   return (
     <g
-      className="zone-connection transition-opacity duration-200"
+      className={`zone-connection transition-opacity duration-200 ${isClickable ? 'cursor-pointer' : ''}`}
       style={{ opacity }}
+      onClick={isClickable ? handleClick : undefined}
+      role={isClickable ? 'button' : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      onKeyDown={isClickable ? (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          handleClick()
+        }
+      } : undefined}
+      aria-label={isClickable ? `Travel along path` : undefined}
     >
       {/* Glow filter definition for active paths */}
       {isActive && (
@@ -75,6 +101,20 @@ export const ZoneConnection = memo(function ZoneConnection({
         </defs>
       )}
 
+      {/* Invisible wider line for easier clicking (hit area) */}
+      {isClickable && (
+        <line
+          x1={from.x}
+          y1={from.y}
+          x2={to.x}
+          y2={to.y}
+          stroke="transparent"
+          strokeWidth={20}
+          strokeLinecap="round"
+          className="cursor-pointer"
+        />
+      )}
+
       {/* Connection line */}
       <line
         x1={from.x}
@@ -86,7 +126,8 @@ export const ZoneConnection = memo(function ZoneConnection({
         strokeLinecap="round"
         strokeDasharray={isActive ? 'none' : '6 4'}
         filter={isActive ? `url(#${filterId})` : undefined}
-        className="transition-all duration-200"
+        className={`transition-all duration-200 ${isClickable ? 'group-hover:stroke-[4px]' : ''}`}
+        style={isClickable ? { pointerEvents: 'none' } : undefined}
       />
 
       {/* Direction arrow at midpoint */}
@@ -97,6 +138,7 @@ export const ZoneConnection = memo(function ZoneConnection({
           transform={`translate(${midX}, ${midY}) rotate(${angle})`}
           filter={isActive ? `url(#${filterId})` : undefined}
           className="transition-all duration-200"
+          style={isClickable ? { pointerEvents: 'none' } : undefined}
         />
       )}
     </g>
