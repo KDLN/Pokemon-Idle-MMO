@@ -34,11 +34,11 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 ### UI Improvements
 
-- [ ] **UI-01**: Navigation buttons ordered in travel direction (contextual to player location)
-- [ ] **UI-02**: "Power-Ups" renamed to "Boosts" throughout UI
-- [ ] **UI-03**: Active boosts display in Boosts panel with remaining duration
-- [ ] **UI-04**: Guild Bank Pokemon display shows sprite and name (not numeric ID)
-- [ ] **UI-05**: Guild Bank transaction logs display human-readable format (not raw JSON)
+- [x] **UI-01**: Navigation buttons ordered in travel direction (contextual to player location)
+- [x] **UI-02**: "Power-Ups" renamed to "Boosts" throughout UI
+- [x] **UI-03**: Active boosts display in Boosts panel with remaining duration
+- [x] **UI-04**: Guild Bank Pokemon display shows sprite and name (not numeric ID)
+- [x] **UI-05**: Guild Bank transaction logs display human-readable format (not raw JSON)
 - [ ] **UI-06**: Party Pokemon can be drag-reordered
 - [ ] **UI-07**: Party order changes persist to database
 - [ ] **UI-08**: Party order affects which Pokemon battles first
@@ -118,11 +118,11 @@ Which phases cover which requirements.
 | LAYOUT-05 | Phase 10 | Complete |
 | LAYOUT-06 | Phase 10 | Complete |
 | LAYOUT-07 | Phase 10 | Complete |
-| UI-01 | Phase 11 | Pending |
-| UI-02 | Phase 11 | Pending |
-| UI-03 | Phase 11 | Pending |
-| UI-04 | Phase 11 | Pending |
-| UI-05 | Phase 11 | Pending |
+| UI-01 | Phase 11 | Complete |
+| UI-02 | Phase 11 | Complete |
+| UI-03 | Phase 11 | Complete |
+| UI-04 | Phase 11 | Complete |
+| UI-05 | Phase 11 | Complete |
 | UI-06 | Phase 12 | Pending |
 | UI-07 | Phase 12 | Pending |
 | UI-08 | Phase 12 | Pending |
@@ -149,4 +149,4 @@ Which phases cover which requirements.
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-20 after Phase 10 completion*
+*Last updated: 2026-01-20 after Phase 11 completion*

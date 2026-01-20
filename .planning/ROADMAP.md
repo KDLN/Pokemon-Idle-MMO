@@ -14,7 +14,7 @@ This milestone transforms the functional MVP into a polished product through sys
 - [x] **Phase 8: Bug Fixes** - Fix Guild Quest contributors and Bank view toggle
 - [x] **Phase 9: Design System** - Formalize tokens, set up Storybook, create CVA components
 - [x] **Phase 10: Layout & Responsiveness** - Typography scale, touch targets, viewport support
-- [ ] **Phase 11: UI Polish** - Navigation order, naming, display improvements
+- [x] **Phase 11: UI Polish** - Navigation order, naming, display improvements
 - [ ] **Phase 12: Party Reordering** - Drag-to-reorder party with persistence
 - [ ] **Phase 13: Map Overhaul** - Visual styling, interactions, zone connections
 - [ ] **Phase 14: Battle System** - Progressive turn calculation and animation
@@ -88,10 +88,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 11-01-PLAN.md — Add direction data to zone connections (database migration + backend)
-- [ ] 11-02-PLAN.md — Implement navigation direction sorting and rename Power-Ups to Boosts
-- [ ] 11-03-PLAN.md — Create active boosts display with countdown timers and expiry notifications
-- [ ] 11-04-PLAN.md — Enhance Guild Bank with Pokemon sprites, sorting, and relative timestamps
+- [x] 11-01-PLAN.md — Add direction data to zone connections (database migration + backend)
+- [x] 11-02-PLAN.md — Implement navigation direction sorting and rename Power-Ups to Boosts
+- [x] 11-03-PLAN.md — Create active boosts display with countdown timers and expiry notifications
+- [x] 11-04-PLAN.md — Enhance Guild Bank with Pokemon sprites, sorting, and relative timestamps
 
 ### Phase 12: Party Reordering
 **Goal**: Enable players to organize their party through intuitive drag-and-drop
@@ -161,8 +161,8 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 8. Bug Fixes | v1.1 | 2/2 | Complete | 2026-01-19 |
 | 9. Design System | v1.1 | 5/5 | Complete | 2026-01-19 |
 | 10. Layout & Responsiveness | v1.1 | 6/6 | Complete | 2026-01-20 |
-| 11. UI Polish | v1.1 | 0/4 | Ready | - |
-| 12. Party Reordering | v1.1 | 0/? | Not started | - |
+| 11. UI Polish | v1.1 | 4/4 | Complete | 2026-01-20 |
+| 12. Party Reordering | v1.1 | 0/? | Ready | - |
 | 13. Map Overhaul | v1.1 | 0/? | Not started | - |
 | 14. Battle System | v1.1 | 0/? | Not started | - |
 | 15. Theme Exploration | v1.1 | 0/? | Not started | - |

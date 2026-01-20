@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Polish the game to feel like a real product, not a prototype — consistent visuals, responsive layouts, satisfying battle feedback.
-**Current focus:** Phase 11 - UI Polish
+**Current focus:** Phase 12 - Party Reordering
 
 ## Current Position
 
-Phase: 11 of 15 (UI Polish)
-Plan: 4 of ? in current phase
-Status: In progress
-Last activity: 2026-01-20 — Completed 11-04-PLAN.md (Guild Bank UX)
+Phase: 12 of 15 (Party Reordering)
+Plan: 0 of ? in current phase
+Status: Ready to plan
+Last activity: 2026-01-20 — Completed Phase 11 (UI Polish)
 
-Progress: [█████░░░] 58%
+Progress: [█████░░░] 62%
 
 ## Performance Metrics
 
@@ -87,8 +87,8 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 11-04-PLAN.md (Guild Bank UX)
+Stopped at: Completed Phase 11 (UI Polish)
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after 11-03 completion*
+*State updated: 2026-01-20 after Phase 11 completion*
