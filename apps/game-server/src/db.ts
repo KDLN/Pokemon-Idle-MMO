@@ -488,6 +488,61 @@ export async function removeFromParty(
   return !error
 }
 
+/**
+ * Reorder party Pokemon to new positions
+ * @param playerId - Owner of the Pokemon
+ * @param newOrder - Array of 6 Pokemon IDs (null for empty slots)
+ * @returns true if successful, false if validation fails
+ */
+export async function reorderParty(
+  playerId: string,
+  newOrder: (string | null)[]
+): Promise<boolean> {
+  // Validate array length
+  if (newOrder.length !== 6) return false
+
+  // Get current party to validate ownership
+  const { data: currentParty, error: fetchError } = await supabase
+    .from('pokemon')
+    .select('id')
+    .eq('owner_id', playerId)
+    .not('party_slot', 'is', null)
+
+  if (fetchError) return false
+
+  // Validate all non-null IDs are in current party
+  const currentPartyIds = new Set(currentParty?.map(p => p.id) || [])
+  const newPartyIds = newOrder.filter((id): id is string => id !== null)
+
+  for (const id of newPartyIds) {
+    if (!currentPartyIds.has(id)) return false
+  }
+
+  // Update each pokemon's party_slot atomically
+  // First, clear all party slots for this player's party Pokemon
+  await supabase
+    .from('pokemon')
+    .update({ party_slot: null })
+    .eq('owner_id', playerId)
+    .not('party_slot', 'is', null)
+
+  // Then set new positions
+  for (let slot = 1; slot <= 6; slot++) {
+    const pokemonId = newOrder[slot - 1]
+    if (pokemonId) {
+      const { error } = await supabase
+        .from('pokemon')
+        .update({ party_slot: slot })
+        .eq('id', pokemonId)
+        .eq('owner_id', playerId)
+
+      if (error) return false
+    }
+  }
+
+  return true
+}
+
 export async function savePokemonXP(pokemonId: string, xp: number): Promise<void> {
   await supabase
     .from('pokemon')
