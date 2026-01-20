@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 12 of 15 (Party Reordering)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-20 — Completed 12-01-PLAN.md
+Last activity: 2026-01-20 — Completed 12-02-PLAN.md
 
-Progress: [██████░░] 65%
+Progress: [███████░] 68%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18 (v1.1)
+- Total plans completed: 19 (v1.1)
 - Average duration: 2.7 min
-- Total execution time: 48 min
+- Total execution time: 51 min
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [██████░░] 65%
 | 09-design-system | 5 | 18 min | 3.6 min |
 | 10-layout-responsiveness | 6 | 14 min | 2.3 min |
 | 11-ui-polish | 4 | 8 min | 2 min |
-| 12-party-reordering | 1 | 4 min | 4 min |
+| 12-party-reordering | 2 | 7 min | 3.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 10-06 (2 min), 11-01 (3 min), 11-02 (2 min), 11-04 (3 min), 12-01 (4 min)
-- Trend: Backend infrastructure plan with 4 tasks
+- Last 5 plans: 11-01 (3 min), 11-02 (2 min), 11-04 (3 min), 12-01 (4 min), 12-02 (3 min)
+- Trend: Frontend drag-and-drop implementation
 
 *Updated after each plan completion*
 
@@ -76,6 +76,9 @@ Recent decisions affecting current work:
 - 11-04: Relative timestamps with cursor-help and hover tooltips for absolute time
 - 12-01: No battle check needed for party reorder - idle game has no persistent battle state
 - 12-01: Use broadcastToPlayer helper for cross-tab sync (broadcasts to all player sessions)
+- 12-02: Local state for activeId - avoids Zustand re-render cascade during drag
+- 12-02: rectSwappingStrategy + arraySwap for swap behavior (not shift/move)
+- 12-02: Optimistic update with rollback on WebSocket send failure
 
 ### Pending Todos
 
@@ -90,8 +93,8 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 12-01-PLAN.md
+Stopped at: Completed 12-02-PLAN.md
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after 12-01 completion*
+*State updated: 2026-01-20 after 12-02 completion*
