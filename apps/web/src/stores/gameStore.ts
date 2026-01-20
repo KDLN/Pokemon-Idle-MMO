@@ -103,6 +103,10 @@ interface GameStore {
   connectedZones: Zone[]
   setZone: (zone: Zone, connectedZones: Zone[]) => void
 
+  // Visited zones (fog of war)
+  visitedZones: number[]
+  markZoneVisited: (zoneId: number) => void
+
   // Party (up to 6 Pokemon)
   party: (Pokemon | null)[]
   setParty: (party: Pokemon[]) => void
@@ -432,6 +436,7 @@ const initialState = {
   player: null,
   currentZone: null,
   connectedZones: [],
+  visitedZones: [1], // Start with Pallet Town (zone 1) visited
   party: [null, null, null, null, null, null] as (Pokemon | null)[],
   box: [],
   pokeballs: 0,
@@ -524,7 +529,26 @@ export const useGameStore = create<GameStore>()(
 
   setPlayer: (player) => set({ player }),
 
-  setZone: (zone, connectedZones) => set({ currentZone: zone, connectedZones }),
+  setZone: (zone, connectedZones) => {
+    // Auto-mark zone as visited when traveling there
+    const state = get()
+    const visitedSet = new Set(state.visitedZones)
+    if (!visitedSet.has(zone.id)) {
+      visitedSet.add(zone.id)
+      set({ currentZone: zone, connectedZones, visitedZones: Array.from(visitedSet) })
+    } else {
+      set({ currentZone: zone, connectedZones })
+    }
+  },
+
+  markZoneVisited: (zoneId) => {
+    const state = get()
+    const visitedSet = new Set(state.visitedZones)
+    if (!visitedSet.has(zoneId)) {
+      visitedSet.add(zoneId)
+      set({ visitedZones: Array.from(visitedSet) })
+    }
+  },
 
   setParty: (partyPokemon) => {
     // Convert array to 6-slot array
@@ -1322,6 +1346,7 @@ export const useGameStore = create<GameStore>()(
       name: 'pokemon-idle-ui-prefs',
       partialize: (state) => ({
         guildBankViewMode: state.guildBankViewMode,
+        visitedZones: state.visitedZones,
       }),
     }
   )
