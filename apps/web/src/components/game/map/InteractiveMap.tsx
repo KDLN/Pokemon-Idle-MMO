@@ -9,6 +9,7 @@ import {
 import { cn } from '@/lib/ui/cn'
 import { MapCanvas, MOCK_POSITIONS, MOCK_CURRENT_ZONE_ID } from './MapCanvas'
 import { MapControls } from './MapControls'
+import { MapFrame } from './MapFrame'
 import type { MapProps, ZonePosition } from './mapTypes'
 
 // Canvas dimensions (should match MapCanvas defaults)
@@ -111,63 +112,62 @@ export function InteractiveMap({
   const initialPos = getInitialPosition()
 
   return (
-    <div
-      ref={containerRef}
-      className={cn(
-        'relative w-full',
-        // Aspect ratio 16:10 with max height
-        'aspect-[16/10] max-h-[400px]',
-        // Container styling
-        'overflow-hidden rounded-lg',
-        // Pokemon-style decorative border
-        'poke-border',
-        className
-      )}
-    >
-      <TransformWrapper
-        ref={transformRef}
-        initialScale={1}
-        initialPositionX={initialPos.x}
-        initialPositionY={initialPos.y}
-        minScale={0.5}
-        maxScale={2}
-        centerOnInit={false}
-        limitToBounds={false}
-        wheel={{
-          step: 0.1,
-          smoothStep: 0.01,
-        }}
-        pinch={{
-          step: 5,
-        }}
-        panning={{
-          velocityDisabled: false,
-        }}
-        doubleClick={{
-          disabled: true,
-        }}
+    <MapFrame className={cn('w-full max-h-[440px]', className)}>
+      <div
+        ref={containerRef}
+        className={cn(
+          'relative w-full',
+          // Aspect ratio 16:10 with max height (excluding header)
+          'aspect-[16/10] max-h-[400px]',
+          // Container styling
+          'overflow-hidden'
+        )}
       >
-        {/* MapControls must be inside TransformWrapper to access useControls */}
-        <MapControls
-          currentZonePosition={currentZonePosition}
-          containerRef={containerRef}
-        />
-
-        <TransformComponent
-          wrapperStyle={{
-            width: '100%',
-            height: '100%',
+        <TransformWrapper
+          ref={transformRef}
+          initialScale={1}
+          initialPositionX={initialPos.x}
+          initialPositionY={initialPos.y}
+          minScale={0.5}
+          maxScale={2}
+          centerOnInit={false}
+          limitToBounds={false}
+          wheel={{
+            step: 0.1,
+            smoothStep: 0.01,
           }}
-          contentStyle={{
-            width: `${CANVAS_WIDTH}px`,
-            height: `${CANVAS_HEIGHT}px`,
+          pinch={{
+            step: 5,
+          }}
+          panning={{
+            velocityDisabled: false,
+          }}
+          doubleClick={{
+            disabled: true,
           }}
         >
-          <MapCanvas width={CANVAS_WIDTH} height={CANVAS_HEIGHT}>
-            {/* Zone nodes and connections are rendered inside MapCanvas */}
-          </MapCanvas>
-        </TransformComponent>
-      </TransformWrapper>
-    </div>
+          {/* MapControls must be inside TransformWrapper to access useControls */}
+          <MapControls
+            currentZonePosition={currentZonePosition}
+            containerRef={containerRef}
+          />
+
+          <TransformComponent
+            wrapperStyle={{
+              width: '100%',
+              height: '100%',
+            }}
+            contentStyle={{
+              width: `${CANVAS_WIDTH}px`,
+              height: `${CANVAS_HEIGHT}px`,
+            }}
+          >
+            <MapCanvas width={CANVAS_WIDTH} height={CANVAS_HEIGHT}>
+              {/* Zone nodes and connections are rendered inside MapCanvas */}
+            </MapCanvas>
+          </TransformComponent>
+        </TransformWrapper>
+      </div>
+    </MapFrame>
   )
 }

@@ -2743,3 +2743,211 @@ html {
     border-color: var(--lb-accent);
   }
 }
+
+/* ================== */
+/* Map Frame Styles   */
+/* ================== */
+
+/* Main frame container - Pokemon handheld device aesthetic */
+.map-frame {
+  position: relative;
+  border: 4px solid var(--border-bright);
+  border-radius: 16px;
+  background: linear-gradient(180deg,
+    var(--color-surface-elevated) 0%,
+    var(--color-surface-base) 100%
+  );
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.4),
+    inset 0 2px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+/* Inner border accent */
+.map-frame::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 2px solid var(--border-subtle);
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 30;
+}
+
+/* Header bar at top of frame */
+.map-frame-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: linear-gradient(180deg,
+    var(--color-surface-hover) 0%,
+    var(--color-surface-elevated) 100%
+  );
+  border-bottom: 2px solid var(--border-subtle);
+}
+
+/* Title text - pixel font style */
+.map-frame-title {
+  font-family: var(--font-pixel), 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Decorative dots in header (like handheld device indicators) */
+.map-frame-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.map-frame-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.map-frame-dot-red {
+  background: var(--poke-red);
+}
+
+.map-frame-dot-yellow {
+  background: var(--poke-yellow);
+}
+
+.map-frame-dot-green {
+  background: var(--color-success);
+}
+
+/* Content area inside frame */
+.map-frame-content {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Corner decorations */
+.map-frame-corner {
+  position: absolute;
+  z-index: 25;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.map-frame-corner-tl {
+  top: 6px;
+  left: 6px;
+}
+
+.map-frame-corner-br {
+  bottom: 6px;
+  right: 6px;
+  transform: rotate(180deg);
+}
+
+/* ================== */
+/* Zone Node Polish   */
+/* ================== */
+
+/* Zone node base refinements for Gen 4-5 aesthetic */
+.zone-node-polished {
+  border-radius: 10px;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Town node specific styling */
+.zone-node-town {
+  background: linear-gradient(180deg,
+    #f59e0b 0%,
+    #d97706 50%,
+    #b45309 100%
+  );
+}
+
+/* Route node specific styling */
+.zone-node-route {
+  background: linear-gradient(180deg,
+    #22c55e 0%,
+    #16a34a 50%,
+    #15803d 100%
+  );
+}
+
+/* Forest node styling */
+.zone-node-forest {
+  background: linear-gradient(180deg,
+    #10b981 0%,
+    #059669 50%,
+    #047857 100%
+  );
+}
+
+/* Cave node styling */
+.zone-node-cave {
+  background: linear-gradient(180deg,
+    #78716c 0%,
+    #57534e 50%,
+    #44403c 100%
+  );
+}
+
+/* Current zone enhanced glow */
+.zone-node-current {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 0 0 3px rgba(250, 204, 21, 0.4),
+    0 0 12px rgba(250, 204, 21, 0.6),
+    0 0 24px rgba(250, 204, 21, 0.3);
+}
+
+/* Zone label styling */
+.zone-label {
+  font-family: var(--font-pixel), 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.8),
+    0 0 4px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+/* Player marker animation */
+@keyframes player-marker-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.player-marker-animated {
+  animation: player-marker-bounce 1.5s ease-in-out infinite;
+}
+
+/* Map canvas vignette effect */
+.map-canvas-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 50%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+}
