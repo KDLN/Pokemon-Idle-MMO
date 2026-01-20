@@ -7,14 +7,23 @@ import {
   type ReactZoomPanPinchContentRef,
 } from 'react-zoom-pan-pinch'
 import { cn } from '@/lib/ui/cn'
+import { useGameStore } from '@/stores/gameStore'
 import { MapCanvas, MOCK_POSITIONS, MOCK_CURRENT_ZONE_ID } from './MapCanvas'
 import { MapControls } from './MapControls'
 import { MapFrame } from './MapFrame'
-import type { MapProps, ZonePosition } from './mapTypes'
+import type { ZonePosition } from './mapTypes'
 
 // Canvas dimensions (should match MapCanvas defaults)
 const CANVAS_WIDTH = 900
 const CANVAS_HEIGHT = 650
+
+/**
+ * Props for InteractiveMap component
+ */
+interface InteractiveMapProps {
+  /** Optional className for the container */
+  className?: string
+}
 
 /**
  * InteractiveMap - Main container with pan/zoom functionality
@@ -36,20 +45,19 @@ const CANVAS_HEIGHT = 650
  * - Map centers on current zone on initial load
  * - "Center on me" button appears when zone scrolls off-screen
  * - Automatic re-center on zone change (travel)
+ *
+ * State:
+ * - Uses gameStore for currentZone, visitedZones, connectedZones
+ * - Falls back to mock data when store is not populated
  */
-export function InteractiveMap({
-  currentZoneId: _currentZoneId,
-  visitedZoneIds: _visitedZoneIds,
-  onZoneClick: _onZoneClick,
-  onConnectionClick: _onConnectionClick,
-  className,
-}: MapProps) {
+export function InteractiveMap({ className }: InteractiveMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const transformRef = useRef<ReactZoomPanPinchContentRef>(null)
   const previousZoneIdRef = useRef<number | null>(null)
 
-  // Use mock current zone ID for now (will use prop when wired to game state)
-  const currentZoneId = MOCK_CURRENT_ZONE_ID
+  // Get current zone from gameStore, fall back to mock for initial centering
+  const currentZone = useGameStore((state) => state.currentZone)
+  const currentZoneId = currentZone?.id ?? MOCK_CURRENT_ZONE_ID
 
   // Find current zone position from mock data
   const currentZonePosition = useMemo(() => {

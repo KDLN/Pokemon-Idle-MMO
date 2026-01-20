@@ -30,20 +30,12 @@ import { GuildPanel } from './guild'
 import { PlayerActionModal } from './PlayerActionModal'
 import { BoostCard } from './BoostCard'
 import { BoostExpiredToast } from './BoostExpiredToast'
+import { InteractiveMap } from './map'
 import type { GuildBuffType } from '@pokemon-idle/shared'
 
 // ============================================================================
 // LAYOUT-B: Compact 3-Column Grid Layout
 // ============================================================================
-
-interface Zone {
-  id: string
-  name: string
-  type: 'town' | 'route' | 'forest' | 'cave'
-  connections: string[]
-  mapX: number
-  mapY: number
-}
 
 // Direction priority for sorting (lower = higher priority)
 const DIRECTION_ORDER: Record<string, number> = {
@@ -57,22 +49,6 @@ const DIRECTION_ARROWS: Record<string, string> = {
   'NE': '\u2197', 'SE': '\u2198', 'SW': '\u2199', 'NW': '\u2196'
 }
 
-// Zone coordinates for the CSS-based map display (percentage-based positioning)
-const KANTO_ZONES: Zone[] = [
-  { id: '1', name: 'Pallet Town', type: 'town', connections: ['2'], mapX: 18, mapY: 85 },
-  { id: '2', name: 'Route 1', type: 'route', connections: ['1', '3'], mapX: 18, mapY: 70 },
-  { id: '3', name: 'Viridian City', type: 'town', connections: ['2', '4', '5'], mapX: 18, mapY: 55 },
-  { id: '4', name: 'Route 2', type: 'route', connections: ['3', '6'], mapX: 18, mapY: 40 },
-  { id: '5', name: 'Route 22', type: 'route', connections: ['3', '12'], mapX: 8, mapY: 55 },
-  { id: '6', name: 'Viridian Forest', type: 'forest', connections: ['4', '7'], mapX: 18, mapY: 25 },
-  { id: '7', name: 'Pewter City', type: 'town', connections: ['6', '8'], mapX: 18, mapY: 12 },
-  { id: '8', name: 'Route 3', type: 'route', connections: ['7', '9'], mapX: 40, mapY: 12 },
-  { id: '9', name: 'Mt. Moon', type: 'cave', connections: ['8', '10'], mapX: 55, mapY: 12 },
-  { id: '10', name: 'Route 4', type: 'route', connections: ['9', '11'], mapX: 70, mapY: 12 },
-  { id: '11', name: 'Cerulean City', type: 'town', connections: ['10'], mapX: 85, mapY: 12 },
-  { id: '12', name: 'Pokemon League', type: 'town', connections: ['5'], mapX: 8, mapY: 40 },
-]
-
 // TODO: Replace with real data from backend when news/events system is implemented
 // These are static placeholders to demonstrate the UI layout
 const NEWS_ITEMS = [
@@ -84,13 +60,6 @@ function MapSidebar({ className = '' }: { className?: string }) {
   const currentZone = useGameStore((state) => state.currentZone)
   const connectedZones = useGameStore((state) => state.connectedZones)
 
-  const currentMapZone = useMemo(() => {
-    if (!currentZone) return KANTO_ZONES[0]
-    return KANTO_ZONES.find(z => z.name === currentZone.name) || KANTO_ZONES[0]
-  }, [currentZone])
-
-  const connectedZoneNames = useMemo(() => connectedZones.map(z => z.name), [connectedZones])
-
   // Sort connected zones by direction (N first, then E, S, W, then diagonals)
   const sortedConnectedZones = useMemo(() => {
     return [...connectedZones].sort((a, b) => {
@@ -100,70 +69,10 @@ function MapSidebar({ className = '' }: { className?: string }) {
     })
   }, [connectedZones])
 
-  // Memoize zone button props to avoid recalculating on every render
-  const zoneButtonProps = useMemo(() =>
-    KANTO_ZONES.map(zone => ({
-      zone,
-      isCurrent: zone.name === currentMapZone.name,
-      isConnected: connectedZoneNames.includes(zone.name),
-    })),
-    [currentMapZone.name, connectedZoneNames]
-  )
-
-  // Memoize map line data to avoid recalculating connections
-  const mapLines = useMemo(() =>
-    KANTO_ZONES.flatMap(zone =>
-      zone.connections
-        .filter(connId => zone.id < connId) // Only render each line once
-        .map(connId => {
-          const connZone = KANTO_ZONES.find(z => z.id === connId)
-          if (!connZone) return null
-          return {
-            key: `${zone.id}-${connId}`,
-            x1: zone.mapX, y1: zone.mapY,
-            x2: connZone.mapX, y2: connZone.mapY,
-            isActive: zone.name === currentMapZone.name || connZone.name === currentMapZone.name,
-          }
-        })
-        .filter(Boolean)
-    ),
-    [currentMapZone.name]
-  )
-
   return (
     <div className={`map-sidebar ${className}`}>
-      <div className="sidebar-header">
-        <span className="header-icon">🗺️</span>
-        <span className="header-title">Kanto</span>
-      </div>
-
-      <div className="map-canvas">
-        <svg className="map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {mapLines.map(line => line && (
-            <line
-              key={line.key}
-              x1={line.x1} y1={line.y1}
-              x2={line.x2} y2={line.y2}
-              className={line.isActive ? 'active' : ''}
-            />
-          ))}
-        </svg>
-        {zoneButtonProps.map(({ zone, isCurrent, isConnected }) => (
-          <button
-            key={zone.id}
-            className={`map-dot ${zone.type} ${isCurrent ? 'current' : ''} ${isConnected ? 'connected' : ''}`}
-            style={{ left: `${zone.mapX}%`, top: `${zone.mapY}%` }}
-            onClick={() => {
-              const target = connectedZones.find(z => z.name === zone.name)
-              if (target) gameSocket.moveToZone(target.id)
-            }}
-            disabled={!isConnected && !isCurrent}
-            title={zone.name}
-            aria-label={`${zone.name}${isCurrent ? ' (current location)' : isConnected ? ' - click to travel' : ''}`}
-            aria-current={isCurrent ? 'location' : undefined}
-          />
-        ))}
-      </div>
+      {/* Interactive Map - replaces static map-canvas */}
+      <InteractiveMap />
 
       <div className="current-location">
         <div className="location-label">Current Location</div>
