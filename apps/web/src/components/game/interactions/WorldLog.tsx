@@ -105,7 +105,7 @@ function LogEntryItem({ entry, isNew }: { entry: LogEntry; isNew: boolean }) {
         className="absolute inset-0 opacity-0 animate-log-pulse"
         style={{ background: `${typeColor}11` }}
       />
-      <div className="relative flex items-center gap-3 px-3 py-2 bg-[#0f0f1a]/90">
+      <div className="relative flex items-center gap-3 px-2 py-1.5 bg-[#0f0f1a]/90">
         <div className="flex flex-col text-[10px] text-[#606080]">
           <span>{formatTime(entry.timestamp)}</span>
           <span className="tracking-wider uppercase">LOG</span>
@@ -171,10 +171,10 @@ export function WorldLog({ entries, maxEntries = 50, className = '' }: WorldLogP
       <div
         ref={logRef}
         onScroll={handleScroll}
-        className="h-32 overflow-y-auto px-1 py-1 space-y-0.5 scrollbar-thin"
+        className="min-h-[60px] max-h-[160px] overflow-y-auto px-1 py-1 space-y-0.5 scrollbar-thin"
       >
         {displayEntries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-[#606080] text-sm">
+          <div className="flex flex-col items-center justify-center py-4 text-[#606080] text-sm">
             <span className="text-xl mb-1">📋</span>
             <p>No activity yet</p>
             <p className="text-xs">Events will appear here</p>
