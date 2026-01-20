@@ -65,13 +65,15 @@ Plans:
   3. Activity log fits available space without unnecessary scroll when few items
   4. Pokemon party panel shows all 6 Pokemon without scroll on standard viewports
   5. Game screens are usable on 375px mobile, 768px tablet, and 1280px+ desktop
-**Plans**: 4 plans
+**Plans**: 6 plans
 
 Plans:
-- [ ] 10-01-PLAN.md — Establish responsive typography system with 16px minimum body text using clamp()
-- [ ] 10-02-PLAN.md — Standardize touch targets to 44px minimum across all interactive elements
-- [ ] 10-03-PLAN.md — Optimize party panel and activity log layouts for content-based sizing
-- [ ] 10-04-PLAN.md — Test and fix all game screens across mobile/tablet/desktop viewports
+- [x] 10-01-PLAN.md — Establish responsive typography system with 16px minimum body text using clamp()
+- [x] 10-02-PLAN.md — Standardize touch targets to 44px minimum across all interactive elements
+- [x] 10-03-PLAN.md — Optimize party panel and activity log layouts for content-based sizing
+- [x] 10-04-PLAN.md — Test and fix all game screens across mobile/tablet/desktop viewports
+- [ ] 10-05-PLAN.md — Fix 1024px breakpoint mismatch between JavaScript and CSS (gap closure)
+- [ ] 10-06-PLAN.md — Fix Box button accessibility on mobile devices (gap closure)
 
 ### Phase 11: UI Polish
 **Goal**: Improve navigation, naming, and display quality throughout the UI
@@ -155,7 +157,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 |-------|-----------|----------------|--------|-----------|
 | 8. Bug Fixes | v1.1 | 2/2 | Complete | 2026-01-19 |
 | 9. Design System | v1.1 | 5/5 | Complete | 2026-01-19 |
-| 10. Layout & Responsiveness | v1.1 | 0/4 | Planned | - |
+| 10. Layout & Responsiveness | v1.1 | 4/6 | In Progress | - |
 | 11. UI Polish | v1.1 | 0/? | Not started | - |
 | 12. Party Reordering | v1.1 | 0/? | Not started | - |
 | 13. Map Overhaul | v1.1 | 0/? | Not started | - |
