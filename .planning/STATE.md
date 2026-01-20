@@ -69,6 +69,8 @@ Recent decisions affecting current work:
 - 11-01: Use single-letter codes (N/S/E/W) for compact storage
 - 11-02: Use stable sort by id as secondary key when directions match
 - 11-02: Display direction arrows before zone icon for visual hierarchy
+- 11-03: Timer shows MM:SS for under 1 hour, HH:MM:SS for longer durations
+- 11-03: Red + pulse animation when under 1 minute remaining
 - 11-04: Use getPokemonSpriteUrl for consistent sprite display in Guild Bank
 - 11-04: Relative timestamps with cursor-help and hover tooltips for absolute time
 
@@ -89,4 +91,4 @@ Stopped at: Completed 11-04-PLAN.md (Guild Bank UX)
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after 11-04 completion*
+*State updated: 2026-01-20 after 11-03 completion*
