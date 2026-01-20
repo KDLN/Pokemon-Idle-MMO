@@ -39,9 +39,9 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 - [x] **UI-03**: Active boosts display in Boosts panel with remaining duration
 - [x] **UI-04**: Guild Bank Pokemon display shows sprite and name (not numeric ID)
 - [x] **UI-05**: Guild Bank transaction logs display human-readable format (not raw JSON)
-- [ ] **UI-06**: Party Pokemon can be drag-reordered
-- [ ] **UI-07**: Party order changes persist to database
-- [ ] **UI-08**: Party order affects which Pokemon battles first
+- [x] **UI-06**: Party Pokemon can be drag-reordered
+- [x] **UI-07**: Party order changes persist to database
+- [x] **UI-08**: Party order affects which Pokemon battles first
 
 ### Map Overhaul
 
@@ -123,9 +123,9 @@ Which phases cover which requirements.
 | UI-03 | Phase 11 | Complete |
 | UI-04 | Phase 11 | Complete |
 | UI-05 | Phase 11 | Complete |
-| UI-06 | Phase 12 | Pending |
-| UI-07 | Phase 12 | Pending |
-| UI-08 | Phase 12 | Pending |
+| UI-06 | Phase 12 | Complete |
+| UI-07 | Phase 12 | Complete |
+| UI-08 | Phase 12 | Complete |
 | MAP-01 | Phase 13 | Pending |
 | MAP-02 | Phase 13 | Pending |
 | MAP-03 | Phase 13 | Pending |
@@ -149,4 +149,4 @@ Which phases cover which requirements.
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-20 after Phase 11 completion*
+*Last updated: 2026-01-20 after Phase 12 completion*

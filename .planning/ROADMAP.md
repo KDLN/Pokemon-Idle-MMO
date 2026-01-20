@@ -15,7 +15,7 @@ This milestone transforms the functional MVP into a polished product through sys
 - [x] **Phase 9: Design System** - Formalize tokens, set up Storybook, create CVA components
 - [x] **Phase 10: Layout & Responsiveness** - Typography scale, touch targets, viewport support
 - [x] **Phase 11: UI Polish** - Navigation order, naming, display improvements
-- [ ] **Phase 12: Party Reordering** - Drag-to-reorder party with persistence
+- [x] **Phase 12: Party Reordering** - Drag-to-reorder party with persistence
 - [ ] **Phase 13: Map Overhaul** - Visual styling, interactions, zone connections
 - [ ] **Phase 14: Battle System** - Progressive turn calculation and animation
 - [ ] **Phase 15: Theme Exploration** - Component showcase and theme comparison tools
@@ -105,9 +105,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 12-01-PLAN.md — Install @dnd-kit packages and add backend reorder_party endpoint
-- [ ] 12-02-PLAN.md — Implement drag-and-drop party reordering using @dnd-kit
-- [ ] 12-03-PLAN.md — Add visual polish: long-press indicator, drag overlay, error feedback
+- [x] 12-01-PLAN.md — Install @dnd-kit packages and add backend reorder_party endpoint
+- [x] 12-02-PLAN.md — Implement drag-and-drop party reordering using @dnd-kit
+- [x] 12-03-PLAN.md — Add visual polish: long-press indicator, drag overlay, error feedback
 
 ### Phase 13: Map Overhaul
 **Goal**: Transform the map into a polished, intuitive navigation tool
@@ -164,7 +164,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 9. Design System | v1.1 | 5/5 | Complete | 2026-01-19 |
 | 10. Layout & Responsiveness | v1.1 | 6/6 | Complete | 2026-01-20 |
 | 11. UI Polish | v1.1 | 4/4 | Complete | 2026-01-20 |
-| 12. Party Reordering | v1.1 | 0/3 | Ready | - |
+| 12. Party Reordering | v1.1 | 3/3 | Complete | 2026-01-20 |
 | 13. Map Overhaul | v1.1 | 0/? | Not started | - |
 | 14. Battle System | v1.1 | 0/? | Not started | - |
 | 15. Theme Exploration | v1.1 | 0/? | Not started | - |

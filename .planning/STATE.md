@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Polish the game to feel like a real product, not a prototype — consistent visuals, responsive layouts, satisfying battle feedback.
-**Current focus:** Phase 12 - Party Reordering
+**Current focus:** Phase 13 - Map Overhaul
 
 ## Current Position
 
-Phase: 12 of 15 (Party Reordering)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-01-20 — Completed 12-03-PLAN.md
+Phase: 13 of 15 (Map Overhaul)
+Plan: 0 of ? in current phase
+Status: Ready to plan
+Last activity: 2026-01-20 — Completed Phase 12 (Party Reordering)
 
 Progress: [████████] 72%
 
@@ -96,8 +96,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 12-03-PLAN.md (Phase 12 complete)
+Stopped at: Completed Phase 12 (Party Reordering)
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after 12-03 completion*
+*State updated: 2026-01-20 after Phase 12 completion*
