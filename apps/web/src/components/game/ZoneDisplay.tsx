@@ -1,9 +1,22 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import { OnlinePresence } from './OnlinePresence'
 import { ShopPanel } from './ShopPanel'
+
+// Direction priority for sorting (lower = higher priority)
+const DIRECTION_ORDER: Record<string, number> = {
+  'N': 0, 'E': 1, 'S': 2, 'W': 3,
+  'NE': 4, 'SE': 5, 'SW': 6, 'NW': 7
+}
+
+// Arrow symbols for each direction
+const DIRECTION_ARROWS: Record<string, string> = {
+  'N': '\u2191', 'S': '\u2193', 'E': '\u2192', 'W': '\u2190',
+  'NE': '\u2197', 'SE': '\u2198', 'SW': '\u2199', 'NW': '\u2196'
+}
 
 // Zone data with icons and imagery
 const ZONE_DATA: Record<string, { description: string; icon: string; features: string[] }> = {
@@ -48,6 +61,15 @@ export function ZoneDisplay() {
   const currentZone = useGameStore((state) => state.currentZone)
   const connectedZones = useGameStore((state) => state.connectedZones)
   const isConnected = useGameStore((state) => state.isConnected)
+
+  // Sort connected zones by direction (N first, then E, S, W, then diagonals)
+  const sortedConnectedZones = useMemo(() => {
+    return [...connectedZones].sort((a, b) => {
+      const orderA = DIRECTION_ORDER[a.direction || ''] ?? 99
+      const orderB = DIRECTION_ORDER[b.direction || ''] ?? 99
+      return orderA - orderB || a.id - b.id
+    })
+  }, [connectedZones])
 
   if (!currentZone) {
     return (
@@ -197,7 +219,7 @@ export function ZoneDisplay() {
               <h3 className="text-xs font-semibold text-[#606080] uppercase tracking-wider">Travel</h3>
             </div>
             <div className="flex flex-wrap gap-2">
-              {connectedZones.map((zone) => (
+              {sortedConnectedZones.map((zone) => (
                 <button
                   key={zone.id}
                   onClick={() => gameSocket.moveToZone(zone.id)}
@@ -211,6 +233,9 @@ export function ZoneDisplay() {
                   `}
                 >
                   <span className="relative z-10 flex items-center gap-2">
+                    {zone.direction && (
+                      <span className="text-[#a0a0c0]">{DIRECTION_ARROWS[zone.direction]}</span>
+                    )}
                     <span>{zone.zone_type === 'town' ? '🏠' : '🌿'}</span>
                     <span>{zone.name}</span>
                   </span>
