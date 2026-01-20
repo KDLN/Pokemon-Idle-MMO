@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 13 of 15 (Map Overhaul)
-Plan: 1 of 8 in current phase
+Plan: 3 of 8 in current phase
 Status: In progress
-Last activity: 2026-01-20 — Completed 13-01-PLAN.md (Foundation Map Components)
+Last activity: 2026-01-20 — Completed 13-03-PLAN.md (Zone Connection Lines)
 
-Progress: [████████░] 74%
+Progress: [████████░] 76%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21 (v1.1)
+- Total plans completed: 23 (v1.1)
 - Average duration: 2.7 min
-- Total execution time: 58 min
+- Total execution time: 64 min
 
 **By Phase:**
 
@@ -32,11 +32,11 @@ Progress: [████████░] 74%
 | 10-layout-responsiveness | 6 | 14 min | 2.3 min |
 | 11-ui-polish | 4 | 8 min | 2 min |
 | 12-party-reordering | 3 | 10 min | 3.3 min |
-| 13-map-overhaul | 1 | 4 min | 4 min |
+| 13-map-overhaul | 3 | 10 min | 3.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 11-04 (3 min), 12-01 (4 min), 12-02 (3 min), 12-03 (3 min), 13-01 (4 min)
-- Trend: Phase 13 map overhaul started
+- Last 5 plans: 12-01 (4 min), 12-02 (3 min), 12-03 (3 min), 13-01 (4 min), 13-03 (3 min)
+- Trend: Phase 13 map overhaul progressing with connection lines
 
 *Updated after each plan completion*
 
@@ -86,6 +86,9 @@ Recent decisions affecting current work:
 - 13-01: Solid dark gradient background for map canvas (Claude's discretion)
 - 13-01: Zoom limits 0.5x-2x for whole map to detail view range
 - 13-01: Double-click zoom disabled to prevent accidental zoom when clicking zones
+- 13-03: SVG filter for glow effect on active connections
+- 13-03: Dashed stroke for inactive connections, solid for active
+- 13-03: Connection deduplication via min/max zone ID normalized keys
 
 ### Pending Todos
 
@@ -100,8 +103,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 13-01-PLAN.md (Foundation Map Components)
+Stopped at: Completed 13-03-PLAN.md (Zone Connection Lines)
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after 13-01-PLAN.md completion*
+*State updated: 2026-01-20 after 13-03-PLAN.md completion*
