@@ -2,10 +2,9 @@
 
 import { useState } from 'react'
 import { useGameStore } from '@/stores/gameStore'
-import { PokemonCard, EmptyPokemonSlot } from './PokemonCard'
 import { PokemonDetailPanel } from './PokemonDetailPanel'
+import { SortablePartyGrid } from './party/SortablePartyGrid'
 import { Card, CardHeader } from '@/components/ui/Card'
-import { getStaggerDelayStyle } from '@/lib/ui'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import type { Pokemon } from '@/types/game'
 
@@ -84,39 +83,15 @@ export function PartyPanel() {
         }
       />
 
-      {/* Party Grid - responsive columns with equal row heights */}
-      <div
-        className="grid grid-cols-2 gap-2 auto-rows-fr"
-        role="list"
-        aria-label="Pokemon party"
-      >
-        {party.map((pokemon, index) =>
-          pokemon ? (
-            <div
-              key={pokemon.id}
-              className="animate-slide-up h-full"
-              style={getStaggerDelayStyle(index)}
-              role="listitem"
-            >
-              <PokemonCard
-                pokemon={pokemon}
-                showXP
-                onClick={() => setDetailPokemon(pokemon)}
-                canRemove={activePartyCount > 1}
-                onRemove={() => {
-                  if (pokemon.party_slot) {
-                    gameSocket.removeFromParty(pokemon.party_slot)
-                  }
-                }}
-                onUsePotion={handleUsePotion}
-                hasPotions={hasPotions}
-              />
-            </div>
-          ) : (
-            <EmptyPokemonSlot key={`empty-${index}`} slot={index + 1} />
-          )
-        )}
-      </div>
+      {/* Party Grid - sortable with drag-to-reorder */}
+      <SortablePartyGrid
+        party={party}
+        onPokemonClick={setDetailPokemon}
+        canRemove={activePartyCount > 1}
+        onRemove={(partySlot) => gameSocket.removeFromParty(partySlot)}
+        onUsePotion={handleUsePotion}
+        hasPotions={hasPotions}
+      />
 
       {/* Pokemon Detail Panel */}
       {detailPokemon && (
