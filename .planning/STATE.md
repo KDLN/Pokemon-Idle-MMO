@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 12 of 15 (Party Reordering)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-20 — Completed 12-02-PLAN.md
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-01-20 — Completed 12-03-PLAN.md
 
-Progress: [███████░] 68%
+Progress: [████████] 72%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19 (v1.1)
+- Total plans completed: 20 (v1.1)
 - Average duration: 2.7 min
-- Total execution time: 51 min
+- Total execution time: 54 min
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [███████░] 68%
 | 09-design-system | 5 | 18 min | 3.6 min |
 | 10-layout-responsiveness | 6 | 14 min | 2.3 min |
 | 11-ui-polish | 4 | 8 min | 2 min |
-| 12-party-reordering | 2 | 7 min | 3.5 min |
+| 12-party-reordering | 3 | 10 min | 3.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 11-01 (3 min), 11-02 (2 min), 11-04 (3 min), 12-01 (4 min), 12-02 (3 min)
-- Trend: Frontend drag-and-drop implementation
+- Last 5 plans: 11-02 (2 min), 11-04 (3 min), 12-01 (4 min), 12-02 (3 min), 12-03 (3 min)
+- Trend: Phase 12 party reordering complete
 
 *Updated after each plan completion*
 
@@ -79,10 +79,13 @@ Recent decisions affecting current work:
 - 12-02: Local state for activeId - avoids Zustand re-render cascade during drag
 - 12-02: rectSwappingStrategy + arraySwap for swap behavior (not shift/move)
 - 12-02: Optimistic update with rollback on WebSocket send failure
+- 12-03: 60fps animation loop for smooth long-press progress display
+- 12-03: Use CSS ring-2 ring-offset-2 for consistent drop zone highlighting
+- 12-03: 4-second toast auto-dismiss for error feedback
 
 ### Pending Todos
 
-None yet.
+- Empty slot drag support needed for party reordering (identified gap from 12-03)
 
 ### Blockers/Concerns
 
@@ -93,8 +96,8 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 12-02-PLAN.md
+Stopped at: Completed 12-03-PLAN.md (Phase 12 complete)
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after 12-02 completion*
+*State updated: 2026-01-20 after 12-03 completion*
