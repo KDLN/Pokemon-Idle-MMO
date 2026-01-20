@@ -45,11 +45,11 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 ### Map Overhaul
 
-- [ ] **MAP-01**: Map visual styling matches game theme (colors, fonts, borders)
-- [ ] **MAP-02**: Zone click/hover interactions work correctly
-- [ ] **MAP-03**: Zone connections are visually clear and intuitive
-- [ ] **MAP-04**: Map uses transform-based pan/zoom for smooth performance
-- [ ] **MAP-05**: Current zone is clearly highlighted on map
+- [x] **MAP-01**: Map visual styling matches game theme (colors, fonts, borders)
+- [x] **MAP-02**: Zone click/hover interactions work correctly
+- [x] **MAP-03**: Zone connections are visually clear and intuitive
+- [x] **MAP-04**: Map uses transform-based pan/zoom for smooth performance
+- [x] **MAP-05**: Current zone is clearly highlighted on map
 
 ### Battle System
 
@@ -126,11 +126,11 @@ Which phases cover which requirements.
 | UI-06 | Phase 12 | Complete |
 | UI-07 | Phase 12 | Complete |
 | UI-08 | Phase 12 | Complete |
-| MAP-01 | Phase 13 | Pending |
-| MAP-02 | Phase 13 | Pending |
-| MAP-03 | Phase 13 | Pending |
-| MAP-04 | Phase 13 | Pending |
-| MAP-05 | Phase 13 | Pending |
+| MAP-01 | Phase 13 | Complete |
+| MAP-02 | Phase 13 | Complete |
+| MAP-03 | Phase 13 | Complete |
+| MAP-04 | Phase 13 | Complete |
+| MAP-05 | Phase 13 | Complete |
 | BATTLE-01 | Phase 14 | Pending |
 | BATTLE-02 | Phase 14 | Pending |
 | BATTLE-03 | Phase 14 | Pending |
@@ -149,4 +149,4 @@ Which phases cover which requirements.
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-20 after Phase 12 completion*
+*Last updated: 2026-01-20 after Phase 13 completion*

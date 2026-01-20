@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Polish the game to feel like a real product, not a prototype — consistent visuals, responsive layouts, satisfying battle feedback.
-**Current focus:** Phase 13 - Map Overhaul
+**Current focus:** Phase 14 - Battle System
 
 ## Current Position
 
-Phase: 13 of 15 (Map Overhaul)
-Plan: 8 of 8 in current phase (PHASE COMPLETE)
-Status: Phase complete - ready for UAT
-Last activity: 2026-01-20 — Completed 13-08-PLAN.md (Layout Integration)
+Phase: 14 of 15 (Battle System)
+Plan: 0 of ? in current phase
+Status: Not started (Phase 13 verified complete)
+Last activity: 2026-01-20 — Completed Phase 13 (Map Overhaul)
 
-Progress: [█████████] 93%
+Progress: [██████████] 100% (Phase 13 verified)
 
 ## Performance Metrics
 
@@ -124,8 +124,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 13-08-PLAN.md (Layout Integration) - Phase 13 Complete
+Stopped at: Phase 13 verified complete, ready for Phase 14
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after 13-08-PLAN.md completion*
+*State updated: 2026-01-20 after Phase 13 verification*

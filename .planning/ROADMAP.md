@@ -16,7 +16,7 @@ This milestone transforms the functional MVP into a polished product through sys
 - [x] **Phase 10: Layout & Responsiveness** - Typography scale, touch targets, viewport support
 - [x] **Phase 11: UI Polish** - Navigation order, naming, display improvements
 - [x] **Phase 12: Party Reordering** - Drag-to-reorder party with persistence
-- [ ] **Phase 13: Map Overhaul** - Visual styling, interactions, zone connections
+- [x] **Phase 13: Map Overhaul** - Visual styling, interactions, zone connections
 - [ ] **Phase 14: Battle System** - Progressive turn calculation and animation
 - [ ] **Phase 15: Theme Exploration** - Component showcase and theme comparison tools
 
@@ -122,14 +122,14 @@ Plans:
 **Plans**: 8 plans
 
 Plans:
-- [ ] 13-01-PLAN.md — Install react-zoom-pan-pinch and create map foundation with pan/zoom
-- [ ] 13-02-PLAN.md — Create zone nodes with calculated positions from direction graph
-- [ ] 13-03-PLAN.md — Create zone connection lines with direction arrows
-- [ ] 13-04-PLAN.md — Implement fog of war (visited zones, adjacent unknown markers)
-- [ ] 13-05-PLAN.md — Add center-on-current-zone functionality
-- [ ] 13-06-PLAN.md — Wire zone/path click interactions to travel
-- [ ] 13-07-PLAN.md — Add Pokemon-style frame and visual polish with verification
-- [ ] 13-08-PLAN.md — Integrate map into game layout
+- [x] 13-01-PLAN.md — Install react-zoom-pan-pinch and create map foundation with pan/zoom
+- [x] 13-02-PLAN.md — Create zone nodes with calculated positions from direction graph
+- [x] 13-03-PLAN.md — Create zone connection lines with direction arrows
+- [x] 13-04-PLAN.md — Implement fog of war (visited zones, adjacent unknown markers)
+- [x] 13-05-PLAN.md — Add center-on-current-zone functionality
+- [x] 13-06-PLAN.md — Wire zone/path click interactions to travel
+- [x] 13-07-PLAN.md — Add Pokemon-style frame and visual polish with verification
+- [x] 13-08-PLAN.md — Integrate map into game layout
 
 ### Phase 14: Battle System
 **Goal**: Create genuine battle uncertainty through progressive turn revelation
@@ -172,7 +172,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 10. Layout & Responsiveness | v1.1 | 6/6 | Complete | 2026-01-20 |
 | 11. UI Polish | v1.1 | 4/4 | Complete | 2026-01-20 |
 | 12. Party Reordering | v1.1 | 3/3 | Complete | 2026-01-20 |
-| 13. Map Overhaul | v1.1 | 0/8 | In Progress | - |
+| 13. Map Overhaul | v1.1 | 8/8 | Complete | 2026-01-20 |
 | 14. Battle System | v1.1 | 0/? | Not started | - |
 | 15. Theme Exploration | v1.1 | 0/? | Not started | - |
 
