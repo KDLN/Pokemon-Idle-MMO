@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 12 of 15 (Party Reordering)
-Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2026-01-20 — Completed Phase 11 (UI Polish)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-20 — Completed 12-01-PLAN.md
 
-Progress: [█████░░░] 62%
+Progress: [██████░░] 65%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17 (v1.1)
-- Average duration: 2.6 min
-- Total execution time: 44 min
+- Total plans completed: 18 (v1.1)
+- Average duration: 2.7 min
+- Total execution time: 48 min
 
 **By Phase:**
 
@@ -31,10 +31,11 @@ Progress: [█████░░░] 62%
 | 09-design-system | 5 | 18 min | 3.6 min |
 | 10-layout-responsiveness | 6 | 14 min | 2.3 min |
 | 11-ui-polish | 4 | 8 min | 2 min |
+| 12-party-reordering | 1 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 10-05 (1 min), 10-06 (2 min), 11-01 (3 min), 11-02 (2 min), 11-04 (3 min)
-- Trend: UI polish plans executing quickly
+- Last 5 plans: 10-06 (2 min), 11-01 (3 min), 11-02 (2 min), 11-04 (3 min), 12-01 (4 min)
+- Trend: Backend infrastructure plan with 4 tasks
 
 *Updated after each plan completion*
 
@@ -73,6 +74,8 @@ Recent decisions affecting current work:
 - 11-03: Red + pulse animation when under 1 minute remaining
 - 11-04: Use getPokemonSpriteUrl for consistent sprite display in Guild Bank
 - 11-04: Relative timestamps with cursor-help and hover tooltips for absolute time
+- 12-01: No battle check needed for party reorder - idle game has no persistent battle state
+- 12-01: Use broadcastToPlayer helper for cross-tab sync (broadcasts to all player sessions)
 
 ### Pending Todos
 
@@ -87,8 +90,8 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed Phase 11 (UI Polish)
+Stopped at: Completed 12-01-PLAN.md
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after Phase 11 completion*
+*State updated: 2026-01-20 after 12-01 completion*
