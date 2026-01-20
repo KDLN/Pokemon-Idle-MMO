@@ -9,6 +9,8 @@ export { InteractiveMap } from './InteractiveMap'
 // Sub-components
 export { MapCanvas } from './MapCanvas'
 export { MapControls } from './MapControls'
+export { ConnectionLayer } from './ConnectionLayer'
+export { ZoneConnection } from './ZoneConnection'
 
 // Types
 export type {
@@ -20,5 +22,8 @@ export type {
   MapCanvasProps,
   MapControlsProps,
 } from './mapTypes'
+
+export type { ZoneConnectionProps } from './ZoneConnection'
+export type { ConnectionLayerProps, RawConnectionData } from './ConnectionLayer'
 
 export { DIRECTION_VECTORS } from './mapTypes'
