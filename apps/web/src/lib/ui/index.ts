@@ -300,9 +300,7 @@ export function getStaggerDelayStyle(index: number): React.CSSProperties {
 // CLASS NAME HELPERS
 // ============================================
 
-export function cn(...classes: (string | boolean | undefined | null)[]): string {
-  return classes.filter(Boolean).join(' ')
-}
+export { cn } from './cn'
 
 // ============================================
 // HELD ITEMS
