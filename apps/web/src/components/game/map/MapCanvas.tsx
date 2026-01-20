@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 import { cn } from '@/lib/ui/cn'
 import { useGameStore } from '@/stores/gameStore'
+import { gameSocket } from '@/lib/ws/gameSocket'
 import { ConnectionLayer, type RawConnectionData } from './ConnectionLayer'
 import { ZoneNode } from './ZoneNode'
 import { getAllZoneVisibilities } from './mapUtils'
@@ -109,6 +110,17 @@ export function MapCanvas({
 }: MapCanvasProps) {
   // Get visited zones from store (persisted)
   const visitedZones = useGameStore((state) => state.visitedZones)
+  // Get current zone and connected zones from store
+  const currentZone = useGameStore((state) => state.currentZone)
+  const connectedZones = useGameStore((state) => state.connectedZones)
+
+  // Use real current zone ID if available, otherwise fall back to mock
+  const currentZoneId = currentZone?.id ?? MOCK_CURRENT_ZONE_ID
+
+  // Set of connected zone IDs for quick lookup
+  const connectedZoneIds = useMemo(() => {
+    return new Set(connectedZones.map((z) => z.id))
+  }, [connectedZones])
 
   // Create position lookup map for ConnectionLayer and ZoneNodes
   const positionsMap = useMemo(() => {
@@ -134,8 +146,9 @@ export function MapCanvas({
       return {
         ...zone,
         position,
-        isCurrent: zone.id === MOCK_CURRENT_ZONE_ID,
+        isCurrent: zone.id === currentZoneId,
         visibility,
+        isConnected: connectedZoneIds.has(zone.id),
       }
     }).filter(Boolean) as Array<{
       id: number
@@ -146,14 +159,28 @@ export function MapCanvas({
       position: ZonePosition
       isCurrent: boolean
       visibility: ZoneVisibility
+      isConnected: boolean
     }>
-  }, [positionsMap, zoneVisibilities])
+  }, [positionsMap, zoneVisibilities, currentZoneId, connectedZoneIds])
 
-  // Handle zone click (console.log for now, will be wired to travel later)
+  // Handle zone click (console.log for debugging)
   const handleZoneClick = (zoneId: number) => {
     const zone = MOCK_ZONES.find(z => z.id === zoneId)
     console.log(`Zone clicked: ${zone?.name ?? 'Unknown'} (ID: ${zoneId})`)
   }
+
+  // Handle travel to a connected zone
+  const handleZoneTravel = useCallback((zoneId: number) => {
+    // Validate zone is connected (can only travel to adjacent zones)
+    if (!connectedZoneIds.has(zoneId)) {
+      console.log(`Cannot travel to zone ${zoneId} - not connected`)
+      return
+    }
+
+    // Send travel request via WebSocket
+    console.log(`Traveling to zone ${zoneId}`)
+    gameSocket.moveToZone(zoneId)
+  }, [connectedZoneIds])
 
   return (
     <div
@@ -187,10 +214,11 @@ export function MapCanvas({
       <ConnectionLayer
         connections={MOCK_CONNECTIONS}
         positions={positionsMap}
-        currentZoneId={MOCK_CURRENT_ZONE_ID}
+        currentZoneId={currentZoneId}
         zoneVisibilities={zoneVisibilities}
         width={width}
         height={height}
+        onPathClick={handleZoneTravel}
       />
 
       {/* Zone nodes layer - renders above connections (z-10) */}
@@ -204,9 +232,11 @@ export function MapCanvas({
             position={zone.position}
             isCurrent={zone.isCurrent}
             visibility={zone.visibility}
+            isConnected={zone.isConnected}
             minLevel={zone.min_level}
             maxLevel={zone.max_level}
             onClick={() => handleZoneClick(zone.id)}
+            onTravel={handleZoneTravel}
           />
         ))}
         {children}
