@@ -2584,8 +2584,11 @@ html {
 @media (max-width: 1024px) {
   .game-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto 1fr auto;
-    padding-bottom: 72px; /* Space for mobile tab bar */
+    grid-template-rows: auto auto 1fr;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile browsers */
+    padding-bottom: 68px; /* Space for mobile tab bar */
+    overflow: hidden;
   }
 
   .map-sidebar,
@@ -2646,5 +2649,91 @@ html {
   .travel-btn {
     padding: 8px 10px;
     font-size: 11px;
+  }
+}
+
+/* Extra-small mobile (375px and below) */
+@media (max-width: 400px) {
+  .game-layout {
+    padding-bottom: 64px;
+  }
+
+  .mobile-tab-bar button {
+    font-size: 8px;
+    padding: 6px 2px;
+  }
+
+  .mobile-tab-bar .tab-icon {
+    font-size: 16px;
+  }
+
+  .party-column.mobile-active .party-content {
+    padding: 6px;
+  }
+
+  /* Tighter card spacing on very small screens */
+  .party-column.mobile-active [class*="grid"] {
+    gap: 4px;
+  }
+
+  .sidebar-header,
+  .party-header {
+    padding: 8px 10px;
+  }
+
+  .map-canvas {
+    height: 130px;
+  }
+
+  .travel-btn {
+    padding: 8px;
+    font-size: 12px;
+  }
+
+  /* Ensure no horizontal overflow */
+  .travel-btn .zone-name {
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Tablet (768px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .game-layout {
+    padding-bottom: 72px;
+  }
+
+  .mobile-tab-bar {
+    padding: 10px 0;
+  }
+
+  .mobile-tab-bar button {
+    font-size: 11px;
+  }
+
+  /* On tablet, show slightly larger party cards */
+  .party-column.mobile-active .party-content {
+    padding: 12px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+}
+
+/* Hover-only interactions */
+@media (hover: hover) and (pointer: fine) {
+  .travel-btn:hover {
+    background: var(--lb-bg-hover);
+    border-color: var(--lb-accent);
+    color: var(--text-primary);
+  }
+
+  .map-dot.connected:not(:disabled):hover {
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+
+  .buff-item:hover {
+    background: var(--lb-bg-hover);
+    border-color: var(--lb-accent);
   }
 }
