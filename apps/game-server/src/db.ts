@@ -148,7 +148,7 @@ export async function getZone(zoneId: number): Promise<Zone | null> {
 export async function getConnectedZones(zoneId: number): Promise<Zone[]> {
   const { data, error } = await supabase
     .from('zone_connections')
-    .select('to_zone_id')
+    .select('to_zone_id, direction')
     .eq('from_zone_id', zoneId)
 
   if (error || !data) return []
@@ -159,7 +159,14 @@ export async function getConnectedZones(zoneId: number): Promise<Zone[]> {
     .select('*')
     .in('id', zoneIds)
 
-  return zones || []
+  // Merge direction into zone objects
+  return (zones || []).map(zone => {
+    const connection = data.find(c => c.to_zone_id === zone.id)
+    return {
+      ...zone,
+      direction: connection?.direction || undefined
+    }
+  })
 }
 
 export async function getEncounterTable(zoneId: number): Promise<EncounterTableEntry[]> {

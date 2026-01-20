@@ -67,6 +67,7 @@ export interface Zone {
   base_encounter_rate: number
   min_level: number
   max_level: number
+  direction?: string  // N, S, E, W - from zone_connections, indicates direction to travel to reach this zone
 }
 
 export interface WildPokemon {
