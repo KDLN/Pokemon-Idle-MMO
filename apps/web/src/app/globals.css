@@ -2528,8 +2528,8 @@ html {
   display: flex;
   background: var(--bg-card);
   border-top: 1px solid var(--border-subtle);
-  padding: 8px 0;
-  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  padding: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   z-index: 100;
 }
 
@@ -2538,7 +2538,9 @@ html {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px; /* Taller than 44px for comfortable thumb use */
   padding: 8px 4px;
   background: transparent;
   border: none;
@@ -2546,7 +2548,12 @@ html {
   font-family: inherit;
   font-size: 10px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-tab-bar button:active {
+  background: var(--lb-bg-elevated);
 }
 
 .mobile-tab-bar button:hover,
@@ -2564,17 +2571,16 @@ html {
 
 .mobile-tab-bar .tab-badge {
   position: absolute;
-  top: 4px;
-  right: 50%;
-  transform: translateX(100%);
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
+  top: 6px;
+  right: calc(50% - 16px);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   background: var(--lb-red);
   color: white;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
-  border-radius: 8px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
