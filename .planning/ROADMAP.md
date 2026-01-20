@@ -142,10 +142,14 @@ Plans:
   4. Catch success/failure is unknown until ball animation completes
   5. Battles timeout after 30 seconds if client disconnects
   6. Each turn animation completes within 800ms budget
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 14-01: TBD
+- [ ] 14-01-PLAN.md — Create BattleManager for server-side battle state with timeout tracking
+- [ ] 14-02-PLAN.md — Implement progressive turn calculation and request/response protocol
+- [ ] 14-03-PLAN.md — Update client for server-driven battle animation
+- [ ] 14-04-PLAN.md — Compress animations for 800ms budget and add HP bar polish
+- [ ] 14-05-PLAN.md — Handle disconnect/reconnect and battle timeout resolution
 
 ### Phase 15: Theme Exploration
 **Goal**: Provide tools to visualize and compare theme directions
@@ -173,7 +177,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 11. UI Polish | v1.1 | 4/4 | Complete | 2026-01-20 |
 | 12. Party Reordering | v1.1 | 3/3 | Complete | 2026-01-20 |
 | 13. Map Overhaul | v1.1 | 8/8 | Complete | 2026-01-20 |
-| 14. Battle System | v1.1 | 0/? | Not started | - |
+| 14. Battle System | v1.1 | 0/5 | Not started | - |
 | 15. Theme Exploration | v1.1 | 0/? | Not started | - |
 
 ---
