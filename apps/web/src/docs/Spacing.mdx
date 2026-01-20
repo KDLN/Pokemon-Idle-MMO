@@ -1,0 +1,155 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Design System/Spacing" />
+
+# Spacing Tokens
+
+Our spacing system is based on a **4px (0.25rem) base unit**. This creates a consistent rhythm throughout the interface.
+
+## Spacing Scale
+
+<div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '20px', background: 'var(--color-surface-elevated)', borderRadius: '8px' }}>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <code style={{ width: '120px', color: 'var(--color-text-secondary)' }}>--spacing-1</code>
+    <div style={{ width: '4px', height: '24px', background: 'var(--color-brand-primary)', borderRadius: '2px' }} />
+    <span style={{ color: 'var(--color-text-muted)' }}>4px (0.25rem)</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <code style={{ width: '120px', color: 'var(--color-text-secondary)' }}>--spacing-2</code>
+    <div style={{ width: '8px', height: '24px', background: 'var(--color-brand-primary)', borderRadius: '2px' }} />
+    <span style={{ color: 'var(--color-text-muted)' }}>8px (0.5rem)</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <code style={{ width: '120px', color: 'var(--color-text-secondary)' }}>--spacing-3</code>
+    <div style={{ width: '12px', height: '24px', background: 'var(--color-brand-primary)', borderRadius: '2px' }} />
+    <span style={{ color: 'var(--color-text-muted)' }}>12px (0.75rem)</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <code style={{ width: '120px', color: 'var(--color-text-secondary)' }}>--spacing-4</code>
+    <div style={{ width: '16px', height: '24px', background: 'var(--color-brand-primary)', borderRadius: '2px' }} />
+    <span style={{ color: 'var(--color-text-muted)' }}>16px (1rem)</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <code style={{ width: '120px', color: 'var(--color-text-secondary)' }}>--spacing-6</code>
+    <div style={{ width: '24px', height: '24px', background: 'var(--color-brand-primary)', borderRadius: '2px' }} />
+    <span style={{ color: 'var(--color-text-muted)' }}>24px (1.5rem)</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <code style={{ width: '120px', color: 'var(--color-text-secondary)' }}>--spacing-8</code>
+    <div style={{ width: '32px', height: '24px', background: 'var(--color-brand-primary)', borderRadius: '2px' }} />
+    <span style={{ color: 'var(--color-text-muted)' }}>32px (2rem)</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <code style={{ width: '120px', color: 'var(--color-text-secondary)' }}>--spacing-10</code>
+    <div style={{ width: '40px', height: '24px', background: 'var(--color-brand-primary)', borderRadius: '2px' }} />
+    <span style={{ color: 'var(--color-text-muted)' }}>40px (2.5rem)</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <code style={{ width: '120px', color: 'var(--color-text-secondary)' }}>--spacing-12</code>
+    <div style={{ width: '48px', height: '24px', background: 'var(--color-brand-primary)', borderRadius: '2px' }} />
+    <span style={{ color: 'var(--color-text-muted)' }}>48px (3rem)</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <code style={{ width: '120px', color: 'var(--color-text-secondary)' }}>--spacing-16</code>
+    <div style={{ width: '64px', height: '24px', background: 'var(--color-brand-primary)', borderRadius: '2px' }} />
+    <span style={{ color: 'var(--color-text-muted)' }}>64px (4rem)</span>
+  </div>
+</div>
+
+## Semantic Spacing
+
+For specific contexts, use semantic tokens that map to the scale:
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--spacing-component-xs` | spacing-1 (4px) | Tight component gaps, badge padding |
+| `--spacing-component-sm` | spacing-2 (8px) | Button padding, small gaps |
+| `--spacing-component-md` | spacing-3 (12px) | Card padding, standard gaps |
+| `--spacing-component-lg` | spacing-4 (16px) | Large card padding |
+| `--spacing-layout-sm` | spacing-4 (16px) | Section spacing on mobile |
+| `--spacing-layout-md` | spacing-6 (24px) | Section spacing standard |
+| `--spacing-layout-lg` | spacing-8 (32px) | Large section spacing |
+
+## Border Radius
+
+<div style={{ display: 'flex', gap: '24px', padding: '20px', background: 'var(--color-surface-elevated)', borderRadius: '8px', flexWrap: 'wrap' }}>
+  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+    <div style={{ width: '48px', height: '48px', background: 'var(--color-brand-primary)', borderRadius: '4px' }} />
+    <code style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>--radius-sm</code>
+    <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>4px</span>
+  </div>
+  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+    <div style={{ width: '48px', height: '48px', background: 'var(--color-brand-primary)', borderRadius: '8px' }} />
+    <code style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>--radius-md</code>
+    <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>8px</span>
+  </div>
+  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+    <div style={{ width: '48px', height: '48px', background: 'var(--color-brand-primary)', borderRadius: '12px' }} />
+    <code style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>--radius-lg</code>
+    <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>12px</span>
+  </div>
+  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+    <div style={{ width: '48px', height: '48px', background: 'var(--color-brand-primary)', borderRadius: '16px' }} />
+    <code style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>--radius-xl</code>
+    <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>16px</span>
+  </div>
+  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+    <div style={{ width: '48px', height: '48px', background: 'var(--color-brand-primary)', borderRadius: '9999px' }} />
+    <code style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>--radius-full</code>
+    <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>pill</span>
+  </div>
+</div>
+
+### Radius Usage
+
+| Radius | When to Use |
+|--------|-------------|
+| `--radius-sm` | Badges, small tags, type indicators |
+| `--radius-md` | Buttons, inputs, small cards |
+| `--radius-lg` | Cards, panels, modals |
+| `--radius-xl` | Large containers, featured cards |
+| `--radius-full` | Pills, avatars, circular buttons |
+
+## Usage Guidelines
+
+### Do's
+
+- Use spacing tokens for all padding, margin, and gaps
+- Use semantic tokens when the context is clear (component vs layout)
+- Maintain consistent spacing within components
+
+### Don'ts
+
+- Don't use arbitrary pixel values (use closest token)
+- Don't mix rem and px units in the same component
+- Don't use layout spacing for component internals
+
+## Code Examples
+
+```css
+/* CSS usage */
+.card {
+  padding: var(--spacing-component-md);
+  border-radius: var(--radius-lg);
+}
+
+.card-header {
+  margin-bottom: var(--spacing-component-sm);
+}
+
+.section {
+  padding: var(--spacing-layout-md);
+}
+```
+
+```tsx
+/* Tailwind (using scale) */
+<div className="p-3 rounded-xl">  {/* 12px padding, 12px radius */}
+  <header className="mb-2">...</header>  {/* 8px margin-bottom */}
+</div>
+
+/* Tailwind with CSS variables */
+<div className="p-[var(--spacing-component-md)] rounded-[var(--radius-lg)]">
+  ...
+</div>
+```
