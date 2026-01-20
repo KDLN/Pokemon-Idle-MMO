@@ -86,8 +86,17 @@ body {
     linear-gradient(180deg, var(--bg-dark) 0%, #0a0a12 100%);
   background-attachment: fixed;
   color: var(--text-primary);
-  font-family: var(--font-outfit), 'Outfit', sans-serif;n  min-height: 100vh;
+  font-family: var(--font-outfit), 'Outfit', sans-serif;
+  font-size: var(--font-size-body);
+  min-height: 100vh;
 }
+
+/* ================== */
+/* Responsive Text Utilities */
+/* ================== */
+.text-body { font-size: var(--font-size-body); }
+.text-secondary { font-size: var(--font-size-sm); }
+.text-caption { font-size: var(--font-size-xs); }
 
 /* Pixel Art Rendering */
 .pixelated {
@@ -1854,7 +1863,7 @@ html {
 }
 
 .location-label {
-  font-size: 9px;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--lb-text-dim);
   text-transform: uppercase;
@@ -1874,7 +1883,7 @@ html {
 }
 
 .section-label {
-  font-size: 9px;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--lb-text-dim);
   text-transform: uppercase;
@@ -1899,7 +1908,7 @@ html {
   border-radius: 8px;
   color: var(--text-secondary);
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   cursor: pointer;
   transition: all 0.15s;
   text-align: left;
@@ -2005,7 +2014,7 @@ html {
 
 .nearby-name {
   flex: 1;
-  font-size: 11px;
+  font-size: var(--font-size-sm);
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -2064,14 +2073,14 @@ html {
 .news-content { flex: 1; min-width: 0; }
 
 .news-title {
-  font-size: 11px;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 2px;
 }
 
 .news-desc {
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   color: var(--text-muted);
   line-height: 1.3;
 }
