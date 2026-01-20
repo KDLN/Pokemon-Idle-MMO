@@ -1,0 +1,183 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Design System/Typography" />
+
+# Typography Tokens
+
+Our typography system uses two font families: **Outfit** for UI text and **Press Start 2P** for retro/pixel headings.
+
+## Font Families
+
+<div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '20px', background: 'var(--color-surface-elevated)', borderRadius: '8px' }}>
+  <div>
+    <p style={{ fontFamily: 'var(--font-family-sans)', fontSize: '24px', color: 'var(--color-text-primary)', marginBottom: '4px' }}>
+      Outfit (Sans)
+    </p>
+    <p style={{ fontFamily: 'var(--font-family-sans)', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
+      The quick brown fox jumps over the lazy dog. 0123456789
+    </p>
+    <code style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>--font-family-sans</code>
+  </div>
+  <div>
+    <p style={{ fontFamily: 'var(--font-family-pixel)', fontSize: '16px', color: 'var(--color-text-primary)', marginBottom: '4px' }}>
+      Press Start 2P (Pixel)
+    </p>
+    <p style={{ fontFamily: 'var(--font-family-pixel)', color: 'var(--color-text-secondary)', fontSize: '10px' }}>
+      POKEMON TRAINER
+    </p>
+    <code style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>--font-family-pixel</code>
+  </div>
+</div>
+
+## Font Sizes
+
+<div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '20px', background: 'var(--color-surface-elevated)', borderRadius: '8px' }}>
+  <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
+    <code style={{ width: '140px', color: 'var(--color-text-muted)', fontSize: '11px' }}>--font-size-xs</code>
+    <span style={{ fontSize: '10px', color: 'var(--color-text-primary)' }}>10px - Badges, timestamps</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
+    <code style={{ width: '140px', color: 'var(--color-text-muted)', fontSize: '11px' }}>--font-size-sm</code>
+    <span style={{ fontSize: '12px', color: 'var(--color-text-primary)' }}>12px - Secondary text, labels</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
+    <code style={{ width: '140px', color: 'var(--color-text-muted)', fontSize: '11px' }}>--font-size-base</code>
+    <span style={{ fontSize: '14px', color: 'var(--color-text-primary)' }}>14px - Body text (default)</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
+    <code style={{ width: '140px', color: 'var(--color-text-muted)', fontSize: '11px' }}>--font-size-md</code>
+    <span style={{ fontSize: '16px', color: 'var(--color-text-primary)' }}>16px - Large body, emphasis</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
+    <code style={{ width: '140px', color: 'var(--color-text-muted)', fontSize: '11px' }}>--font-size-lg</code>
+    <span style={{ fontSize: '18px', color: 'var(--color-text-primary)' }}>18px - Subheadings</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
+    <code style={{ width: '140px', color: 'var(--color-text-muted)', fontSize: '11px' }}>--font-size-xl</code>
+    <span style={{ fontSize: '20px', color: 'var(--color-text-primary)' }}>20px - Section headings</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
+    <code style={{ width: '140px', color: 'var(--color-text-muted)', fontSize: '11px' }}>--font-size-2xl</code>
+    <span style={{ fontSize: '24px', color: 'var(--color-text-primary)' }}>24px - Page titles</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
+    <code style={{ width: '140px', color: 'var(--color-text-muted)', fontSize: '11px' }}>--font-size-3xl</code>
+    <span style={{ fontSize: '30px', color: 'var(--color-text-primary)' }}>30px - Hero headings</span>
+  </div>
+</div>
+
+### Pixel Font Sizes
+
+Pixel fonts need smaller sizes for legibility:
+
+| Token | Size | Usage |
+|-------|------|-------|
+| `--font-size-pixel-xs` | 8px | Tiny labels |
+| `--font-size-pixel-sm` | 10px | Card headers, badges |
+| `--font-size-pixel-base` | 12px | Section titles |
+
+## Font Weights
+
+<div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '20px', background: 'var(--color-surface-elevated)', borderRadius: '8px' }}>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <code style={{ width: '180px', color: 'var(--color-text-muted)', fontSize: '11px' }}>--font-weight-normal</code>
+    <span style={{ fontSize: '16px', fontWeight: 400, color: 'var(--color-text-primary)' }}>400 - Body text</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <code style={{ width: '180px', color: 'var(--color-text-muted)', fontSize: '11px' }}>--font-weight-medium</code>
+    <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--color-text-primary)' }}>500 - Labels, buttons</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <code style={{ width: '180px', color: 'var(--color-text-muted)', fontSize: '11px' }}>--font-weight-semibold</code>
+    <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text-primary)' }}>600 - Subheadings</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <code style={{ width: '180px', color: 'var(--color-text-muted)', fontSize: '11px' }}>--font-weight-bold</code>
+    <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-text-primary)' }}>700 - Headings</span>
+  </div>
+</div>
+
+## Line Heights
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--line-height-tight` | 1.25 | Headings, single-line text |
+| `--line-height-normal` | 1.5 | Body text, paragraphs |
+| `--line-height-relaxed` | 1.75 | Long-form content, descriptions |
+
+## Letter Spacing
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--letter-spacing-tight` | -0.025em | Large headings |
+| `--letter-spacing-normal` | 0 | Body text |
+| `--letter-spacing-wide` | 0.025em | Uppercase labels |
+| `--letter-spacing-wider` | 0.05em | Small caps, badges |
+| `--letter-spacing-widest` | 0.1em | Pixel font headings |
+
+## Typography Hierarchy
+
+<div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '20px', background: 'var(--color-surface-elevated)', borderRadius: '8px' }}>
+  <div style={{ fontFamily: 'var(--font-family-pixel)', fontSize: '12px', color: 'var(--color-text-primary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+    SECTION TITLE (Pixel)
+  </div>
+  <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-text-primary)', margin: 0 }}>
+    Page Heading (Outfit Bold 24px)
+  </h1>
+  <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--color-text-primary)', margin: 0 }}>
+    Card Heading (Outfit Semibold 18px)
+  </h2>
+  <p style={{ fontSize: '14px', fontWeight: 400, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.5 }}>
+    Body text uses Outfit Regular at 14px with secondary color for comfortable reading.
+    This is how paragraphs and descriptions should look.
+  </p>
+  <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+    Caption text (12px muted)
+  </span>
+</div>
+
+## Usage Guidelines
+
+### Do's
+
+- Use pixel font only for section headers and special UI elements
+- Maintain hierarchy: larger = more important
+- Use font-weight to create emphasis within the same size
+
+### Don'ts
+
+- Don't use pixel font for body text (legibility issues)
+- Don't mix more than 2-3 sizes on one screen
+- Don't use bold weight for large blocks of text
+
+## Code Examples
+
+```css
+/* CSS usage */
+.page-title {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.section-header {
+  font-family: var(--font-family-pixel);
+  font-size: var(--font-size-pixel-sm);
+  letter-spacing: var(--letter-spacing-widest);
+  text-transform: uppercase;
+}
+
+.body-text {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-secondary);
+}
+```
+
+```tsx
+/* Tailwind classes */
+<h1 className="text-2xl font-bold">Page Title</h1>
+<h2 className="font-pixel text-xs tracking-wider uppercase">Section</h2>
+<p className="text-sm text-[var(--color-text-secondary)]">Body text</p>
+```
