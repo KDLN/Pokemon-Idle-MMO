@@ -12,27 +12,27 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 Phase: 9 of 15 (Design System)
 Plan: 3 of 5 in current phase
 Status: In progress
-Last activity: 2026-01-20 — Completed 09-03-PLAN.md (Core Components CVA Migration)
+Last activity: 2026-01-20 — Completed 09-02-PLAN.md (Design Tokens Audit)
 
 Progress: [███_____] 25%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4 (v1.1)
-- Average duration: 4 min
-- Total execution time: 14 min
+- Total plans completed: 5 (v1.1)
+- Average duration: 3.4 min
+- Total execution time: 17 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 08-bug-fixes | 2 | 4 min | 2 min |
-| 09-design-system | 2 | 10 min | 5 min |
+| 09-design-system | 3 | 13 min | 4.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 08-01 (1 min), 08-02 (3 min), 09-01 (8 min), 09-03 (2 min)
-- Trend: CVA migration faster than foundation setup
+- Last 5 plans: 08-01 (1 min), 08-02 (3 min), 09-01 (8 min), 09-03 (2 min), 09-02 (3 min)
+- Trend: Token organization faster than foundation setup
 
 *Updated after each plan completion*
 
@@ -48,6 +48,8 @@ Recent decisions affecting current work:
 - 08-02: Use existing Zustand persist middleware for UI preferences storage
 - 09-01: Added @rollup/rollup-win32-x64-msvc as optionalDependency to fix Windows npm issue
 - 09-01: Using dark-only theme in Storybook since app is dark-mode only
+- 09-02: Organize tokens by semantic purpose (brand, surface, text) not value-based naming
+- 09-02: Maintain backward compatibility via legacy aliases referencing new tokens
 - 09-03: Handle Pokemon type badges separately from CVA (dynamic color via style prop)
 - 09-03: Import cn from '@/lib/ui/cn' for explicit path
 
@@ -63,8 +65,8 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 09-03-PLAN.md, ready for 09-04
+Stopped at: Completed 09-02-PLAN.md (Design Tokens), 09-03 already done, ready for 09-04
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after 09-03 completion*
+*State updated: 2026-01-20 after 09-02 completion*
