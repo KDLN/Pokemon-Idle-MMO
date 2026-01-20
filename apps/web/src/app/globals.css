@@ -86,8 +86,7 @@ body {
     linear-gradient(180deg, var(--bg-dark) 0%, #0a0a12 100%);
   background-attachment: fixed;
   color: var(--text-primary);
-  font-family: var(--font-outfit), 'Outfit', sans-serif;
-  min-height: 100vh;
+  font-family: var(--font-outfit), 'Outfit', sans-serif;n  min-height: 100vh;
 }
 
 /* Pixel Art Rendering */
@@ -813,6 +812,32 @@ a:focus-visible {
 }
 
 /* ================== */
+/* Touch Target Utilities */
+/* ================== */
+
+/* Base touch target - explicit 44px minimum */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Touch target for inline/small elements - uses pseudo-element expansion */
+.touch-target-inline {
+  position: relative;
+}
+
+.touch-target-inline::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  /* Expands clickable area without affecting layout */
+}
+
+/* ================== */
 /* Mobile Optimizations */
 /* ================== */
 
@@ -833,11 +858,17 @@ html, body {
   }
 }
 
-/* Touch-friendly tap targets */
+/* Touch-friendly tap targets - enhanced */
 @media (hover: none) {
   button, a, [role="button"] {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  /* Touch feedback */
+  button:active, a:active, [role="button"]:active {
+    transform: scale(0.98);
+    opacity: 0.9;
   }
 }
 
@@ -1780,8 +1811,8 @@ html {
 
 .map-dot {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   border: none;
   transform: translate(-50%, -50%);
@@ -1789,14 +1820,26 @@ html {
   transition: all 0.15s;
 }
 
+/* Expand touch target for map dots */
+.map-dot::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
 .map-dot.town { background: var(--lb-red); }
-.map-dot.route { background: var(--lb-accent); width: 6px; height: 6px; }
+.map-dot.route { background: var(--lb-accent); width: 10px; height: 10px; }
 .map-dot.forest { background: var(--lb-green); }
 .map-dot.cave { background: #6b7280; }
 .map-dot:disabled { opacity: 0.2; cursor: not-allowed; }
 .map-dot.current {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   border: 2px solid var(--lb-yellow);
   box-shadow: 0 0 10px var(--lb-yellow);
 }
@@ -1850,6 +1893,7 @@ html {
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
+  min-height: 44px; /* WCAG touch target */
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
@@ -2077,6 +2121,7 @@ html {
 .social-tabs .stab {
   flex: 1;
   padding: 10px;
+  min-height: 44px; /* WCAG touch target */
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
@@ -2143,8 +2188,8 @@ html {
 }
 
 .add-btn {
-  width: 24px;
-  height: 24px;
+  width: 44px;  /* WCAG touch target */
+  height: 44px; /* WCAG touch target */
   display: flex;
   align-items: center;
   justify-content: center;
