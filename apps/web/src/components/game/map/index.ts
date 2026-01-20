@@ -9,6 +9,7 @@ export { InteractiveMap } from './InteractiveMap'
 // Sub-components
 export { MapCanvas } from './MapCanvas'
 export { MapControls } from './MapControls'
+export { MapFrame } from './MapFrame'
 export { ConnectionLayer } from './ConnectionLayer'
 export { ZoneConnection } from './ZoneConnection'
 export { ZoneNode } from './ZoneNode'
