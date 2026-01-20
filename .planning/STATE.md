@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 11 of 15 (UI Polish)
-Plan: 2 of ? in current phase
+Plan: 4 of ? in current phase
 Status: In progress
-Last activity: 2026-01-20 — Completed 11-02-PLAN.md (Navigation Directions)
+Last activity: 2026-01-20 — Completed 11-04-PLAN.md (Guild Bank UX)
 
-Progress: [█████░░░] 55%
+Progress: [█████░░░] 58%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15 (v1.1)
-- Average duration: 2.7 min
-- Total execution time: 41 min
+- Total plans completed: 17 (v1.1)
+- Average duration: 2.6 min
+- Total execution time: 44 min
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [█████░░░] 55%
 | 08-bug-fixes | 2 | 4 min | 2 min |
 | 09-design-system | 5 | 18 min | 3.6 min |
 | 10-layout-responsiveness | 6 | 14 min | 2.3 min |
-| 11-ui-polish | 2 | 5 min | 2.5 min |
+| 11-ui-polish | 4 | 8 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 10-04 (2 min), 10-05 (1 min), 10-06 (2 min), 11-01 (3 min), 11-02 (2 min)
+- Last 5 plans: 10-05 (1 min), 10-06 (2 min), 11-01 (3 min), 11-02 (2 min), 11-04 (3 min)
 - Trend: UI polish plans executing quickly
 
 *Updated after each plan completion*
@@ -69,6 +69,8 @@ Recent decisions affecting current work:
 - 11-01: Use single-letter codes (N/S/E/W) for compact storage
 - 11-02: Use stable sort by id as secondary key when directions match
 - 11-02: Display direction arrows before zone icon for visual hierarchy
+- 11-04: Use getPokemonSpriteUrl for consistent sprite display in Guild Bank
+- 11-04: Relative timestamps with cursor-help and hover tooltips for absolute time
 
 ### Pending Todos
 
@@ -83,8 +85,8 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 11-02-PLAN.md (Navigation Directions)
+Stopped at: Completed 11-04-PLAN.md (Guild Bank UX)
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after 11-02 completion*
+*State updated: 2026-01-20 after 11-04 completion*
