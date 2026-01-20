@@ -37,7 +37,7 @@ const POINT_TIER_COLORS: Record<number, string> = {
   25: 'text-yellow-400', // Legendary
 }
 
-type SortOption = 'date' | 'level' | 'name' | 'species' | 'grade' | 'ivs'
+type SortOption = 'date' | 'level' | 'name' | 'species' | 'grade'
 
 export function BankPokemonTab() {
   const [selectedPokemon, setSelectedPokemon] = useState<GuildBankPokemon | null>(null)
@@ -87,11 +87,6 @@ export function BankPokemonTab() {
           break
         case 'grade':
           comparison = b.point_cost - a.point_cost
-          break
-        case 'ivs':
-          const ivsA = (a.iv_hp || 0) + (a.iv_attack || 0) + (a.iv_defense || 0) + (a.iv_sp_attack || 0) + (a.iv_sp_defense || 0) + (a.iv_speed || 0)
-          const ivsB = (b.iv_hp || 0) + (b.iv_attack || 0) + (b.iv_defense || 0) + (b.iv_sp_attack || 0) + (b.iv_sp_defense || 0) + (b.iv_speed || 0)
-          comparison = ivsB - ivsA
           break
       }
       return sortAsc ? -comparison : comparison
@@ -177,7 +172,6 @@ export function BankPokemonTab() {
             <option value="name">Name</option>
             <option value="species">Species</option>
             <option value="grade">Grade</option>
-            <option value="ivs">IVs</option>
           </select>
           <button
             onClick={() => setSortAsc(!sortAsc)}
