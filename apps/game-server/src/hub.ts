@@ -73,6 +73,7 @@ import {
   getCaughtSpeciesForPlayer,
   swapPartyMember,
   removeFromParty,
+  reorderParty,
   savePokemonXP,
   updatePlayerMoney,
   buyItem,
@@ -484,6 +485,9 @@ export class GameHub {
           break
         case 'remove_from_party':
           this.handleRemoveFromParty(client, msg.payload as { party_slot: number })
+          break
+        case 'reorder_party':
+          this.handleReorderParty(client, msg.payload as { order: (string | null)[] })
           break
         case 'buy_item':
           this.handleBuyItem(client, msg.payload as { item_id: string; quantity: number })
@@ -1081,6 +1085,36 @@ export class GameHub {
       party: client.session.party,
       box
     })
+  }
+
+  private async handleReorderParty(client: Client, payload: { order: (string | null)[] }) {
+    if (!client.session) return
+
+    const success = await reorderParty(
+      client.session.player.id,
+      payload.order
+    )
+
+    if (!success) {
+      this.sendError(client, 'Failed to reorder party')
+      return
+    }
+
+    // Reload party
+    client.session.party = await getPlayerParty(client.session.player.id)
+
+    // Broadcast to all sessions for this player (cross-tab sync)
+    this.broadcastToPlayer(client.session.player.id, 'party_update', {
+      party: client.session.party
+    })
+  }
+
+  private broadcastToPlayer(playerId: string, type: string, payload: unknown) {
+    for (const [, c] of this.clients) {
+      if (c.session?.player.id === playerId) {
+        this.send(c, type, payload)
+      }
+    }
   }
 
   private async handleBuyItem(client: Client, payload: { item_id: string; quantity: number }) {
