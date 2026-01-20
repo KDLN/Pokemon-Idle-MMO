@@ -511,7 +511,7 @@ export function GameShell({ accessToken }: GameShellProps) {
   // Check if mobile on mount and resize
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024)
+      setIsMobile(window.innerWidth <= 1024)  // Matches CSS @media (max-width: 1024px)
     }
     checkMobile()
     window.addEventListener('resize', checkMobile)
