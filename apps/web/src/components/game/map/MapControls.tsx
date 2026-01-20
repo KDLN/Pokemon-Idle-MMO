@@ -1,7 +1,9 @@
 'use client'
 
-import { useControls } from 'react-zoom-pan-pinch'
+import { useState, useEffect, useCallback } from 'react'
+import { useControls, useTransformEffect } from 'react-zoom-pan-pinch'
 import { cn } from '@/lib/ui/cn'
+import { isZoneInViewport, type TransformState } from './mapUtils'
 import type { MapControlsProps } from './mapTypes'
 
 /**
@@ -14,11 +16,71 @@ import type { MapControlsProps } from './mapTypes'
  * - Zoom in (+) button
  * - Zoom out (-) button
  * - Reset view button
+ * - "Center on me" button (shows when current zone is off-screen)
  * - WCAG compliant 44x44px touch targets
  * - Pixel font styling matching game theme
  */
-export function MapControls({ className }: MapControlsProps) {
-  const { zoomIn, zoomOut, resetTransform } = useControls()
+export function MapControls({
+  className,
+  currentZonePosition,
+  containerRef,
+}: MapControlsProps) {
+  const { zoomIn, zoomOut, resetTransform, setTransform } = useControls()
+
+  // Track transform state for visibility calculation
+  const [transformState, setTransformState] = useState<TransformState>({
+    scale: 1,
+    positionX: 0,
+    positionY: 0,
+  })
+
+  // Track viewport size
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
+
+  // Update transform state on changes
+  useTransformEffect(({ state }) => {
+    setTransformState({
+      scale: state.scale,
+      positionX: state.positionX,
+      positionY: state.positionY,
+    })
+  })
+
+  // Track viewport size from container
+  useEffect(() => {
+    if (!containerRef?.current) return
+
+    const updateSize = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect()
+        setViewportSize({ width: rect.width, height: rect.height })
+      }
+    }
+
+    updateSize()
+
+    const resizeObserver = new ResizeObserver(updateSize)
+    resizeObserver.observe(containerRef.current)
+
+    return () => resizeObserver.disconnect()
+  }, [containerRef])
+
+  // Calculate if current zone is visible
+  const isCurrentZoneVisible = currentZonePosition
+    ? isZoneInViewport(currentZonePosition, transformState, viewportSize)
+    : true // If no position, don't show button
+
+  // Center on current zone
+  const handleCenterOnMe = useCallback(() => {
+    if (!currentZonePosition || viewportSize.width === 0) return
+
+    // Calculate position to center the zone
+    // setTransform uses position as offset from origin
+    const targetX = viewportSize.width / 2 - currentZonePosition.x * transformState.scale
+    const targetY = viewportSize.height / 2 - currentZonePosition.y * transformState.scale
+
+    setTransform(targetX, targetY, transformState.scale, 300, 'easeOut')
+  }, [currentZonePosition, viewportSize, transformState.scale, setTransform])
 
   const buttonBaseClass = cn(
     // Size: 44x44px minimum for WCAG touch targets
@@ -86,6 +148,46 @@ export function MapControls({ className }: MapControlsProps) {
           <path d="M3 3v5h5" />
         </svg>
       </button>
+
+      {/* Center on me button - shows when current zone is off-screen */}
+      {!isCurrentZoneVisible && currentZonePosition && (
+        <button
+          type="button"
+          onClick={handleCenterOnMe}
+          className={cn(
+            buttonBaseClass,
+            // More prominent styling with accent color
+            'bg-[var(--lb-accent,#3b82f6)]',
+            'border-[var(--lb-accent,#3b82f6)]',
+            'text-white',
+            'hover:bg-[var(--lb-accent-hover,#2563eb)]',
+            'hover:border-[var(--lb-accent-hover,#2563eb)]',
+            // Add margin top for visual separation
+            'mt-2'
+          )}
+          aria-label="Center map on current location"
+        >
+          {/* Crosshairs/target icon */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="22" y1="12" x2="18" y2="12" />
+            <line x1="6" y1="12" x2="2" y2="12" />
+            <line x1="12" y1="6" x2="12" y2="2" />
+            <line x1="12" y1="22" x2="12" y2="18" />
+          </svg>
+        </button>
+      )}
     </div>
   )
 }

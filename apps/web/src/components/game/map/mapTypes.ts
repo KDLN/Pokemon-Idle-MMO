@@ -95,4 +95,8 @@ export interface MapCanvasProps {
 export interface MapControlsProps {
   /** Optional className for styling */
   className?: string
+  /** Current zone position for center-on-me functionality */
+  currentZonePosition?: { x: number; y: number } | null
+  /** Ref to the container element for viewport size calculation */
+  containerRef?: React.RefObject<HTMLDivElement | null>
 }
