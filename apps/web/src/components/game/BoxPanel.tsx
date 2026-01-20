@@ -126,7 +126,7 @@ export function BoxPanel() {
       {/* Toggle Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-b from-[#3B4CCA] to-[#2A3A99] border border-[#5B6EEA]/30 shadow-lg shadow-[#3B4CCA]/30 hover:from-[#4B5CDA] hover:to-[#3A4AA9] transition-all duration-200 hover:scale-105"
+        className="fixed bottom-20 lg:bottom-4 right-4 group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-b from-[#3B4CCA] to-[#2A3A99] border border-[#5B6EEA]/30 shadow-lg shadow-[#3B4CCA]/30 hover:from-[#4B5CDA] hover:to-[#3A4AA9] transition-all duration-200 hover:scale-105"
       >
         {/* Box icon */}
         <div className="w-6 h-6 rounded-lg bg-[#1a1a2e] border border-[#2a2a4a] flex items-center justify-center">
