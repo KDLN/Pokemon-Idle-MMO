@@ -23,6 +23,8 @@ export interface ConnectionLayerProps {
   positions: Map<number, ZonePosition>
   /** Current zone ID where the player is located */
   currentZoneId: number
+  /** Map of zone ID to visibility state (for fog of war) */
+  zoneVisibilities?: Map<number, 'visited' | 'adjacent' | 'hidden'>
   /** Width of the SVG canvas */
   width?: number
   /** Height of the SVG canvas */
@@ -43,6 +45,7 @@ export function ConnectionLayer({
   connections,
   positions,
   currentZoneId,
+  zoneVisibilities,
   width = 800,
   height = 600,
 }: ConnectionLayerProps) {
@@ -82,13 +85,28 @@ export function ConnectionLayer({
           return null
         }
 
+        // Check visibility of both zones
+        const fromVisibility = zoneVisibilities?.get(conn.from_zone_id) ?? 'visited'
+        const toVisibility = zoneVisibilities?.get(conn.to_zone_id) ?? 'visited'
+
+        // Hide connection if both zones are hidden
+        if (fromVisibility === 'hidden' && toVisibility === 'hidden') {
+          return null
+        }
+
+        // Hide connection if one zone is hidden and the other is not adjacent
+        // Only show connections where at least one zone is visible (visited or adjacent)
+        if (fromVisibility === 'hidden' || toVisibility === 'hidden') {
+          return null
+        }
+
         // Connection is active if either zone is the current zone
         const isActive =
           conn.from_zone_id === currentZoneId ||
           conn.to_zone_id === currentZoneId
 
-        // For now, all visible connections are reachable
-        const isReachable = true
+        // Connection is to unknown if connecting to an adjacent (undiscovered) zone
+        const isToUnknown = fromVisibility === 'adjacent' || toVisibility === 'adjacent'
 
         return (
           <ZoneConnection
@@ -97,7 +115,7 @@ export function ConnectionLayer({
             to={toPos}
             direction={conn.direction}
             isActive={isActive}
-            isReachable={isReachable}
+            isReachable={!isToUnknown}
           />
         )
       })}

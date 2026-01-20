@@ -57,7 +57,8 @@ export function ZoneNode({
   // Determine node color based on zone type
   const getZoneClasses = () => {
     if (isUnknown) {
-      return 'bg-gray-600/50 hover:bg-gray-500/50'
+      // Mystery zone: muted gray with subtle pulse animation
+      return 'bg-gray-700/60 border border-gray-500/30'
     }
     switch (zoneType) {
       case 'town':
@@ -94,18 +95,22 @@ export function ZoneNode({
         getZoneClasses(),
         // Current zone indicator
         isCurrent && 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-[#101820]',
-        // Hover effect
-        'hover:scale-110',
-        // Disabled state for unknown zones
-        isUnknown && 'cursor-not-allowed',
+        // Hover effect (only for visited zones)
+        !isUnknown && 'hover:scale-110',
+        // Disabled state for unknown zones with subtle pulse
+        isUnknown && 'cursor-not-allowed animate-pulse',
         // Focus styling
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400'
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400',
+        // Flexbox for centering content
+        'flex items-center justify-center'
       )}
       style={{
         left: position.x,
         top: position.y,
+        // Subtle animation duration for unknown zones
+        ...(isUnknown && { animationDuration: '3s' }),
       }}
-      aria-label={isUnknown ? 'Unknown zone' : name}
+      aria-label={isUnknown ? 'Unknown area' : name}
     >
       {/* Touch target expansion (WCAG compliance) */}
       <span
@@ -158,10 +163,18 @@ export function ZoneNode({
 
   // Wrap in tooltip for zone info on hover
   if (isUnknown) {
-    // Unknown zones don't show detailed tooltip
+    // Unknown zones show simple "Unknown area" tooltip
     return (
       <>
-        {nodeContent}
+        <Tooltip
+          content={
+            <span className="text-gray-400 text-sm">Unknown area</span>
+          }
+          position="top"
+          delay={300}
+        >
+          {nodeContent}
+        </Tooltip>
         {townLabel}
       </>
     )
