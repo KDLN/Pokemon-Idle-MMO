@@ -11,6 +11,7 @@ export const buttonVariants = cva(
   // Base classes applied to all variants
   [
     "inline-flex items-center justify-center gap-2 rounded-xl font-medium",
+    "min-h-[44px]", // WCAG touch target minimum
     "transition-all duration-200",
     "disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
   ],
@@ -52,10 +53,10 @@ export const buttonVariants = cva(
         ],
       },
       size: {
-        sm: "px-3 py-1.5 text-xs",
-        md: "px-4 py-2 text-sm",
+        sm: "px-3 py-2 text-sm min-w-[44px]",
+        md: "px-4 py-2.5 text-base min-w-[44px]",
         lg: "px-6 py-3 text-base",
-        icon: "w-10 h-10",
+        icon: "w-11 h-11", // 44px touch target
       },
     },
     defaultVariants: {
