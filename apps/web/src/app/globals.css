@@ -1,67 +1,73 @@
 @import "tailwindcss";
+@import "../styles/tokens/colors.css";
+@import "../styles/tokens/spacing.css";
+@import "../styles/tokens/typography.css";
 
 :root {
-  /* Pokemon Classic Colors */
-  --poke-red: #EE1515;
-  --poke-red-dark: #CC0000;
-  --poke-red-light: #FF4444;
-  --poke-blue: #3B4CCA;
-  --poke-blue-dark: #2A3A99;
-  --poke-blue-light: #5B6EEA;
-  --poke-yellow: #FFDE00;
-  --poke-yellow-dark: #E6C800;
-  --poke-gold: #B3A125;
+  /* ========== LEGACY ALIASES ========== */
+  /* Map old names to new tokens for backward compatibility */
 
-  /* Type Colors - All 18 Types */
-  --type-normal: #A8A878;
-  --type-normal-dark: #6D6D4E;
-  --type-fire: #F08030;
-  --type-fire-dark: #9C531F;
-  --type-water: #6890F0;
-  --type-water-dark: #445E9C;
-  --type-electric: #F8D030;
-  --type-electric-dark: #A1871F;
-  --type-grass: #78C850;
-  --type-grass-dark: #4E8234;
-  --type-ice: #98D8D8;
-  --type-ice-dark: #638D8D;
-  --type-fighting: #C03028;
-  --type-fighting-dark: #7D1F1A;
-  --type-poison: #A040A0;
-  --type-poison-dark: #682A68;
-  --type-ground: #E0C068;
-  --type-ground-dark: #927D44;
-  --type-flying: #A890F0;
-  --type-flying-dark: #6D5E9C;
-  --type-psychic: #F85888;
-  --type-psychic-dark: #A13959;
-  --type-bug: #A8B820;
-  --type-bug-dark: #6D7815;
-  --type-rock: #B8A038;
-  --type-rock-dark: #786824;
-  --type-ghost: #705898;
-  --type-ghost-dark: #493963;
-  --type-dragon: #7038F8;
-  --type-dragon-dark: #4924A1;
-  --type-dark: #705848;
-  --type-dark-dark: #49392F;
-  --type-steel: #B8B8D0;
-  --type-steel-dark: #787887;
-  --type-fairy: #EE99AC;
-  --type-fairy-dark: #9B6470;
+  /* Pokemon Classic Colors */
+  --poke-red: var(--color-brand-secondary);
+  --poke-red-dark: var(--color-brand-secondary-dark);
+  --poke-red-light: var(--color-brand-secondary-light);
+  --poke-blue: var(--color-brand-primary);
+  --poke-blue-dark: var(--color-brand-primary-dark);
+  --poke-blue-light: var(--color-brand-primary-light);
+  --poke-yellow: var(--color-brand-accent);
+  --poke-yellow-dark: var(--color-brand-accent-dark);
+  --poke-gold: var(--color-brand-gold);
+
+  /* Type Colors - map to new token names */
+  --type-normal: var(--color-type-normal);
+  --type-normal-dark: var(--color-type-normal-dark);
+  --type-fire: var(--color-type-fire);
+  --type-fire-dark: var(--color-type-fire-dark);
+  --type-water: var(--color-type-water);
+  --type-water-dark: var(--color-type-water-dark);
+  --type-electric: var(--color-type-electric);
+  --type-electric-dark: var(--color-type-electric-dark);
+  --type-grass: var(--color-type-grass);
+  --type-grass-dark: var(--color-type-grass-dark);
+  --type-ice: var(--color-type-ice);
+  --type-ice-dark: var(--color-type-ice-dark);
+  --type-fighting: var(--color-type-fighting);
+  --type-fighting-dark: var(--color-type-fighting-dark);
+  --type-poison: var(--color-type-poison);
+  --type-poison-dark: var(--color-type-poison-dark);
+  --type-ground: var(--color-type-ground);
+  --type-ground-dark: var(--color-type-ground-dark);
+  --type-flying: var(--color-type-flying);
+  --type-flying-dark: var(--color-type-flying-dark);
+  --type-psychic: var(--color-type-psychic);
+  --type-psychic-dark: var(--color-type-psychic-dark);
+  --type-bug: var(--color-type-bug);
+  --type-bug-dark: var(--color-type-bug-dark);
+  --type-rock: var(--color-type-rock);
+  --type-rock-dark: var(--color-type-rock-dark);
+  --type-ghost: var(--color-type-ghost);
+  --type-ghost-dark: var(--color-type-ghost-dark);
+  --type-dragon: var(--color-type-dragon);
+  --type-dragon-dark: var(--color-type-dragon-dark);
+  --type-dark: var(--color-type-dark);
+  --type-dark-dark: var(--color-type-dark-dark);
+  --type-steel: var(--color-type-steel);
+  --type-steel-dark: var(--color-type-steel-dark);
+  --type-fairy: var(--color-type-fairy);
+  --type-fairy-dark: var(--color-type-fairy-dark);
 
   /* UI Colors */
-  --bg-dark: #0f0f1a;
-  --bg-card: #1a1a2e;
-  --bg-card-hover: #252542;
-  --border-subtle: #2a2a4a;
-  --border-bright: #3a3a6a;
-  --text-primary: #ffffff;
-  --text-secondary: #a0a0c0;
-  --text-muted: #606080;
+  --bg-dark: var(--color-surface-base);
+  --bg-card: var(--color-surface-elevated);
+  --bg-card-hover: var(--color-surface-hover);
+  --border-subtle: var(--color-border-subtle);
+  --border-bright: var(--color-border-bright);
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --text-muted: var(--color-text-muted);
 
-  /* Gradients */
-  --gradient-pokeball: linear-gradient(180deg, var(--poke-red) 0%, var(--poke-red) 45%, #1a1a2e 45%, #1a1a2e 55%, #f0f0f0 55%, #f0f0f0 100%);
+  /* Gradients - reference new color tokens */
+  --gradient-pokeball: linear-gradient(180deg, var(--color-brand-secondary) 0%, var(--color-brand-secondary) 45%, #1a1a2e 45%, #1a1a2e 55%, #f0f0f0 55%, #f0f0f0 100%);
   --gradient-shine: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
 }
 
@@ -1688,17 +1694,18 @@ html {
 /* ================== */
 
 /* Additional CSS variables for Layout-B (extends :root) */
+/* Legacy aliases - map to new token names */
 :root {
-  --lb-bg-base: #0f1015;
-  --lb-bg-elevated: #1d1e26;
-  --lb-bg-hover: #252630;
-  --lb-border-bright: #3a3b48;
-  --lb-text-dim: #5a5b68;
-  --lb-accent: #6366f1;
-  --lb-accent-glow: rgba(99, 102, 241, 0.3);
-  --lb-green: #22c55e;
-  --lb-red: #ef4444;
-  --lb-yellow: #eab308;
+  --lb-bg-base: var(--color-lb-base);
+  --lb-bg-elevated: var(--color-lb-elevated);
+  --lb-bg-hover: var(--color-lb-hover);
+  --lb-border-bright: var(--color-lb-border);
+  --lb-text-dim: var(--color-lb-text-dim);
+  --lb-accent: var(--color-lb-accent);
+  --lb-accent-glow: var(--color-lb-accent-glow);
+  --lb-green: var(--color-success);
+  --lb-red: var(--color-error);
+  --lb-yellow: var(--color-warning);
 }
 
 /* Main 3-column grid layout */
