@@ -1,0 +1,188 @@
+import { Meta, ColorPalette, ColorItem } from '@storybook/blocks';
+
+<Meta title="Design System/Colors" />
+
+# Color Tokens
+
+Our color system uses **semantic naming** to describe purpose, not value. This makes it easier to maintain themes and ensure consistent usage.
+
+## Brand Colors
+
+The Pokemon-inspired brand palette forms the foundation of our visual identity.
+
+<ColorPalette>
+  <ColorItem
+    title="Primary"
+    subtitle="--color-brand-primary"
+    colors={{
+      Default: '#3B4CCA',
+      Dark: '#2A3A99',
+      Light: '#5B6EEA',
+    }}
+  />
+  <ColorItem
+    title="Secondary"
+    subtitle="--color-brand-secondary"
+    colors={{
+      Default: '#EE1515',
+      Dark: '#CC0000',
+      Light: '#FF4444',
+    }}
+  />
+  <ColorItem
+    title="Accent"
+    subtitle="--color-brand-accent"
+    colors={{
+      Default: '#FFDE00',
+      Dark: '#E6C800',
+      Gold: '#B3A125',
+    }}
+  />
+</ColorPalette>
+
+### Usage
+
+| Color | When to Use |
+|-------|-------------|
+| Primary (Blue) | Main CTAs, links, active states, progress bars |
+| Secondary (Red) | Pokeball buttons, danger/destructive actions |
+| Accent (Yellow) | Focus rings, highlights, premium badges, gold rewards |
+
+## Surface Colors
+
+Backgrounds for containers, cards, and UI elements.
+
+<ColorPalette>
+  <ColorItem
+    title="Surfaces"
+    subtitle="Background layers"
+    colors={{
+      Base: '#0f0f1a',
+      Elevated: '#1a1a2e',
+      Hover: '#252542',
+    }}
+  />
+</ColorPalette>
+
+### Surface Hierarchy
+
+1. **Base** (`--color-surface-base`): Page background
+2. **Elevated** (`--color-surface-elevated`): Cards, modals, panels
+3. **Hover** (`--color-surface-hover`): Hover states on elevated surfaces
+
+## Text Colors
+
+<ColorPalette>
+  <ColorItem
+    title="Text"
+    subtitle="Typography colors"
+    colors={{
+      Primary: '#ffffff',
+      Secondary: '#a0a0c0',
+      Muted: '#606080',
+    }}
+  />
+</ColorPalette>
+
+### Text Hierarchy
+
+| Color | When to Use |
+|-------|-------------|
+| Primary | Headings, important text, interactive elements |
+| Secondary | Body text, labels, descriptions |
+| Muted | Captions, timestamps, disabled text |
+
+## Border Colors
+
+<ColorPalette>
+  <ColorItem
+    title="Borders"
+    subtitle="Dividers and outlines"
+    colors={{
+      Subtle: '#2a2a4a',
+      Bright: '#3a3a6a',
+    }}
+  />
+</ColorPalette>
+
+| Color | When to Use |
+|-------|-------------|
+| Subtle | Card borders, dividers, inactive states |
+| Bright | Active borders, focus states, hover states |
+
+## Semantic Colors
+
+<ColorPalette>
+  <ColorItem
+    title="Status"
+    subtitle="Feedback colors"
+    colors={{
+      Success: '#22c55e',
+      Warning: '#eab308',
+      Error: '#ef4444',
+    }}
+  />
+</ColorPalette>
+
+## Pokemon Type Colors
+
+All 18 Pokemon types have defined colors for badges and type indicators.
+
+<ColorPalette>
+  <ColorItem title="Normal" subtitle="--color-type-normal" colors={{ Default: '#A8A878', Dark: '#6D6D4E' }} />
+  <ColorItem title="Fire" subtitle="--color-type-fire" colors={{ Default: '#F08030', Dark: '#9C531F' }} />
+  <ColorItem title="Water" subtitle="--color-type-water" colors={{ Default: '#6890F0', Dark: '#445E9C' }} />
+  <ColorItem title="Electric" subtitle="--color-type-electric" colors={{ Default: '#F8D030', Dark: '#A1871F' }} />
+  <ColorItem title="Grass" subtitle="--color-type-grass" colors={{ Default: '#78C850', Dark: '#4E8234' }} />
+  <ColorItem title="Ice" subtitle="--color-type-ice" colors={{ Default: '#98D8D8', Dark: '#638D8D' }} />
+  <ColorItem title="Fighting" subtitle="--color-type-fighting" colors={{ Default: '#C03028', Dark: '#7D1F1A' }} />
+  <ColorItem title="Poison" subtitle="--color-type-poison" colors={{ Default: '#A040A0', Dark: '#682A68' }} />
+  <ColorItem title="Ground" subtitle="--color-type-ground" colors={{ Default: '#E0C068', Dark: '#927D44' }} />
+  <ColorItem title="Flying" subtitle="--color-type-flying" colors={{ Default: '#A890F0', Dark: '#6D5E9C' }} />
+  <ColorItem title="Psychic" subtitle="--color-type-psychic" colors={{ Default: '#F85888', Dark: '#A13959' }} />
+  <ColorItem title="Bug" subtitle="--color-type-bug" colors={{ Default: '#A8B820', Dark: '#6D7815' }} />
+  <ColorItem title="Rock" subtitle="--color-type-rock" colors={{ Default: '#B8A038', Dark: '#786824' }} />
+  <ColorItem title="Ghost" subtitle="--color-type-ghost" colors={{ Default: '#705898', Dark: '#493963' }} />
+  <ColorItem title="Dragon" subtitle="--color-type-dragon" colors={{ Default: '#7038F8', Dark: '#4924A1' }} />
+  <ColorItem title="Dark" subtitle="--color-type-dark" colors={{ Default: '#705848', Dark: '#49392F' }} />
+  <ColorItem title="Steel" subtitle="--color-type-steel" colors={{ Default: '#B8B8D0', Dark: '#787887' }} />
+  <ColorItem title="Fairy" subtitle="--color-type-fairy" colors={{ Default: '#EE99AC', Dark: '#9B6470' }} />
+</ColorPalette>
+
+## Usage Guidelines
+
+### Do's
+
+- Use semantic tokens (`--color-brand-primary`) not raw values (`#3B4CCA`)
+- Use `--color-text-secondary` for body text, not white
+- Use `--color-surface-hover` for hover states on cards
+
+### Don'ts
+
+- Don't use text colors for backgrounds
+- Don't mix brand colors with semantic colors for the same purpose
+- Don't use `--color-surface-base` for cards (use `--color-surface-elevated`)
+
+## Code Examples
+
+```css
+/* CSS usage */
+.card {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+}
+
+.card:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-bright);
+}
+```
+
+```tsx
+/* Tailwind with CSS variables */
+<div className="bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)]">
+  <h2 className="text-[var(--color-text-primary)]">Title</h2>
+  <p className="text-[var(--color-text-secondary)]">Description</p>
+</div>
+```
