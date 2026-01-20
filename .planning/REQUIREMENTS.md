@@ -24,13 +24,13 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 ### Layout & Responsiveness
 
-- [ ] **LAYOUT-01**: Body text uses 16px minimum font size
-- [ ] **LAYOUT-02**: Interactive elements have 44px minimum touch targets
-- [ ] **LAYOUT-03**: Activity log fits available space without scroll when content allows
-- [ ] **LAYOUT-04**: Pokemon party panel fits screen without scroll (6 Pokemon visible)
-- [ ] **LAYOUT-05**: All game screens work on mobile viewport (375px width)
-- [ ] **LAYOUT-06**: All game screens work on tablet viewport (768px width)
-- [ ] **LAYOUT-07**: All game screens work on desktop viewport (1280px+ width)
+- [x] **LAYOUT-01**: Body text uses 16px minimum font size
+- [x] **LAYOUT-02**: Interactive elements have 44px minimum touch targets
+- [x] **LAYOUT-03**: Activity log fits available space without scroll when content allows
+- [x] **LAYOUT-04**: Pokemon party panel fits screen without scroll (6 Pokemon visible)
+- [x] **LAYOUT-05**: All game screens work on mobile viewport (375px width)
+- [x] **LAYOUT-06**: All game screens work on tablet viewport (768px width)
+- [x] **LAYOUT-07**: All game screens work on desktop viewport (1280px+ width)
 
 ### UI Improvements
 
@@ -111,13 +111,13 @@ Which phases cover which requirements.
 | DS-05 | Phase 9 | Complete |
 | DS-06 | Phase 9 | Complete |
 | DS-07 | Phase 9 | Complete |
-| LAYOUT-01 | Phase 10 | Pending |
-| LAYOUT-02 | Phase 10 | Pending |
-| LAYOUT-03 | Phase 10 | Pending |
-| LAYOUT-04 | Phase 10 | Pending |
-| LAYOUT-05 | Phase 10 | Pending |
-| LAYOUT-06 | Phase 10 | Pending |
-| LAYOUT-07 | Phase 10 | Pending |
+| LAYOUT-01 | Phase 10 | Complete |
+| LAYOUT-02 | Phase 10 | Complete |
+| LAYOUT-03 | Phase 10 | Complete |
+| LAYOUT-04 | Phase 10 | Complete |
+| LAYOUT-05 | Phase 10 | Complete |
+| LAYOUT-06 | Phase 10 | Complete |
+| LAYOUT-07 | Phase 10 | Complete |
 | UI-01 | Phase 11 | Pending |
 | UI-02 | Phase 11 | Pending |
 | UI-03 | Phase 11 | Pending |
@@ -149,4 +149,4 @@ Which phases cover which requirements.
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-19 after Phase 9 completion*
+*Last updated: 2026-01-20 after Phase 10 completion*

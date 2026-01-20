@@ -13,7 +13,7 @@ This milestone transforms the functional MVP into a polished product through sys
 
 - [x] **Phase 8: Bug Fixes** - Fix Guild Quest contributors and Bank view toggle
 - [x] **Phase 9: Design System** - Formalize tokens, set up Storybook, create CVA components
-- [ ] **Phase 10: Layout & Responsiveness** - Typography scale, touch targets, viewport support
+- [x] **Phase 10: Layout & Responsiveness** - Typography scale, touch targets, viewport support
 - [ ] **Phase 11: UI Polish** - Navigation order, naming, display improvements
 - [ ] **Phase 12: Party Reordering** - Drag-to-reorder party with persistence
 - [ ] **Phase 13: Map Overhaul** - Visual styling, interactions, zone connections
@@ -72,8 +72,8 @@ Plans:
 - [x] 10-02-PLAN.md — Standardize touch targets to 44px minimum across all interactive elements
 - [x] 10-03-PLAN.md — Optimize party panel and activity log layouts for content-based sizing
 - [x] 10-04-PLAN.md — Test and fix all game screens across mobile/tablet/desktop viewports
-- [ ] 10-05-PLAN.md — Fix 1024px breakpoint mismatch between JavaScript and CSS (gap closure)
-- [ ] 10-06-PLAN.md — Fix Box button accessibility on mobile devices (gap closure)
+- [x] 10-05-PLAN.md — Fix 1024px breakpoint mismatch between JavaScript and CSS (gap closure)
+- [x] 10-06-PLAN.md — Fix Box button accessibility on mobile devices (gap closure)
 
 ### Phase 11: UI Polish
 **Goal**: Improve navigation, naming, and display quality throughout the UI
@@ -157,7 +157,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 |-------|-----------|----------------|--------|-----------|
 | 8. Bug Fixes | v1.1 | 2/2 | Complete | 2026-01-19 |
 | 9. Design System | v1.1 | 5/5 | Complete | 2026-01-19 |
-| 10. Layout & Responsiveness | v1.1 | 4/6 | In Progress | - |
+| 10. Layout & Responsiveness | v1.1 | 6/6 | Complete | 2026-01-20 |
 | 11. UI Polish | v1.1 | 0/? | Not started | - |
 | 12. Party Reordering | v1.1 | 0/? | Not started | - |
 | 13. Map Overhaul | v1.1 | 0/? | Not started | - |
