@@ -40,6 +40,7 @@
     "typescript": "^5"
   },
   "optionalDependencies": {
+    "@rollup/rollup-win32-x64-msvc": "^4.55.2",
     "@tailwindcss/oxide-win32-x64-msvc": "^4.1.18",
     "lightningcss-win32-x64-msvc": "^1.30.2"
   }
