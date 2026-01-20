@@ -18,12 +18,16 @@ interface ZoneNodeProps {
   isCurrent: boolean
   /** Visibility state for fog of war */
   visibility: ZoneVisibility
+  /** Whether this zone is directly connected to current zone */
+  isConnected?: boolean
   /** Minimum level (for routes) */
   minLevel?: number
   /** Maximum level (for routes) */
   maxLevel?: number
   /** Click handler */
   onClick?: () => void
+  /** Travel handler - called when user wants to travel to this zone */
+  onTravel?: (zoneId: number) => void
 }
 
 /**
@@ -44,15 +48,30 @@ export function ZoneNode({
   position,
   isCurrent,
   visibility,
+  isConnected = false,
   minLevel,
   maxLevel,
   onClick,
+  onTravel,
 }: ZoneNodeProps) {
   // Hidden zones are not rendered
   if (visibility === 'hidden') return null
 
   const isUnknown = visibility === 'adjacent'
   const isTown = zoneType === 'town'
+  // Can travel if: visited, not current zone, and connected to current zone
+  const canTravel = visibility === 'visited' && !isCurrent && isConnected
+
+  // Handle zone click for travel
+  const handleClick = () => {
+    // Call general onClick for any click
+    onClick?.()
+
+    // Only trigger travel if this is a valid travel target
+    if (canTravel && onTravel) {
+      onTravel(id)
+    }
+  }
 
   // Determine node color based on zone type
   const getZoneClasses = () => {
@@ -83,8 +102,9 @@ export function ZoneNode({
 
   const nodeContent = (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       disabled={isUnknown}
+      aria-disabled={!canTravel && !isCurrent && visibility === 'visited'}
       className={cn(
         'absolute rounded-lg transition-all duration-200',
         // Center the node on its position
@@ -95,8 +115,10 @@ export function ZoneNode({
         getZoneClasses(),
         // Current zone indicator
         isCurrent && 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-[#101820]',
-        // Hover effect (only for visited zones)
-        !isUnknown && 'hover:scale-110',
+        // Connected zones: interactive cursor and scale effect
+        canTravel && 'cursor-pointer hover:scale-110 active:scale-95',
+        // Visited but not connected: show as visited but dimmed
+        visibility === 'visited' && !isCurrent && !isConnected && 'opacity-60 cursor-default',
         // Disabled state for unknown zones with subtle pulse
         isUnknown && 'cursor-not-allowed animate-pulse',
         // Focus styling
@@ -110,7 +132,15 @@ export function ZoneNode({
         // Subtle animation duration for unknown zones
         ...(isUnknown && { animationDuration: '3s' }),
       }}
-      aria-label={isUnknown ? 'Unknown area' : name}
+      aria-label={
+        isUnknown
+          ? 'Unknown area'
+          : canTravel
+            ? `Travel to ${name}`
+            : isCurrent
+              ? `${name} (current location)`
+              : name
+      }
     >
       {/* Touch target expansion (WCAG compliance) */}
       <span
