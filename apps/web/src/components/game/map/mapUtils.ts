@@ -244,3 +244,119 @@ export function isZoneInViewport(
 
 // Re-export DIRECTION_VECTORS for convenience
 export { DIRECTION_VECTORS } from './mapTypes'
+
+/**
+ * Zone visibility type for fog of war
+ */
+export type { ZoneVisibility } from './mapTypes'
+
+/**
+ * Get all zone IDs adjacent to a given zone
+ *
+ * @param zoneId - Zone ID to find neighbors for
+ * @param connections - Array of zone connections
+ * @returns Array of adjacent zone IDs
+ */
+export function getAdjacentZones(
+  zoneId: number,
+  connections: ZoneConnection[]
+): number[] {
+  const adjacent: number[] = []
+
+  for (const conn of connections) {
+    if (conn.from_zone_id === zoneId) {
+      adjacent.push(conn.to_zone_id)
+    } else if (conn.to_zone_id === zoneId) {
+      adjacent.push(conn.from_zone_id)
+    }
+  }
+
+  return adjacent
+}
+
+/**
+ * Calculate the visibility state for a zone based on visited zones.
+ *
+ * Visibility rules:
+ * - 'visited': Zone has been visited by the player
+ * - 'adjacent': Zone is connected to a visited zone (mystery marker)
+ * - 'hidden': Zone is not discovered (neither visited nor adjacent to visited)
+ *
+ * @param zoneId - Zone ID to check visibility for
+ * @param visitedZones - Array of visited zone IDs
+ * @param connections - Array of zone connections
+ * @returns ZoneVisibility state ('visited', 'adjacent', or 'hidden')
+ */
+export function getZoneVisibility(
+  zoneId: number,
+  visitedZones: number[],
+  connections: ZoneConnection[]
+): 'visited' | 'adjacent' | 'hidden' {
+  // Create visited set for O(1) lookup
+  const visitedSet = new Set(visitedZones)
+
+  // If zone is visited, return 'visited'
+  if (visitedSet.has(zoneId)) {
+    return 'visited'
+  }
+
+  // Check if zone is adjacent to any visited zone
+  // A zone is adjacent if it appears in a connection with any visited zone
+  for (const conn of connections) {
+    // Check if connection involves this zone
+    if (conn.from_zone_id === zoneId) {
+      if (visitedSet.has(conn.to_zone_id)) {
+        return 'adjacent'
+      }
+    } else if (conn.to_zone_id === zoneId) {
+      if (visitedSet.has(conn.from_zone_id)) {
+        return 'adjacent'
+      }
+    }
+  }
+
+  // Not visited and not adjacent to any visited zone
+  return 'hidden'
+}
+
+/**
+ * Calculate visibility for all zones at once.
+ * More efficient when calculating visibility for multiple zones.
+ *
+ * @param zoneIds - Array of all zone IDs
+ * @param visitedZones - Array of visited zone IDs
+ * @param connections - Array of zone connections
+ * @returns Map of zone ID to visibility state
+ */
+export function getAllZoneVisibilities(
+  zoneIds: number[],
+  visitedZones: number[],
+  connections: ZoneConnection[]
+): Map<number, 'visited' | 'adjacent' | 'hidden'> {
+  const visitedSet = new Set(visitedZones)
+  const result = new Map<number, 'visited' | 'adjacent' | 'hidden'>()
+
+  // Pre-compute set of all zones adjacent to any visited zone
+  const adjacentToVisited = new Set<number>()
+  for (const conn of connections) {
+    if (visitedSet.has(conn.from_zone_id)) {
+      adjacentToVisited.add(conn.to_zone_id)
+    }
+    if (visitedSet.has(conn.to_zone_id)) {
+      adjacentToVisited.add(conn.from_zone_id)
+    }
+  }
+
+  // Calculate visibility for each zone
+  for (const zoneId of zoneIds) {
+    if (visitedSet.has(zoneId)) {
+      result.set(zoneId, 'visited')
+    } else if (adjacentToVisited.has(zoneId)) {
+      result.set(zoneId, 'adjacent')
+    } else {
+      result.set(zoneId, 'hidden')
+    }
+  }
+
+  return result
+}
