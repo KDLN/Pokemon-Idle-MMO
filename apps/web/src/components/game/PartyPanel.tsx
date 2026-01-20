@@ -59,7 +59,7 @@ export function PartyPanel() {
   }
 
   return (
-    <Card variant="glass" padding="sm" className="p-3 sm:p-4">
+    <Card variant="glass" padding="none" className="p-2 sm:p-3">
       {/* Header */}
       <CardHeader
         icon={<PokeballIcon className="w-4 h-4 sm:w-5 sm:h-5" />}
@@ -86,7 +86,7 @@ export function PartyPanel() {
 
       {/* Party Grid - responsive columns with equal row heights */}
       <div
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-2 sm:gap-3 auto-rows-fr"
+        className="grid grid-cols-2 gap-2 auto-rows-fr"
         role="list"
         aria-label="Pokemon party"
       >

@@ -218,7 +218,7 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
       />
 
       {/* Content */}
-      <div className="relative p-2 sm:p-3">
+      <div className="relative p-1.5 sm:p-2">
         {/* Header with type badges and IV grade */}
         <div className="flex items-start justify-between mb-1.5 sm:mb-2">
           <div className="flex items-center gap-1 flex-wrap">
@@ -247,7 +247,7 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
             <img
               src={getPokemonSpriteUrl(pokemon.species_id, isShiny)}
               alt={name}
-              className="w-14 h-14 sm:w-20 sm:h-20 pixelated relative z-10 group-hover:animate-bounce-gentle"
+              className="w-12 h-12 sm:w-16 sm:h-16 pixelated relative z-10 group-hover:animate-bounce-gentle"
             />
           </div>
         </div>
@@ -303,7 +303,7 @@ export function EmptyPokemonSlot({ slot, onClick }: { slot: number; onClick?: ()
       role="listitem"
       aria-label={`Empty party slot ${slot}${onClick ? ', click to add Pokemon' : ''}`}
       className={cn(
-        'relative rounded-xl overflow-hidden min-h-[120px] sm:min-h-[180px] h-full',
+        'relative rounded-xl overflow-hidden min-h-[100px] sm:min-h-[140px] h-full',
         'flex flex-col items-center justify-center gap-1.5 sm:gap-2',
         'bg-[#1a1a2e]/50 border-2 border-dashed border-[#2a2a4a]',
         onClick && 'cursor-pointer hover:border-[#3a3a6a] hover:bg-[#1a1a2e]',
