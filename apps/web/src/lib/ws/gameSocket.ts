@@ -329,6 +329,17 @@ class GameSocket {
     this.send('remove_from_party', { party_slot: partySlot })
   }
 
+  // Reorder party Pokemon
+  // order: Array of 6 Pokemon IDs (null for empty slots), in desired position order
+  // Returns true if message sent, false if not connected
+  reorderParty(order: (string | null)[]): boolean {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return false
+    }
+    this.send('reorder_party', { order })
+    return true
+  }
+
   // Request current game state
   getState() {
     this.send('get_state')
