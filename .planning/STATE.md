@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 11 of 15 (UI Polish)
-Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2026-01-20 — Completed Phase 10 (Layout & Responsiveness)
+Plan: 1 of ? in current phase
+Status: In progress
+Last activity: 2026-01-20 — Completed 11-01-PLAN.md (Zone Directions)
 
-Progress: [████░░░░] 50%
+Progress: [█████░░░] 53%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13 (v1.1)
+- Total plans completed: 14 (v1.1)
 - Average duration: 2.8 min
-- Total execution time: 36 min
+- Total execution time: 39 min
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: [████░░░░] 50%
 | 08-bug-fixes | 2 | 4 min | 2 min |
 | 09-design-system | 5 | 18 min | 3.6 min |
 | 10-layout-responsiveness | 6 | 14 min | 2.3 min |
+| 11-ui-polish | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 10-02 (4 min), 10-03 (2 min), 10-04 (2 min), 10-05 (1 min), 10-06 (2 min)
-- Trend: Gap closure plans executing very fast (1-2 min)
+- Last 5 plans: 10-03 (2 min), 10-04 (2 min), 10-05 (1 min), 10-06 (2 min), 11-01 (3 min)
+- Trend: Database/backend plans slightly longer than pure frontend
 
 *Updated after each plan completion*
 
@@ -64,6 +65,8 @@ Recent decisions affecting current work:
 - 10-03: Reduce sprite sizes to fit 6 Pokemon in party column without scroll
 - 10-05: Use <= 1024 in JS to match CSS max-width: 1024px inclusive behavior
 - 10-06: Use bottom-20 lg:bottom-4 for fixed buttons to clear mobile tab bar
+- 11-01: Direction is from perspective of from_zone_id (travel direction to reach destination)
+- 11-01: Use single-letter codes (N/S/E/W) for compact storage
 
 ### Pending Todos
 
@@ -73,12 +76,13 @@ None yet.
 
 - 08-01: Requires manual migration application to production database
 - 09-03: Build failure due to missing lightningcss.win32-x64-msvc.node (pre-existing Windows native module issue)
+- 11-01: Requires manual migration application (032_zone_directions.sql) to production database
 
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed Phase 10 (Layout & Responsiveness)
+Stopped at: Completed 11-01-PLAN.md (Zone Directions)
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after Phase 10 completion*
+*State updated: 2026-01-20 after 11-01 completion*
