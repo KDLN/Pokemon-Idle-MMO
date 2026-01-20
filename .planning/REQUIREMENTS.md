@@ -14,13 +14,13 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 ### Design System
 
-- [ ] **DS-01**: Audit existing CSS variables and document current design tokens
-- [ ] **DS-02**: Create color token documentation with semantic naming
-- [ ] **DS-03**: Create typography scale documentation (sizes, weights, line heights)
-- [ ] **DS-04**: Create spacing scale documentation (margins, padding, gaps)
-- [ ] **DS-05**: Set up Storybook 10 with Next.js 16 + Tailwind CSS 4 integration
-- [ ] **DS-06**: Create CVA component variants for Button, Card, Badge components
-- [ ] **DS-07**: Document component patterns in Storybook with examples
+- [x] **DS-01**: Audit existing CSS variables and document current design tokens
+- [x] **DS-02**: Create color token documentation with semantic naming
+- [x] **DS-03**: Create typography scale documentation (sizes, weights, line heights)
+- [x] **DS-04**: Create spacing scale documentation (margins, padding, gaps)
+- [x] **DS-05**: Set up Storybook 10 with Next.js 16 + Tailwind CSS 4 integration
+- [x] **DS-06**: Create CVA component variants for Button, Card, Badge components
+- [x] **DS-07**: Document component patterns in Storybook with examples
 
 ### Layout & Responsiveness
 
@@ -104,13 +104,13 @@ Which phases cover which requirements.
 |-------------|-------|--------|
 | BUG-01 | Phase 8 | Complete |
 | BUG-02 | Phase 8 | Complete |
-| DS-01 | Phase 9 | Pending |
-| DS-02 | Phase 9 | Pending |
-| DS-03 | Phase 9 | Pending |
-| DS-04 | Phase 9 | Pending |
-| DS-05 | Phase 9 | Pending |
-| DS-06 | Phase 9 | Pending |
-| DS-07 | Phase 9 | Pending |
+| DS-01 | Phase 9 | Complete |
+| DS-02 | Phase 9 | Complete |
+| DS-03 | Phase 9 | Complete |
+| DS-04 | Phase 9 | Complete |
+| DS-05 | Phase 9 | Complete |
+| DS-06 | Phase 9 | Complete |
+| DS-07 | Phase 9 | Complete |
 | LAYOUT-01 | Phase 10 | Pending |
 | LAYOUT-02 | Phase 10 | Pending |
 | LAYOUT-03 | Phase 10 | Pending |
@@ -149,4 +149,4 @@ Which phases cover which requirements.
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-19 after roadmap creation*
+*Last updated: 2026-01-19 after Phase 9 completion*

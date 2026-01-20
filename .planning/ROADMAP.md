@@ -12,7 +12,7 @@ This milestone transforms the functional MVP into a polished product through sys
 ## Phases
 
 - [x] **Phase 8: Bug Fixes** - Fix Guild Quest contributors and Bank view toggle
-- [ ] **Phase 9: Design System** - Formalize tokens, set up Storybook, create CVA components
+- [x] **Phase 9: Design System** - Formalize tokens, set up Storybook, create CVA components
 - [ ] **Phase 10: Layout & Responsiveness** - Typography scale, touch targets, viewport support
 - [ ] **Phase 11: UI Polish** - Navigation order, naming, display improvements
 - [ ] **Phase 12: Party Reordering** - Drag-to-reorder party with persistence
@@ -49,11 +49,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 09-01-PLAN.md — Install CVA/Storybook dependencies, upgrade cn() utility, configure Storybook 10
-- [ ] 09-02-PLAN.md — Audit tokens, create colors/spacing/typography CSS files, document in TOKENS.md
-- [ ] 09-03-PLAN.md — Migrate Button, Card, Badge components to CVA patterns
-- [ ] 09-04-PLAN.md — Create Storybook stories for Button, Card, Badge with interactive examples
-- [ ] 09-05-PLAN.md — Create Colors, Spacing, Typography MDX documentation pages
+- [x] 09-01-PLAN.md — Install CVA/Storybook dependencies, upgrade cn() utility, configure Storybook 10
+- [x] 09-02-PLAN.md — Audit tokens, create colors/spacing/typography CSS files, document in TOKENS.md
+- [x] 09-03-PLAN.md — Migrate Button, Card, Badge components to CVA patterns
+- [x] 09-04-PLAN.md — Create Storybook stories for Button, Card, Badge with interactive examples
+- [x] 09-05-PLAN.md — Create Colors, Spacing, Typography MDX documentation pages
 
 ### Phase 10: Layout & Responsiveness
 **Goal**: Make the game comfortable to use across all device sizes with proper typography and touch targets
@@ -151,7 +151,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 8. Bug Fixes | v1.1 | 2/2 | Complete | 2026-01-19 |
-| 9. Design System | v1.1 | 0/5 | Not started | - |
+| 9. Design System | v1.1 | 5/5 | Complete | 2026-01-19 |
 | 10. Layout & Responsiveness | v1.1 | 0/? | Not started | - |
 | 11. UI Polish | v1.1 | 0/? | Not started | - |
 | 12. Party Reordering | v1.1 | 0/? | Not started | - |
