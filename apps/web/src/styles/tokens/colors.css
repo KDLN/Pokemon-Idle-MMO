@@ -1,0 +1,91 @@
+/* ============================================
+ * COLOR TOKENS
+ * Semantic naming: describes purpose, not value
+ * ============================================ */
+
+:root {
+  /* ========== BRAND COLORS ========== */
+  /* Primary brand - Pokemon Blue */
+  --color-brand-primary: #3B4CCA;
+  --color-brand-primary-dark: #2A3A99;
+  --color-brand-primary-light: #5B6EEA;
+
+  /* Secondary brand - Pokemon Red */
+  --color-brand-secondary: #EE1515;
+  --color-brand-secondary-dark: #CC0000;
+  --color-brand-secondary-light: #FF4444;
+
+  /* Accent - Pokemon Yellow/Gold */
+  --color-brand-accent: #FFDE00;
+  --color-brand-accent-dark: #E6C800;
+  --color-brand-gold: #B3A125;
+
+  /* ========== SURFACE COLORS ========== */
+  /* Backgrounds for containers and UI elements */
+  --color-surface-base: #0f0f1a;
+  --color-surface-elevated: #1a1a2e;
+  --color-surface-hover: #252542;
+
+  /* ========== TEXT COLORS ========== */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a0a0c0;
+  --color-text-muted: #606080;
+
+  /* ========== BORDER COLORS ========== */
+  --color-border-subtle: #2a2a4a;
+  --color-border-bright: #3a3a6a;
+
+  /* ========== SEMANTIC COLORS ========== */
+  --color-success: #22c55e;
+  --color-warning: #eab308;
+  --color-error: #ef4444;
+
+  /* ========== POKEMON TYPE COLORS ========== */
+  /* Each type has base and dark variant */
+  --color-type-normal: #A8A878;
+  --color-type-normal-dark: #6D6D4E;
+  --color-type-fire: #F08030;
+  --color-type-fire-dark: #9C531F;
+  --color-type-water: #6890F0;
+  --color-type-water-dark: #445E9C;
+  --color-type-electric: #F8D030;
+  --color-type-electric-dark: #A1871F;
+  --color-type-grass: #78C850;
+  --color-type-grass-dark: #4E8234;
+  --color-type-ice: #98D8D8;
+  --color-type-ice-dark: #638D8D;
+  --color-type-fighting: #C03028;
+  --color-type-fighting-dark: #7D1F1A;
+  --color-type-poison: #A040A0;
+  --color-type-poison-dark: #682A68;
+  --color-type-ground: #E0C068;
+  --color-type-ground-dark: #927D44;
+  --color-type-flying: #A890F0;
+  --color-type-flying-dark: #6D5E9C;
+  --color-type-psychic: #F85888;
+  --color-type-psychic-dark: #A13959;
+  --color-type-bug: #A8B820;
+  --color-type-bug-dark: #6D7815;
+  --color-type-rock: #B8A038;
+  --color-type-rock-dark: #786824;
+  --color-type-ghost: #705898;
+  --color-type-ghost-dark: #493963;
+  --color-type-dragon: #7038F8;
+  --color-type-dragon-dark: #4924A1;
+  --color-type-dark: #705848;
+  --color-type-dark-dark: #49392F;
+  --color-type-steel: #B8B8D0;
+  --color-type-steel-dark: #787887;
+  --color-type-fairy: #EE99AC;
+  --color-type-fairy-dark: #9B6470;
+
+  /* ========== LAYOUT-B COLORS ========== */
+  /* Extended palette for 3-column layout */
+  --color-lb-base: #0f1015;
+  --color-lb-elevated: #1d1e26;
+  --color-lb-hover: #252630;
+  --color-lb-border: #3a3b48;
+  --color-lb-text-dim: #5a5b68;
+  --color-lb-accent: #6366f1;
+  --color-lb-accent-glow: rgba(99, 102, 241, 0.3);
+}
