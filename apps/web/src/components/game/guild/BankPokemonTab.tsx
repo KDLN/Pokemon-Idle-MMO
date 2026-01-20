@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
+import { getPokemonSpriteUrl } from '@/types/game'
 import type { GuildBankPokemon } from '@pokemon-idle/shared'
 
 // Type colors for badges
@@ -36,10 +37,14 @@ const POINT_TIER_COLORS: Record<number, string> = {
   25: 'text-yellow-400', // Legendary
 }
 
+type SortOption = 'date' | 'level' | 'name' | 'species' | 'grade' | 'ivs'
+
 export function BankPokemonTab() {
   const [selectedPokemon, setSelectedPokemon] = useState<GuildBankPokemon | null>(null)
   const [selectedOwnPokemon, setSelectedOwnPokemon] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<SortOption>('date')
+  const [sortAsc, setSortAsc] = useState(false)
 
   const guildBank = useGameStore((state) => state.guildBank)
   const myPokemon = useGameStore((state) => state.box)
@@ -51,16 +56,49 @@ export function BankPokemonTab() {
   const canWithdraw = myGuildRole === 'leader' || myGuildRole === 'officer'
   const remainingPoints = myBankLimits?.pokemon_points ?? -1
 
-  // Filter bank Pokemon
+  // Filter and sort bank Pokemon
   const filteredBankPokemon = useMemo(() => {
     if (!guildBank) return []
-    return guildBank.pokemon.filter((p) => {
+
+    let filtered = guildBank.pokemon.filter((p) => {
       if (searchQuery && !p.species_name.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false
       }
       return true
     })
-  }, [guildBank, searchQuery])
+
+    // Sort the filtered results
+    filtered = [...filtered].sort((a, b) => {
+      let comparison = 0
+      switch (sortBy) {
+        case 'date':
+          comparison = new Date(b.deposited_at).getTime() - new Date(a.deposited_at).getTime()
+          break
+        case 'level':
+          comparison = b.level - a.level
+          break
+        case 'name':
+          const nameA = (a.nickname || a.species_name).toLowerCase()
+          const nameB = (b.nickname || b.species_name).toLowerCase()
+          comparison = nameA.localeCompare(nameB)
+          break
+        case 'species':
+          comparison = a.species_name.localeCompare(b.species_name)
+          break
+        case 'grade':
+          comparison = b.point_cost - a.point_cost
+          break
+        case 'ivs':
+          const ivsA = (a.iv_hp || 0) + (a.iv_attack || 0) + (a.iv_defense || 0) + (a.iv_sp_attack || 0) + (a.iv_sp_defense || 0) + (a.iv_speed || 0)
+          const ivsB = (b.iv_hp || 0) + (b.iv_attack || 0) + (b.iv_defense || 0) + (b.iv_sp_attack || 0) + (b.iv_sp_defense || 0) + (b.iv_speed || 0)
+          comparison = ivsB - ivsA
+          break
+      }
+      return sortAsc ? -comparison : comparison
+    })
+
+    return filtered
+  }, [guildBank, searchQuery, sortBy, sortAsc])
 
   // Get depositable Pokemon (not in party, owned by player)
   const depositablePokemon = useMemo(() => {
@@ -128,6 +166,27 @@ export function BankPokemonTab() {
             className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm text-white placeholder-slate-400 w-32"
           />
 
+          {/* Sort Controls */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm text-white"
+          >
+            <option value="date">Date</option>
+            <option value="level">Level</option>
+            <option value="name">Name</option>
+            <option value="species">Species</option>
+            <option value="grade">Grade</option>
+            <option value="ivs">IVs</option>
+          </select>
+          <button
+            onClick={() => setSortAsc(!sortAsc)}
+            className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm text-white"
+            title={sortAsc ? 'Ascending' : 'Descending'}
+          >
+            {sortAsc ? '\u2191' : '\u2193'}
+          </button>
+
           {/* View Mode Toggle */}
           <div className="flex bg-slate-700 rounded overflow-hidden">
             {(['grid', 'list', 'card'] as const).map((mode) => (
@@ -175,6 +234,11 @@ export function BankPokemonTab() {
                   {pokemon.is_shiny && (
                     <span className="absolute top-1 right-1 text-yellow-400 text-xs">*</span>
                   )}
+                  <img
+                    src={getPokemonSpriteUrl(pokemon.species_id, pokemon.is_shiny)}
+                    alt={pokemon.nickname || pokemon.species_name}
+                    className="w-10 h-10 mx-auto pixelated"
+                  />
                   <div className="text-xs text-white truncate">
                     {pokemon.nickname || pokemon.species_name}
                   </div>
@@ -200,6 +264,11 @@ export function BankPokemonTab() {
                   }`}
                 >
                   <div className="flex items-center gap-2">
+                    <img
+                      src={getPokemonSpriteUrl(pokemon.species_id, pokemon.is_shiny)}
+                      alt={pokemon.nickname || pokemon.species_name}
+                      className="w-8 h-8 pixelated"
+                    />
                     {pokemon.is_shiny && <span className="text-yellow-400">*</span>}
                     <span className="text-white">{pokemon.nickname || pokemon.species_name}</span>
                     <span className="text-slate-400 text-sm">Lv.{pokemon.level}</span>
@@ -229,17 +298,24 @@ export function BankPokemonTab() {
                       : 'bg-slate-700 hover:bg-slate-600 border-2 border-transparent'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-white">
-                      {pokemon.is_shiny && <span className="text-yellow-400 mr-1">*</span>}
-                      {pokemon.nickname || pokemon.species_name}
-                    </span>
+                  <div className="flex items-center gap-2 mb-2">
+                    <img
+                      src={getPokemonSpriteUrl(pokemon.species_id, pokemon.is_shiny)}
+                      alt={pokemon.nickname || pokemon.species_name}
+                      className="w-10 h-10 pixelated"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-white truncate block">
+                        {pokemon.is_shiny && <span className="text-yellow-400 mr-1">*</span>}
+                        {pokemon.nickname || pokemon.species_name}
+                      </span>
+                      <span className="text-sm text-slate-400">Level {pokemon.level}</span>
+                    </div>
                     <span className={`text-sm font-bold ${getPointColor(pokemon.point_cost)}`}>
                       {pokemon.point_cost}pt
                     </span>
                   </div>
-                  <div className="text-sm text-slate-400">Level {pokemon.level}</div>
-                  <div className="text-xs text-slate-500 mt-1">
+                  <div className="text-xs text-slate-500">
                     Deposited by {pokemon.deposited_by_username || 'Unknown'}
                   </div>
                   <div className="text-xs text-slate-500">
