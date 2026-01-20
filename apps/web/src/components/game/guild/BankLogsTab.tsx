@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
+import { formatRelativeTime } from '@/lib/ui'
 import type { BankAction, BankCategory } from '@pokemon-idle/shared'
 
 const ACTION_LABELS: Record<BankAction, string> = {
@@ -56,16 +57,20 @@ export function BankLogsTab() {
 
   const formatDetails = (log: typeof logs[0]) => {
     const { details, category } = log
-    if (category === 'currency' && details.amount) {
+    if (category === 'currency' && details.amount !== undefined) {
       return `${details.amount.toLocaleString()} currency`
     }
     if (category === 'item' && details.item_name) {
-      return `${details.quantity || 1}x ${details.item_name}`
+      const quantity = details.quantity || 1
+      return quantity > 1 ? `${quantity}x ${details.item_name}` : details.item_name
     }
     if (category === 'pokemon' && details.pokemon_name) {
-      return `${details.pokemon_name} Lv.${details.pokemon_level}`
+      return `${details.pokemon_name} Lv.${details.pokemon_level || '?'}`
     }
-    return JSON.stringify(details)
+    // Fallback: show raw details in readable format
+    return Object.entries(details)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join(', ')
   }
 
   return (
@@ -119,8 +124,20 @@ export function BankLogsTab() {
               className="bg-slate-700/50 rounded-lg p-3 flex items-center justify-between"
             >
               <div className="flex items-center gap-3">
-                <span className="w-6 h-6 bg-slate-600 rounded flex items-center justify-center text-xs text-slate-300">
-                  {CATEGORY_ICONS[log.category]}
+                <span className={`w-6 h-6 rounded flex items-center justify-center text-xs ${
+                  log.action === 'deposit' ? 'bg-green-500/20 text-green-400' :
+                  log.action === 'withdraw' ? 'bg-orange-500/20 text-orange-400' :
+                  log.action === 'request_created' ? 'bg-blue-500/20 text-blue-400' :
+                  log.action === 'request_fulfilled' ? 'bg-purple-500/20 text-purple-400' :
+                  'bg-slate-600 text-slate-300'
+                }`}>
+                  {log.action === 'deposit' ? '\u2B07' :
+                   log.action === 'withdraw' ? '\u2B06' :
+                   log.action === 'request_created' ? '\u2753' :
+                   log.action === 'request_fulfilled' ? '\u2714' :
+                   log.action === 'request_expired' ? '\u23F0' :
+                   log.action === 'request_cancelled' ? '\u2716' :
+                   CATEGORY_ICONS[log.category]}
                 </span>
                 <div>
                   <div className="flex items-center gap-2">
@@ -139,8 +156,11 @@ export function BankLogsTab() {
                   </div>
                 </div>
               </div>
-              <div className="text-xs text-slate-500">
-                {new Date(log.created_at).toLocaleString()}
+              <div
+                className="text-xs text-slate-500 cursor-help flex-shrink-0"
+                title={new Date(log.created_at).toLocaleString()}
+              >
+                {formatRelativeTime(new Date(log.created_at))}
               </div>
             </div>
           ))}
