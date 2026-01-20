@@ -1,0 +1,38 @@
+/* ============================================
+ * SPACING TOKENS
+ * Based on 4px base unit (0.25rem)
+ * ============================================ */
+
+:root {
+  /* ========== SPACING SCALE ========== */
+  --spacing-0: 0;
+  --spacing-1: 0.25rem;   /* 4px */
+  --spacing-2: 0.5rem;    /* 8px */
+  --spacing-3: 0.75rem;   /* 12px */
+  --spacing-4: 1rem;      /* 16px */
+  --spacing-5: 1.25rem;   /* 20px */
+  --spacing-6: 1.5rem;    /* 24px */
+  --spacing-8: 2rem;      /* 32px */
+  --spacing-10: 2.5rem;   /* 40px */
+  --spacing-12: 3rem;     /* 48px */
+  --spacing-16: 4rem;     /* 64px */
+
+  /* ========== SEMANTIC SPACING ========== */
+  /* Component internal spacing */
+  --spacing-component-xs: var(--spacing-1);
+  --spacing-component-sm: var(--spacing-2);
+  --spacing-component-md: var(--spacing-3);
+  --spacing-component-lg: var(--spacing-4);
+
+  /* Layout spacing (between sections) */
+  --spacing-layout-sm: var(--spacing-4);
+  --spacing-layout-md: var(--spacing-6);
+  --spacing-layout-lg: var(--spacing-8);
+
+  /* ========== BORDER RADIUS ========== */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+}
