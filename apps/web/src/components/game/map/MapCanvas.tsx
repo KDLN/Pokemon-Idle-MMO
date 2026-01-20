@@ -2,8 +2,10 @@
 
 import { useMemo } from 'react'
 import { cn } from '@/lib/ui/cn'
+import { useGameStore } from '@/stores/gameStore'
 import { ConnectionLayer, type RawConnectionData } from './ConnectionLayer'
 import { ZoneNode } from './ZoneNode'
+import { getAllZoneVisibilities } from './mapUtils'
 import type { MapCanvasProps, ZonePosition, ZoneVisibility } from './mapTypes'
 
 // Mock zone data for testing (will be replaced with real data from gameStore)
@@ -34,7 +36,8 @@ const MOCK_ZONES: MockZone[] = [
 
 // Mock zone positions for testing (will be replaced with real data)
 // Kanto map layout: Pallet Town at bottom, going north
-const MOCK_POSITIONS: ZonePosition[] = [
+// Exported for InteractiveMap initial centering
+export const MOCK_POSITIONS: ZonePosition[] = [
   { id: 1, x: 400, y: 550 },  // Pallet Town (start)
   { id: 2, x: 400, y: 450 },  // Route 1
   { id: 3, x: 400, y: 350 },  // Viridian City
@@ -83,7 +86,8 @@ const MOCK_CONNECTIONS: RawConnectionData[] = [
 ]
 
 // Mock current zone for testing
-const MOCK_CURRENT_ZONE_ID = 3 // Viridian City
+// Exported for InteractiveMap initial centering
+export const MOCK_CURRENT_ZONE_ID = 3 // Viridian City
 
 /**
  * MapCanvas - Content layer for zones and connections
@@ -103,6 +107,9 @@ export function MapCanvas({
   height = 650,
   children,
 }: MapCanvasProps) {
+  // Get visited zones from store (persisted)
+  const visitedZones = useGameStore((state) => state.visitedZones)
+
   // Create position lookup map for ConnectionLayer and ZoneNodes
   const positionsMap = useMemo(() => {
     const map = new Map<number, ZonePosition>()
@@ -112,17 +119,23 @@ export function MapCanvas({
     return map
   }, [])
 
-  // Combine zone data with positions for rendering
+  // Calculate visibility for all zones based on visitedZones
+  const zoneVisibilities = useMemo(() => {
+    const zoneIds = MOCK_ZONES.map(z => z.id)
+    return getAllZoneVisibilities(zoneIds, visitedZones, MOCK_CONNECTIONS)
+  }, [visitedZones])
+
+  // Combine zone data with positions and visibility for rendering
   const zoneNodesData = useMemo(() => {
     return MOCK_ZONES.map(zone => {
       const position = positionsMap.get(zone.id)
       if (!position) return null
+      const visibility = zoneVisibilities.get(zone.id) ?? 'hidden'
       return {
         ...zone,
         position,
         isCurrent: zone.id === MOCK_CURRENT_ZONE_ID,
-        // For now, all zones are 'visited' (fog of war to be implemented later)
-        visibility: 'visited' as ZoneVisibility,
+        visibility,
       }
     }).filter(Boolean) as Array<{
       id: number
@@ -134,7 +147,7 @@ export function MapCanvas({
       isCurrent: boolean
       visibility: ZoneVisibility
     }>
-  }, [positionsMap])
+  }, [positionsMap, zoneVisibilities])
 
   // Handle zone click (console.log for now, will be wired to travel later)
   const handleZoneClick = (zoneId: number) => {
@@ -175,6 +188,7 @@ export function MapCanvas({
         connections={MOCK_CONNECTIONS}
         positions={positionsMap}
         currentZoneId={MOCK_CURRENT_ZONE_ID}
+        zoneVisibilities={zoneVisibilities}
         width={width}
         height={height}
       />
