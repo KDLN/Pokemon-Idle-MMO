@@ -9,12 +9,13 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 
 ## Current Position
 
-Phase: 18 - Component Updates (IN PROGRESS)
-Plan: 01 of 3 complete
-Status: In progress
-Last activity: 2026-01-21 - Completed 18-01-PLAN.md (Upper Screen Components)
+Phase: 18 - Component Updates (COMPLETE)
+Plan: 03 of 3 complete
+Status: Phase complete
+Last activity: 2026-01-21 - Completed 18-03-PLAN.md (Social & Mobile Polish)
 
-Progress: v1.0 + v1.1 shipped, v1.2 plan 7/~12 complete
+Progress: v1.0 + v1.1 shipped, v1.2 plan 9/~12 complete
+[##########--------] 75%
 
 ## Milestones
 
@@ -26,7 +27,7 @@ Progress: v1.0 + v1.1 shipped, v1.2 plan 7/~12 complete
 
 ## Next Steps
 
-Phase 18-01 complete. Ready for 18-02 (Zone view styling) or 18-03 (Social area styling).
+Phase 18 complete. Ready for Phase 19 (final polish/cleanup).
 
 ## Accumulated Context
 
@@ -74,6 +75,19 @@ All v1.0 and v1.1 decisions documented in PROJECT.md Key Decisions table.
 - Map device wrapper uses red/yellow/green indicator dots for retro handheld feel
 - Travel buttons get texture-noise class and updated hover states
 
+**Phase 18-02 Decisions:**
+- Time-of-day system: 4 periods (dawn, day, dusk, night) based on server time
+- Zone gradients: forest=green, cave=gray, water=blue shades
+- PokemonCard styling matches Mock with HP bar color states
+
+**Phase 18-03 Decisions:**
+- Guild leader usernames: text-yellow-400 (gold)
+- Officer usernames: text-blue-400
+- Member usernames: text-purple-400
+- BeveledButton hue=240 for Send button
+- Mobile tab order: Zone / Party / Social / Map
+- Tab underline uses brand-primary color
+
 ### Open Items
 
 - Sound/audio system: Consider for v1.3
@@ -82,7 +96,7 @@ All v1.0 and v1.1 decisions documented in PROJECT.md Key Decisions table.
 
 ### Blockers/Concerns
 
-None - Phase 18-01 complete
+None - Phase 18 complete
 
 Production migration notes (apply if not already done):
 - 031_fix_quest_details.sql
@@ -91,8 +105,8 @@ Production migration notes (apply if not already done):
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 18-01-PLAN.md (Upper Screen Components)
+Stopped at: Completed 18-03-PLAN.md (Social & Mobile Polish)
 Resume file: None
 
 ---
-*State updated: 2026-01-21 after completing 18-01-PLAN.md*
+*State updated: 2026-01-21 after completing 18-03-PLAN.md*
