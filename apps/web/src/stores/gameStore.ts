@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Player, Pokemon, Zone, EncounterEvent, LevelUpEvent, PendingEvolution, ShopItem, LeaderboardEntry, LeaderboardType, LeaderboardTimeframe, PlayerRank } from '@/types/game'
+import type { Player, Pokemon, Zone, EncounterEvent, LevelUpEvent, PendingEvolution, ShopItem, LeaderboardEntry, LeaderboardType, LeaderboardTimeframe, PlayerRank, WildPokemon } from '@/types/game'
+import type { BattleTurn } from '@pokemon-idle/shared'
 import type { ChatMessageData, ChatChannel, WhisperMessageData, BlockedPlayerData } from '@/types/chat'
 import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
 import type { IncomingTradeRequest, OutgoingTradeRequest, ActiveTradeSession, TradeOffer, TradeHistoryEntry } from '@/types/trade'
@@ -389,6 +390,101 @@ interface GameStore {
   openPlayerModal: (player: { id: string; username: string; guild_id?: string | null; is_online?: boolean; is_friend?: boolean }) => void
   closePlayerModal: () => void
 
+  // Progressive battle state
+  activeBattle: {
+    wildPokemon: WildPokemon
+    leadPokemon: {
+      id: string
+      name: string
+      level: number
+      current_hp: number
+      max_hp: number
+      species_id: number
+      is_shiny: boolean
+    }
+    playerFirst: boolean
+    status: 'intro' | 'battling' | 'catching' | 'complete' | 'summary'
+    currentTurn: BattleTurn | null
+    playerHP: number
+    wildHP: number
+    playerMaxHP: number
+    wildMaxHP: number
+    canCatch: boolean
+    catchResult: {
+      shakeCount: number
+      success: boolean
+      isNewPokedexEntry: boolean
+      catchStrength: number
+    } | null
+    catchComplete: {
+      caught_pokemon: Pokemon
+      xp_earned: number
+      is_new_pokedex_entry: boolean
+    } | null
+    battleSummary: {
+      outcome: 'timeout' | 'win' | 'lose'
+      message: string
+    } | null
+  } | null
+  setActiveBattle: (battle: {
+    wildPokemon: WildPokemon
+    leadPokemon: {
+      id: string
+      name: string
+      level: number
+      current_hp: number
+      max_hp: number
+      species_id: number
+      is_shiny: boolean
+    }
+    playerFirst: boolean
+    status: 'intro' | 'battling' | 'catching' | 'complete' | 'summary'
+    currentTurn: BattleTurn | null
+    playerHP: number
+    wildHP: number
+    playerMaxHP: number
+    wildMaxHP: number
+    canCatch: boolean
+    catchResult: {
+      shakeCount: number
+      success: boolean
+      isNewPokedexEntry: boolean
+      catchStrength: number
+    } | null
+    catchComplete: {
+      caught_pokemon: Pokemon
+      xp_earned: number
+      is_new_pokedex_entry: boolean
+    } | null
+    battleSummary: {
+      outcome: 'timeout' | 'win' | 'lose'
+      message: string
+    } | null
+  } | null) => void
+  setBattleTurn: (data: {
+    turn: BattleTurn
+    battleStatus: 'ongoing' | 'player_win' | 'player_faint'
+    playerHP: number
+    wildHP: number
+    canCatch: boolean
+  }) => void
+  setCatchResult: (data: {
+    shakeCount: number
+    success: boolean
+    isNewPokedexEntry: boolean
+    catchStrength: number
+  }) => void
+  setCatchComplete: (data: {
+    caught_pokemon: Pokemon
+    xp_earned: number
+    is_new_pokedex_entry: boolean
+  }) => void
+  setBattleSummary: (data: {
+    outcome: 'timeout' | 'win' | 'lose'
+    message: string
+  }) => void
+  clearActiveBattle: () => void
+
   // Reset store
   reset: () => void
 }
@@ -520,6 +616,42 @@ const initialState = {
   expiredBoosts: [] as GuildBuffType[],
   // Guild bank view preference (persisted)
   guildBankViewMode: 'grid' as GuildBankViewMode,
+  // Progressive battle state
+  activeBattle: null as {
+    wildPokemon: WildPokemon
+    leadPokemon: {
+      id: string
+      name: string
+      level: number
+      current_hp: number
+      max_hp: number
+      species_id: number
+      is_shiny: boolean
+    }
+    playerFirst: boolean
+    status: 'intro' | 'battling' | 'catching' | 'complete' | 'summary'
+    currentTurn: BattleTurn | null
+    playerHP: number
+    wildHP: number
+    playerMaxHP: number
+    wildMaxHP: number
+    canCatch: boolean
+    catchResult: {
+      shakeCount: number
+      success: boolean
+      isNewPokedexEntry: boolean
+      catchStrength: number
+    } | null
+    catchComplete: {
+      caught_pokemon: Pokemon
+      xp_earned: number
+      is_new_pokedex_entry: boolean
+    } | null
+    battleSummary: {
+      outcome: 'timeout' | 'win' | 'lose'
+      message: string
+    } | null
+  } | null,
 }
 
 export const useGameStore = create<GameStore>()(
@@ -1339,6 +1471,51 @@ export const useGameStore = create<GameStore>()(
   selectedPlayer: null,
   openPlayerModal: (player) => set({ selectedPlayer: player }),
   closePlayerModal: () => set({ selectedPlayer: null }),
+
+  // Progressive battle actions
+  setActiveBattle: (battle) => set({ activeBattle: battle ? { ...battle, canCatch: false, catchResult: null, catchComplete: null, battleSummary: null } : null }),
+
+  setBattleTurn: (data) => set((state) => ({
+    activeBattle: state.activeBattle ? {
+      ...state.activeBattle,
+      status: data.battleStatus === 'ongoing' ? 'battling' : (data.canCatch ? 'catching' : 'complete'),
+      currentTurn: data.turn,
+      playerHP: data.playerHP,
+      wildHP: data.wildHP,
+      canCatch: data.canCatch
+    } : null
+  })),
+
+  setCatchResult: (data) => set((state) => ({
+    activeBattle: state.activeBattle ? {
+      ...state.activeBattle,
+      status: 'catching',
+      catchResult: {
+        shakeCount: data.shakeCount,
+        success: data.success,
+        isNewPokedexEntry: data.isNewPokedexEntry,
+        catchStrength: data.catchStrength
+      }
+    } : null
+  })),
+
+  setCatchComplete: (data) => set((state) => ({
+    activeBattle: state.activeBattle ? {
+      ...state.activeBattle,
+      status: 'complete',
+      catchComplete: data
+    } : null
+  })),
+
+  setBattleSummary: (data) => set((state) => ({
+    activeBattle: state.activeBattle ? {
+      ...state.activeBattle,
+      status: 'summary',
+      battleSummary: data
+    } : null
+  })),
+
+  clearActiveBattle: () => set({ activeBattle: null }),
 
   reset: () => set(initialState),
     }),
