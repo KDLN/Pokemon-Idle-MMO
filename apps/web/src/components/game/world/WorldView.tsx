@@ -146,6 +146,17 @@ export function WorldView({ className = '' }: WorldViewProps) {
         )}
       </div>
 
+      {/* Ambient particles - only on routes/forests */}
+      {isRoute && (
+        <>
+          <div className="absolute top-6 left-8 w-1 h-1 rounded-full bg-green-300/50 animate-pulse" aria-hidden="true" />
+          <div className="absolute top-12 right-12 w-1.5 h-1.5 rounded-full bg-yellow-300/40 animate-pulse" aria-hidden="true" />
+          <div className="absolute bottom-16 left-16 w-1 h-1 rounded-full bg-green-400/50 animate-pulse" aria-hidden="true" />
+          <div className="absolute top-20 left-1/4 w-1 h-1 rounded-full bg-emerald-300/40 animate-pulse" aria-hidden="true" />
+          <div className="absolute bottom-12 right-1/4 w-1.5 h-1.5 rounded-full bg-lime-300/30 animate-pulse" aria-hidden="true" />
+        </>
+      )}
+
       {/* Status overlay */}
       <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end pointer-events-none">
         {/* Zone info */}
