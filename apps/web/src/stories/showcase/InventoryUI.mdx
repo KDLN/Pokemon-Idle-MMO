@@ -1,0 +1,132 @@
+import { Canvas, Meta } from '@storybook/blocks';
+import * as ButtonStories from '../../components/ui/Button.stories';
+import * as CardStories from '../../components/ui/Card.stories';
+import * as BadgeStories from '../../components/ui/Badge.stories';
+
+<Meta title="Showcase/Inventory UI" />
+
+# Inventory UI Components
+
+Components for shop, box, pokedex, and boost panels. These manage the player's items and Pokemon collection.
+
+---
+
+## Action Buttons
+
+Buttons for purchasing items, managing Pokemon, and activating boosts.
+
+<Canvas of={ButtonStories.Variants} />
+
+### Button Sizes
+
+Various sizes for inventory actions.
+
+<Canvas of={ButtonStories.Sizes} />
+
+---
+
+## Item and Pokemon Cards
+
+Cards displaying items in shop, Pokemon in box, and species in pokedex.
+
+<Canvas of={CardStories.Variants} />
+
+### Card Padding Options
+
+Different padding for compact vs detailed views.
+
+<Canvas of={CardStories.Padding} />
+
+### Cards with Headers
+
+Section headers for inventory panels.
+
+<Canvas of={CardStories.WithHeader} />
+
+---
+
+## Badges
+
+Status and quality indicators for items and Pokemon.
+
+<Canvas of={BadgeStories.Variants} />
+
+### Type Badges
+
+Pokemon types shown in box and pokedex views.
+
+<Canvas of={BadgeStories.PokemonTypes} />
+
+---
+
+## Beveled Buttons (Modern Theme)
+
+3D beveled buttons for purchase and action CTAs in modern theme.
+
+<Canvas of={ButtonStories.Beveled} />
+
+<Canvas of={ButtonStories.BeveledColors} />
+
+---
+
+## Loading States
+
+Buttons during purchase processing or box operations.
+
+<Canvas of={ButtonStories.Loading} />
+
+## Disabled States
+
+Actions when insufficient funds or inventory full.
+
+<Canvas of={ButtonStories.Disabled} />
+
+<Canvas of={ButtonStories.BeveledDisabled} />
+
+---
+
+## Components Without Stories (Planned)
+
+The following inventory-specific components don't have dedicated stories yet:
+
+### Shop Panel
+- Item grid with prices
+- Currency display
+- Purchase button per item
+- Quantity selector
+- "Sold out" state
+- Price comparison (sale vs normal)
+
+### Box Panel (Pokemon Storage)
+- Grid layout of stored Pokemon
+- Selection checkboxes
+- Sorting controls (by level, name, type)
+- Filter by type
+- Transfer to party action
+- Release Pokemon (with confirmation)
+
+### Pokedex Panel
+- Species list with catch status
+- Silhouette for uncaught
+- Full art for caught
+- Type filter tabs
+- Catch count and percentage
+
+### Boost/Buff Cards
+- Active buff icon and name
+- Countdown timer (MM:SS / HH:MM:SS)
+- Red + pulse animation when <1 min
+- Buff effect description
+- "Expired" state
+
+### Item Card
+- Item icon/image
+- Item name and description
+- Quantity owned
+- Use/Equip button
+- Sell option
+
+### Currency Display
+- Gold/coins amount
+- Premium currency amount
+- Animated increment on gain

@@ -1,0 +1,196 @@
+import { Canvas, Meta } from '@storybook/blocks';
+import * as ButtonStories from '../../components/ui/Button.stories';
+import * as CardStories from '../../components/ui/Card.stories';
+import * as BadgeStories from '../../components/ui/Badge.stories';
+
+<Meta title="Showcase/Core UI" />
+
+# Core UI Components
+
+Reusable components used throughout the application. This is the comprehensive component library.
+
+---
+
+## Buttons
+
+The primary interactive element for user actions.
+
+### All Variants
+
+<Canvas of={ButtonStories.Variants} />
+
+### All Sizes
+
+<Canvas of={ButtonStories.Sizes} />
+
+### Loading State
+
+<Canvas of={ButtonStories.Loading} />
+
+### Disabled State
+
+<Canvas of={ButtonStories.Disabled} />
+
+### With Icons
+
+<Canvas of={ButtonStories.WithIcons} />
+
+### Icon-Only Buttons
+
+<Canvas of={ButtonStories.IconButtons} />
+
+---
+
+## Beveled Buttons (Modern Theme)
+
+3D buttons with raised shadow effect for the modern game aesthetic.
+
+### Default Beveled
+
+<Canvas of={ButtonStories.Beveled} />
+
+### Color Variants
+
+<Canvas of={ButtonStories.BeveledColors} />
+
+### Interactive Demo
+
+<Canvas of={ButtonStories.BeveledInteractive} />
+
+### Disabled State
+
+<Canvas of={ButtonStories.BeveledDisabled} />
+
+---
+
+## Cards
+
+Container component for grouping related content.
+
+### Default Card
+
+<Canvas of={CardStories.Default} />
+
+### All Variants
+
+<Canvas of={CardStories.Variants} />
+
+### Padding Options
+
+<Canvas of={CardStories.Padding} />
+
+### With Header
+
+<Canvas of={CardStories.WithHeader} />
+
+### Header Variations
+
+<Canvas of={CardStories.HeaderVariations} />
+
+### Nested Cards
+
+<Canvas of={CardStories.Nested} />
+
+---
+
+## Badges
+
+Compact labels for status, categories, or metadata.
+
+### Default Badge
+
+<Canvas of={BadgeStories.Default} />
+
+### All Variants
+
+<Canvas of={BadgeStories.Variants} />
+
+### Badge Sizes
+
+<Canvas of={BadgeStories.Sizes} />
+
+### Pokemon Type Badges
+
+<Canvas of={BadgeStories.PokemonTypes} />
+
+### Type Badge Sizes
+
+<Canvas of={BadgeStories.TypeBadgeSizes} />
+
+### Types in Context
+
+<Canvas of={BadgeStories.InContext} />
+
+### Status in Context
+
+<Canvas of={BadgeStories.StatusInContext} />
+
+---
+
+## Components Without Stories (Planned)
+
+The following core components need dedicated stories:
+
+### Progress Bar
+- HP bars (green to yellow to red based on percentage)
+- XP bars (blue gradient)
+- Loading indicators (animated)
+- Custom colors and heights
+
+### Tooltip
+- Hover information displays
+- Click-to-show on mobile
+- Positioning (top, bottom, left, right)
+- Rich content support
+
+### Modal / Dialog
+- Confirmation dialogs
+- Information popups
+- Form modals
+- Full-screen on mobile
+
+### Input Fields
+- Text input with label
+- Number input with increment/decrement
+- Search input with clear button
+- Validation states (error, success)
+
+### Select / Dropdown
+- Single select
+- Multi-select (checkboxes)
+- Searchable dropdown
+- Option groups
+
+### Tabs
+- Tab list with active indicator
+- Tab panels with content
+- Scrollable tabs for mobile
+- Icon-only tabs
+
+### Toggle / Switch
+- On/off toggle
+- With label
+- Disabled state
+
+### Toast / Notification
+- Success, error, warning, info variants
+- Auto-dismiss with countdown
+- Action button support
+- Stacking behavior
+
+### Skeleton Loader
+- Text skeleton
+- Card skeleton
+- List skeleton
+- Animated shimmer effect
+
+### Avatar
+- Player avatar images
+- Size variants
+- Status indicator dot
+- Fallback initials
+
+### Divider
+- Horizontal rule
+- Vertical divider
+- With text label
