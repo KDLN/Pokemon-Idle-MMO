@@ -186,7 +186,7 @@ export type {
 // Backend-only types below
 // ========================
 
-import type { Player, Pokemon, PokemonSpecies, Zone, PendingEvolution, Trade, PlayerGuildInfo } from '@pokemon-idle/shared'
+import type { Player, Pokemon, PokemonSpecies, Zone, PendingEvolution, Trade, PlayerGuildInfo, BallType } from '@pokemon-idle/shared'
 
 // Move data (backend battle calculation)
 export interface Move {
@@ -206,6 +206,19 @@ export interface EncounterTableEntry {
   species_id: number
   encounter_rate: number
   species?: PokemonSpecies
+}
+
+// Progressive battle payloads
+export interface StartBattlePayload {
+  // Empty - battle starts automatically from encounter
+}
+
+export interface RequestTurnPayload {
+  // Empty - server knows which battle from player session
+}
+
+export interface AttemptCatchPayload {
+  ball_type: BallType
 }
 
 // Player session state (in-memory only)
