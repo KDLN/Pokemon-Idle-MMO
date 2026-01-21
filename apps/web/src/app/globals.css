@@ -1875,6 +1875,48 @@ html {
   letter-spacing: 0.5px;
 }
 
+/* ===== MAP DEVICE - Handheld aesthetic ===== */
+.map-device {
+  margin: 12px;
+  border-radius: 12px;
+  background: var(--color-surface-base);
+  border: 1px solid var(--color-border-subtle);
+  overflow: hidden;
+}
+
+.map-device-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--color-surface-elevated);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.map-indicator-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.map-dot-red,
+.map-dot-yellow,
+.map-dot-green {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.map-dot-red { background: #ef4444; }
+.map-dot-yellow { background: #eab308; }
+.map-dot-green { background: #22c55e; }
+
+.map-device-label {
+  font-size: 9px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
 .map-canvas {
   position: relative;
   height: 180px;
@@ -1940,23 +1982,21 @@ html {
 
 .current-location {
   padding: 12px 14px;
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border-subtle);
+  text-align: center;
 }
 
 .location-label {
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  color: var(--lb-text-dim);
+  font-size: 10px;
+  color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.1em;
   margin-bottom: 4px;
 }
 
 .location-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--lb-green);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
 }
 
 .travel-section {
@@ -1985,8 +2025,8 @@ html {
   gap: 8px;
   padding: 10px 12px;
   min-height: 44px; /* WCAG touch target */
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  background: var(--color-surface-hover);
+  border: 1px solid transparent;
   border-radius: 8px;
   color: var(--text-secondary);
   font-family: inherit;
@@ -1997,8 +2037,8 @@ html {
 }
 
 .travel-btn:hover {
-  background: var(--lb-bg-hover);
-  border-color: var(--lb-accent);
+  background: var(--color-border-subtle);
+  border-color: var(--color-border-bright);
   color: var(--text-primary);
 }
 

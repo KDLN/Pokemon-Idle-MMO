@@ -71,8 +71,20 @@ function MapSidebar({ className = '' }: { className?: string }) {
 
   return (
     <div className={`map-sidebar ${className}`}>
-      {/* Interactive Map - replaces static map-canvas */}
-      <InteractiveMap />
+      {/* Map with handheld device aesthetic */}
+      <div className="map-device">
+        {/* Header bar with indicator dots */}
+        <div className="map-device-header">
+          <div className="map-indicator-dots">
+            <div className="map-dot-red" />
+            <div className="map-dot-yellow" />
+            <div className="map-dot-green" />
+          </div>
+          <span className="map-device-label">Map</span>
+        </div>
+        {/* Interactive Map */}
+        <InteractiveMap />
+      </div>
 
       <div className="current-location">
         <div className="location-label">Current Location</div>
@@ -85,11 +97,11 @@ function MapSidebar({ className = '' }: { className?: string }) {
           {sortedConnectedZones.map(zone => (
             <button
               key={zone.id}
-              className="travel-btn"
+              className="travel-btn texture-noise"
               onClick={() => gameSocket.moveToZone(zone.id)}
             >
               {zone.direction && (
-                <span className="direction-arrow text-[var(--color-text-secondary)]">
+                <span className="direction-arrow text-[var(--color-text-muted)]">
                   {DIRECTION_ARROWS[zone.direction]}
                 </span>
               )}
@@ -106,7 +118,7 @@ function MapSidebar({ className = '' }: { className?: string }) {
         <div className="section-label">News & Events</div>
         <div className="news-list">
           {NEWS_ITEMS.map(item => (
-            <div key={item.id} className={`news-item ${item.type}`}>
+            <div key={item.id} className={`news-item texture-noise ${item.type}`}>
               <div className="news-icon">
                 {item.type === 'event' ? '🎉' : item.type === 'news' ? '📰' : '🔧'}
               </div>
@@ -177,7 +189,7 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
       <div className="social-tabs" role="tablist" aria-label="Social sections">
         <button
           id="social-tab-chat"
-          className={`stab ${tab === 'chat' ? 'active' : ''}`}
+          className={`stab ${tab === 'chat' ? 'active border-b-2 border-[var(--color-brand-primary)]' : ''}`}
           onClick={() => setTab('chat')}
           onKeyDown={(e) => handleTabKeyDown(e, 'chat')}
           role="tab"
@@ -185,11 +197,11 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
           aria-controls="social-panel-chat"
           tabIndex={tab === 'chat' ? 0 : -1}
         >
-          💬 Chat
+          {'\uD83D\uDCAC'} Chat
         </button>
         <button
           id="social-tab-friends"
-          className={`stab ${tab === 'friends' ? 'active' : ''}`}
+          className={`stab ${tab === 'friends' ? 'active border-b-2 border-[var(--color-brand-primary)]' : ''}`}
           onClick={() => setTab('friends')}
           onKeyDown={(e) => handleTabKeyDown(e, 'friends')}
           role="tab"
@@ -197,14 +209,14 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
           aria-controls="social-panel-friends"
           tabIndex={tab === 'friends' ? 0 : -1}
         >
-          👥 <span className="friend-count">{onlineCount}</span>
+          {'\uD83D\uDC65'} <span className="friend-count">{onlineCount}</span>
           {friendRequestCount > 0 && (
             <span className="trade-count ml-1">{friendRequestCount}</span>
           )}
         </button>
         <button
           id="social-tab-trades"
-          className={`stab ${tab === 'trades' ? 'active' : ''}`}
+          className={`stab ${tab === 'trades' ? 'active border-b-2 border-[var(--color-brand-primary)]' : ''}`}
           onClick={() => setTab('trades')}
           onKeyDown={(e) => handleTabKeyDown(e, 'trades')}
           role="tab"
@@ -212,14 +224,14 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
           aria-controls="social-panel-trades"
           tabIndex={tab === 'trades' ? 0 : -1}
         >
-          🔄 Trades
+          {'\uD83D\uDD04'} Trades
           {tradeRequestCount > 0 && (
             <span className="trade-count">{tradeRequestCount}</span>
           )}
         </button>
         <button
           id="social-tab-guild"
-          className={`stab ${tab === 'guild' ? 'active' : ''}`}
+          className={`stab ${tab === 'guild' ? 'active border-b-2 border-[var(--color-brand-primary)]' : ''}`}
           onClick={() => setTab('guild')}
           onKeyDown={(e) => handleTabKeyDown(e, 'guild')}
           role="tab"
