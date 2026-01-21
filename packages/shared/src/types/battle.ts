@@ -54,3 +54,28 @@ export interface GymBattleMatchup {
   outcome: 'player_pokemon_faint' | 'gym_pokemon_faint'
   player_final_hp: number
 }
+
+// Battle status for progressive turns
+export type BattleStatus = 'battling' | 'catching' | 'complete' | 'timeout'
+
+// Server -> Client: Single turn data
+export interface BattleTurnMessage {
+  turn: BattleTurn
+  battleStatus: 'ongoing' | 'player_win' | 'player_faint'
+  playerHP: number
+  wildHP: number
+  canCatch: boolean  // true only after player wins
+}
+
+// Client -> Server: Request next turn
+export interface RequestTurnPayload {
+  battle_id: string
+}
+
+// Server -> Client: Catch result with animation data
+export interface CatchResultMessage {
+  shakeCount: number  // Always 3 for suspense
+  success: boolean
+  isNewPokedexEntry: boolean
+  catchStrength: number  // For catch meter display
+}
