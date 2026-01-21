@@ -9,13 +9,13 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 
 ## Current Position
 
-Phase: 18 - Component Updates (COMPLETE)
-Plan: 03 of 3 complete
-Status: Phase complete
-Last activity: 2026-01-21 - Completed 18-03-PLAN.md (Social & Mobile Polish)
+Phase: 19 - Cleanup & Polish (IN PROGRESS)
+Plan: 01 of ~2 complete
+Status: In progress
+Last activity: 2026-01-21 - Completed 19-01-PLAN.md (Remove experimental code, fix ESLint errors)
 
-Progress: v1.0 + v1.1 shipped, v1.2 plan 9/~12 complete
-[##########--------] 75%
+Progress: v1.0 + v1.1 shipped, v1.2 plan 10/~12 complete
+[###########-------] 83%
 
 ## Milestones
 
@@ -88,6 +88,12 @@ All v1.0 and v1.1 decisions documented in PROJECT.md Key Decisions table.
 - Mobile tab order: Zone / Party / Social / Map
 - Tab underline uses brand-primary color
 
+**Phase 19-01 Decisions:**
+- useReducer pattern for complex state management with atomic updates
+- Seeded random functions (Math.sin-based) for deterministic render-time calculations
+- setTimeout(..., 0) pattern for queuing state updates outside effect body
+- Removed experimental MockGameScreen and /theme-compare route after Modern theme adoption complete
+
 ### Open Items
 
 - Sound/audio system: Consider for v1.3
@@ -96,17 +102,22 @@ All v1.0 and v1.1 decisions documented in PROJECT.md Key Decisions table.
 
 ### Blockers/Concerns
 
-None - Phase 18 complete
+None - Codebase clean and production-ready
 
 Production migration notes (apply if not already done):
 - 031_fix_quest_details.sql
 - 032_zone_directions.sql
 
+**Code Quality Status:**
+- ESLint: 0 errors (only acceptable img element warnings)
+- TypeScript build: Passing
+- React 19 strict mode: Compliant
+
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 18-03-PLAN.md (Social & Mobile Polish)
+Stopped at: Completed 19-01-PLAN.md (Cleanup & Polish)
 Resume file: None
 
 ---
-*State updated: 2026-01-21 after completing 18-03-PLAN.md*
+*State updated: 2026-01-21 after completing 19-01-PLAN.md*
