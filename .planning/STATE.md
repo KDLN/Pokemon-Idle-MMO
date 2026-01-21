@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 
 ## Current Position
 
-Phase: 17 - Theme Styling (IN PROGRESS)
-Plan: 02 of 3 complete
-Status: In progress
-Last activity: 2026-01-21 - Completed 17-01-PLAN.md (Enable Modern theme globally)
+Phase: 17 - Theme Styling (COMPLETE)
+Plan: 03 of 3 complete
+Status: Phase complete
+Last activity: 2026-01-21 - Completed 17-03-PLAN.md (Button & Input Styling)
 
-Progress: v1.0 + v1.1 shipped, v1.2 plan 5/~12 complete
+Progress: v1.0 + v1.1 shipped, v1.2 plan 6/~12 complete
 
 ## Milestones
 
@@ -26,9 +26,7 @@ Progress: v1.0 + v1.1 shipped, v1.2 plan 5/~12 complete
 
 ## Next Steps
 
-Phase 17 Theme Styling in progress (plan 02 of 03 complete). Continue with:
-1. Execute remaining Phase 17 plans
-2. Run `/gsd:execute-phase 17 03` to continue theme styling
+Phase 17 Theme Styling complete. Ready for Phase 18 or next phase planning.
 
 ## Accumulated Context
 
@@ -62,6 +60,14 @@ All v1.0 and v1.1 decisions documented in PROJECT.md Key Decisions table.
 - Ambient particles only visible on route/forest zones, not towns
 - Particles use green/yellow/emerald/lime color mix for natural atmosphere
 
+**Phase 17-03 Decisions:**
+- Shop buttons use green (hue=120) to indicate positive commerce action
+- Gym buttons use red (hue=0) to indicate combat/challenging action
+- Pokemon Center uses blue (hue=200) for healing/utility action
+- Locked town actions keep muted dashed border style, not beveled
+- Disabled shop buy buttons use flat gray, not beveled (no tactile feel when unusable)
+- Input inset shadow creates pressed-in appearance matching beveled buttons
+
 ### Open Items
 
 - Sound/audio system: Consider for v1.3
@@ -79,8 +85,8 @@ Production migration notes (apply if not already done):
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 17-01-PLAN.md (Enable Modern theme globally)
+Stopped at: Completed 17-03-PLAN.md (Button & Input Styling)
 Resume file: None
 
 ---
-*State updated: 2026-01-21 after completing 17-01-PLAN.md*
+*State updated: 2026-01-21 after completing 17-03-PLAN.md*
