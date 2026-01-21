@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useReducer } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import { getPokemonSpriteUrl } from '@/types/game'
@@ -13,31 +13,72 @@ type EvolutionPhase =
   | 'reveal'          // New form revealed
   | 'congratulations' // "Congratulations! Your [Pokemon] evolved into [NewPokemon]!"
 
+// Create a seeded random function for deterministic sparkle positions
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 9999) * 10000
+  return x - Math.floor(x)
+}
+
+type EvolutionState = {
+  phase: EvolutionPhase
+  canCancel: boolean
+  evolutionId: number | null
+}
+
+type EvolutionAction =
+  | { type: 'START_NEW_EVOLUTION'; evolutionId: number }
+  | { type: 'SET_PHASE'; phase: EvolutionPhase }
+  | { type: 'DISABLE_CANCEL' }
+
+function evolutionReducer(state: EvolutionState, action: EvolutionAction): EvolutionState {
+  switch (action.type) {
+    case 'START_NEW_EVOLUTION':
+      // Only reset if this is actually a new evolution
+      if (action.evolutionId === state.evolutionId) return state
+      return {
+        phase: 'intro',
+        canCancel: true,
+        evolutionId: action.evolutionId
+      }
+    case 'SET_PHASE':
+      return { ...state, phase: action.phase }
+    case 'DISABLE_CANCEL':
+      return { ...state, canCancel: false }
+    default:
+      return state
+  }
+}
+
 export function EvolutionModal() {
   const activeEvolution = useGameStore((state) => state.activeEvolution)
   const setActiveEvolution = useGameStore((state) => state.setActiveEvolution)
   const completeEvolutionAndAdvance = useGameStore((state) => state.completeEvolutionAndAdvance)
 
-  const [phase, setPhase] = useState<EvolutionPhase>('intro')
-  const [canCancel, setCanCancel] = useState(true)
+  // Use reducer for atomic state updates
+  const [state, dispatch] = useReducer(evolutionReducer, {
+    phase: 'intro',
+    canCancel: true,
+    evolutionId: null
+  })
 
-  // Memoize sparkle positions to avoid layout thrashing on re-renders
-  const sparklePositions = useMemo(() =>
-    [...Array(20)].map((_, i) => ({
-      left: `${15 + Math.random() * 70}%`,
-      top: `${15 + Math.random() * 70}%`,
-      animationDelay: `${i * 0.15}s`,
-      animationDuration: `${1 + Math.random() * 0.5}s`
-    })), [activeEvolution?.pokemon_id] // Regenerate when new evolution starts
-  )
+  const { phase, canCancel } = state
 
-  // Reset phase when new evolution starts
+  // Detect new evolution and reset state
   useEffect(() => {
     if (activeEvolution) {
-      setPhase('intro')
-      setCanCancel(true)
+      dispatch({ type: 'START_NEW_EVOLUTION', evolutionId: activeEvolution.pokemon_id })
     }
-  }, [activeEvolution?.pokemon_id])
+  }, [activeEvolution])
+
+  // Generate sparkle positions once on mount using seeded random for deterministic but random-looking positions
+  const [sparklePositions] = useState(() =>
+    [...Array(20)].map((_, i) => ({
+      left: `${15 + seededRandom(i) * 70}%`,
+      top: `${15 + seededRandom(i + 100) * 70}%`,
+      animationDelay: `${i * 0.15}s`,
+      animationDuration: `${1 + seededRandom(i + 200) * 0.5}s`
+    }))
+  )
 
   // Progress through phases automatically
   useEffect(() => {
@@ -46,16 +87,16 @@ export function EvolutionModal() {
     let timer: NodeJS.Timeout
 
     if (phase === 'intro') {
-      timer = setTimeout(() => setPhase('glowing'), 2000)
+      timer = setTimeout(() => dispatch({ type: 'SET_PHASE', phase: 'glowing' }), 2000)
     } else if (phase === 'glowing') {
       timer = setTimeout(() => {
-        setCanCancel(false) // Can't cancel once transformation starts
-        setPhase('transforming')
+        dispatch({ type: 'DISABLE_CANCEL' })
+        dispatch({ type: 'SET_PHASE', phase: 'transforming' })
       }, 3000)
     } else if (phase === 'transforming') {
-      timer = setTimeout(() => setPhase('reveal'), 2000)
+      timer = setTimeout(() => dispatch({ type: 'SET_PHASE', phase: 'reveal' }), 2000)
     } else if (phase === 'reveal') {
-      timer = setTimeout(() => setPhase('congratulations'), 1500)
+      timer = setTimeout(() => dispatch({ type: 'SET_PHASE', phase: 'congratulations' }), 1500)
     }
 
     return () => clearTimeout(timer)
