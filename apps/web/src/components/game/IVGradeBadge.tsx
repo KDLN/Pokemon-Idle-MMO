@@ -68,7 +68,6 @@ export function IVGradeText({
 }: IVGradeTextProps) {
   const grade = getIVGrade(pokemon)
   const total = getTotalIVs(pokemon)
-  const description = getGradeDescription(grade)
 
   const gradeTextColor: Record<IVGrade, string> = {
     S: 'text-yellow-400',

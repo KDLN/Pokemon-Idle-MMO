@@ -12,9 +12,6 @@ import {
   sortByGrade,
   filterByMinGrade,
   filterHasPerfectIV,
-  getIVGrade,
-  type IVStats,
-  type IVGrade,
 } from '@/lib/ivUtils'
 
 type SortOption = 'default' | 'total_ivs' | 'grade' | 'hp_iv' | 'attack_iv' | 'defense_iv' | 'sp_attack_iv' | 'sp_defense_iv' | 'speed_iv'

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
-import type { LeaderboardEntry, LeaderboardType, LeaderboardTimeframe } from '@/types/game'
+import type { LeaderboardEntry, LeaderboardType } from '@/types/game'
 import { getPokemonSpriteUrl } from '@/types/game'
 import Image from 'next/image'
 

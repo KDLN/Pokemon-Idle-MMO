@@ -62,9 +62,17 @@ Guilds give players a reason to come back daily and feel part of something bigge
 
 ### Active
 
-**v1.2 — (To be defined)**
+**v1.2 — Theme Finalization**
 
-No requirements defined yet. Run `/gsd:new-milestone` to start v1.2 planning.
+Apply the approved Modern theme layout and styling from MockGameScreen to the actual game.
+
+- [ ] Two-sidebar layout (left: party/inventory, right: zone info/actions)
+- [ ] Balanced center proportions (zone content constrained, social expanded)
+- [ ] Modern theme color palette applied to all components
+- [ ] Beveled button styling on action buttons
+- [ ] Card and typography styling matches Modern theme
+- [ ] Component updates (PartySidebar, ZoneView, ChatPanel)
+- [ ] Cleanup MockGameScreen and theme-compare after migration
 
 ### Out of Scope
 
@@ -83,7 +91,7 @@ No requirements defined yet. Run `/gsd:new-milestone` to start v1.2 planning.
 
 ## Context
 
-**Current State (v1.1 shipped):**
+**Current State (v1.2 in progress):**
 - Monorepo: Next.js 16 frontend, Node.js WebSocket game server, Supabase PostgreSQL
 - 32,865 lines of TypeScript across 140+ files
 - Real-time via WebSocket with 1-second tick loop
@@ -143,4 +151,4 @@ No requirements defined yet. Run `/gsd:new-milestone` to start v1.2 planning.
 | Theme via data-theme attribute | CSS-only switching without JS re-renders | ✓ Good — performant |
 
 ---
-*Last updated: 2026-01-21 after v1.1 milestone*
+*Last updated: 2026-01-21 after v1.2 milestone initialization*

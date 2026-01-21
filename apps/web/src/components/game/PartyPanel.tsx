@@ -19,7 +19,7 @@ function PokeballIcon({ className = '' }: { className?: string }) {
 }
 
 // Star icon component
-function StarIcon({ filled, className = '' }: { filled: boolean; className?: string }) {
+function StarIcon({ className = '' }: { className?: string }) {
   return (
     <svg
       className={className}

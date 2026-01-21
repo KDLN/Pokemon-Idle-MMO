@@ -460,7 +460,6 @@ export function GameShell({ accessToken }: GameShellProps) {
   const worldEvents = useGameStore((state) => state.worldEvents)
   const incomingFriendRequests = useGameStore((state) => state.incomingFriendRequests)
   const incomingTradeRequests = useGameStore((state) => state.incomingTradeRequests)
-  const outgoingTradeRequests = useGameStore((state) => state.outgoingTradeRequests)
   const isTradeModalOpen = useGameStore((state) => state.isTradeModalOpen)
   const setActiveTrade = useGameStore((state) => state.setActiveTrade)
   const setTradeModalOpen = useGameStore((state) => state.setTradeModalOpen)

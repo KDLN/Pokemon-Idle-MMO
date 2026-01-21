@@ -5,7 +5,7 @@
  * Useful for development and testing when actual sprite assets aren't available.
  */
 
-import { TRAINER_SPRITE, POKEMON_SPRITE, DIRECTION_ROW, type SpriteDirection } from './spriteAnimation'
+import { TRAINER_SPRITE, POKEMON_SPRITE, type SpriteDirection } from './spriteAnimation'
 
 // Color palette for placeholders
 const PLACEHOLDER_COLORS = {

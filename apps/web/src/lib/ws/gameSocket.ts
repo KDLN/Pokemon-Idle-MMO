@@ -1,15 +1,11 @@
 import { useGameStore } from '@/stores/gameStore'
-import type { TickResult, GameState, Zone, Pokemon, ShopItem, PendingEvolution, EvolutionEvent, LeaderboardEntry, LeaderboardType, LeaderboardTimeframe, PlayerRank, WildPokemon } from '@/types/game'
+import type { TickResult, GameState, Zone, Pokemon, ShopItem, EvolutionEvent, LeaderboardEntry, LeaderboardType, LeaderboardTimeframe, PlayerRank, WildPokemon } from '@/types/game'
 import type { BattleTurn } from '@pokemon-idle/shared'
 import type { GymLeader, GymBattleResult } from '@/components/game/GymBattlePanel'
 import type { ChatMessageData, ChatChannel, WhisperMessageData, BlockedPlayerData } from '@/types/chat'
 import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
-import type { IncomingTradeRequest, OutgoingTradeRequest, TradeOffer, TradeStatus, TradeHistoryEntry } from '@/types/trade'
+import type { IncomingTradeRequest, OutgoingTradeRequest, TradeOffer, TradeHistoryEntry } from '@/types/trade'
 import type {
-  Guild,
-  GuildMember,
-  GuildRole,
-  GuildPreview,
   GuildDataPayload,
   GuildListPayload,
   GuildMemberJoinedPayload,
@@ -19,7 +15,6 @@ import type {
   GuildDisbandedPayload,
   GuildErrorPayload,
   GuildInvite,
-  GuildOutgoingInvite,
   GuildInvitesListPayload,
   GuildOutgoingInvitesPayload,
   GuildInviteReceivedPayload,
@@ -30,13 +25,9 @@ import type {
   GuildMessageEntry,
   GuildChatHistoryPayload,
   GuildChatMessagePayload,
-  GuildBank,
   GuildBankDataPayload,
   GuildBankCurrencyUpdatedPayload,
-  GuildBankItemUpdatedPayload,
-  GuildBankPokemonAddedPayload,
   GuildBankPokemonRemovedPayload,
-  GuildBankSlotsExpandedPayload,
   GuildBankLogsPayload,
   GuildBankRequestsPayload,
   GuildBankRequestCreatedPayload,
@@ -44,8 +35,6 @@ import type {
   GuildBankMyLimitsPayload,
   GuildBankErrorPayload,
   GuildBankSuccessPayload,
-  GuildBankRequest,
-  BankCategory,
   GuildQuestsDataPayload,
   GuildQuestDetailsPayload,
   GuildQuestProgressPayload,
@@ -61,7 +50,6 @@ import type {
   GuildStatisticsPayload,
   GuildLeaderboardPayload,
   GuildShopErrorPayload,
-  LeaderboardMetric as GuildLeaderboardMetric,
 } from '@pokemon-idle/shared'
 
 type MessageHandler = (payload: unknown) => void
@@ -74,8 +62,6 @@ type ChatPayload = {
   content: string
   created_at: string
 }
-
-const CHAT_CHANNELS: ChatChannel[] = ['global', 'trade', 'guild', 'system']
 
 // Constants - exported for use in other components
 export const ONLINE_THRESHOLD_MS = 2 * 60 * 1000 // 2 minutes
@@ -1378,12 +1364,12 @@ class GameSocket {
     useGameStore.getState().clearGuildState()
   }
 
-  private handleGuildCreated = (payload: unknown) => {
+  private handleGuildCreated = (_payload: unknown) => {
     // After guild creation, request fresh guild data
     this.getGuild()
   }
 
-  private handleGuildJoined = (payload: unknown) => {
+  private handleGuildJoined = (_payload: unknown) => {
     // After joining guild, request fresh guild data
     this.getGuild()
   }
@@ -1442,8 +1428,7 @@ class GameSocket {
     }
   }
 
-  private handleGuildInviteAccepted = (payload: unknown) => {
-    const data = payload as GuildInviteAcceptedPayload
+  private handleGuildInviteAccepted = (_payload: unknown) => {
     // Clear all invites after joining a guild
     useGameStore.getState().clearGuildInvites()
     // Request fresh guild data
@@ -1525,12 +1510,12 @@ class GameSocket {
     useGameStore.getState().updateGuildBankCurrency(data.balance)
   }
 
-  private handleGuildBankItemUpdated = (payload: unknown) => {
+  private handleGuildBankItemUpdated = (_payload: unknown) => {
     // Refetch bank for accurate data
     this.getGuildBank()
   }
 
-  private handleGuildBankPokemonAdded = (payload: unknown) => {
+  private handleGuildBankPokemonAdded = (_payload: unknown) => {
     // Refetch bank for full pokemon data
     this.getGuildBank()
   }
@@ -1540,7 +1525,7 @@ class GameSocket {
     useGameStore.getState().removeGuildBankPokemon(data.pokemon_id)
   }
 
-  private handleGuildBankSlotsExpanded = (payload: unknown) => {
+  private handleGuildBankSlotsExpanded = (_payload: unknown) => {
     // Refetch bank for updated slot counts
     this.getGuildBank()
   }
