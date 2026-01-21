@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 14 of 15 (Battle System)
-Plan: 2 of 5 in current phase
+Plan: 3 of 5 in current phase
 Status: In progress
-Last activity: 2026-01-21 — Completed 14-02-PLAN.md (Progressive Turn Protocol)
+Last activity: 2026-01-21 — Completed 14-03-PLAN.md (Client Progressive Battle)
 
-Progress: [██████████░░░░░] 40% (Plan 2/5 complete in Phase 14)
+Progress: [████████████░░░] 60% (Plan 3/5 complete in Phase 14)
 
 ## Performance Metrics
 
@@ -33,10 +33,10 @@ Progress: [██████████░░░░░] 40% (Plan 2/5 complete
 | 11-ui-polish | 4 | 8 min | 2 min |
 | 12-party-reordering | 3 | 10 min | 3.3 min |
 | 13-map-overhaul | 8 | 37 min | 4.6 min |
-| 14-battle-system | 2 | 10 min | 5 min |
+| 14-battle-system | 3 | 14 min | 4.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 13-07 (5 min), 13-08 (4 min), 14-01 (3 min), 14-02 (7 min)
+- Last 5 plans: 13-08 (4 min), 14-01 (3 min), 14-02 (7 min), 14-03 (4 min)
 - Trend: Phase 14 progressing, velocity stable
 
 *Updated after each plan completion*
@@ -119,6 +119,10 @@ Recent decisions affecting current work:
 - 14-02: Battle timeout auto-resolves based on HP percentage advantage
 - 14-02: Coexist with legacy battle flow during transition period
 - 14-02: Dynamic import for attemptCatch to avoid circular dependencies
+- 14-03: useBattleAnimation uses activeBattle from store (not encounter prop)
+- 14-03: Hook requests turns via gameSocket.requestTurn() after animations
+- 14-03: Auto-select best ball type: prefer great_ball over pokeball
+- 14-03: turn_active phase compressed to 500ms (under 800ms budget)
 
 ### Pending Todos
 
@@ -133,8 +137,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 14-02-PLAN.md (Progressive Turn Protocol)
+Stopped at: Completed 14-03-PLAN.md (Client Progressive Battle)
 Resume file: None
 
 ---
-*State updated: 2026-01-21 after 14-02 completion*
+*State updated: 2026-01-21 after 14-03 completion*
