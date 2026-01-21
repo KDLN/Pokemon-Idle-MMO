@@ -132,3 +132,49 @@ export function IconButton({ icon, label, className, ...props }: IconButtonProps
     </Button>
   )
 }
+
+/**
+ * 3D Beveled Button - Josh Comeau inspired layered approach
+ * Uses transform-based animations for smooth performance
+ *
+ * Different structure from Button (uses three nested spans),
+ * so it's a separate component rather than a CVA variant.
+ */
+interface BeveledButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** HSL hue value (0-360). Default 240 (blue) */
+  hue?: number
+  /** HSL saturation percentage. Default 60 */
+  saturation?: number
+  /** HSL lightness percentage. Default 50 */
+  lightness?: number
+  children: React.ReactNode
+}
+
+export function BeveledButton({
+  hue = 240,
+  saturation = 60,
+  lightness = 50,
+  children,
+  className,
+  style,
+  ...props
+}: BeveledButtonProps) {
+  return (
+    <button
+      className={cn("btn-3d min-h-[44px]", className)}
+      style={{
+        '--btn-hue': hue,
+        '--btn-saturation': `${saturation}%`,
+        '--btn-lightness': `${lightness}%`,
+        ...style
+      } as React.CSSProperties}
+      {...props}
+    >
+      <span className="btn-3d-shadow" />
+      <span className="btn-3d-edge" />
+      <span className="btn-3d-front">
+        {children}
+      </span>
+    </button>
+  )
+}
