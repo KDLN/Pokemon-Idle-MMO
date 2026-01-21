@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 15 of 15 (Theme Exploration)
-Plan: 0 of ? in current phase
-Status: Not started (Phase 14 verified complete)
-Last activity: 2026-01-21 — Completed Phase 14 (Battle System)
+Plan: 2 of 4 in current phase
+Status: In progress
+Last activity: 2026-01-21 — Completed 15-02-PLAN.md (Beveled 3D Button)
 
-Progress: [██████████] 100% (Phase 14 verified)
+Progress: [██████████] 100% + 15-01, 15-02
 
 ## Performance Metrics
 
@@ -36,8 +36,8 @@ Progress: [██████████] 100% (Phase 14 verified)
 | 14-battle-system | 5 | 27 min | 5.4 min |
 
 **Recent Trend:**
-- Last 5 plans: 14-01 (3 min), 14-02 (7 min), 14-03 (4 min), 14-04 (9 min), 14-05 (4 min)
-- Trend: Phase 14 complete
+- Last 5 plans: 14-03 (4 min), 14-04 (9 min), 14-05 (4 min), 15-01 (3 min), 15-02 (4 min)
+- Trend: Phase 15 in progress
 
 *Updated after each plan completion*
 
@@ -129,6 +129,9 @@ Recent decisions affecting current work:
 - 14-04: Switched from currentEncounter to activeBattle for server-driven battles
 - 14-05: Battle not ended immediately on disconnect - allows 30s reconnect window
 - 14-05: checkAndResumeActiveBattle sends encounter_start with resume flag or battle_summary
+- 15-01: Use [data-theme="modern"] selector for theme overrides
+- 15-01: Theme tokens in @layer base to ensure proper cascade
+- 15-01: Storybook themes: 'current' (empty attr) and 'modern'
 
 ### Pending Todos
 
@@ -143,8 +146,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Phase 14 verified complete, ready for Phase 15
+Stopped at: Completed 15-02-PLAN.md (Beveled 3D Button)
 Resume file: None
 
 ---
-*State updated: 2026-01-21 after Phase 14 verification*
+*State updated: 2026-01-21 after 15-02 completion*
