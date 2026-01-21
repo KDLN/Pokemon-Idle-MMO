@@ -1823,7 +1823,11 @@ html {
 
 /* ===== LEFT SIDEBAR: MAP ===== */
 .map-sidebar {
-  background: var(--lb-bg-base);
+  background: linear-gradient(
+    to bottom,
+    var(--color-surface-elevated) 0%,
+    var(--color-surface-base) 100%
+  );
   border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
@@ -2270,7 +2274,11 @@ html {
 
 /* ===== PARTY COLUMN (right) ===== */
 .party-column {
-  background: var(--lb-bg-base);
+  background: linear-gradient(
+    to bottom,
+    var(--color-surface-elevated) 0%,
+    var(--color-surface-base) 100%
+  );
   border-left: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;

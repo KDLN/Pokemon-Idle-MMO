@@ -89,7 +89,7 @@ export function BoostCard({ buff, onExpire }: BoostCardProps) {
   return (
     <div
       className={cn(
-        "p-3 rounded-xl border transition-all duration-300",
+        "texture-noise p-3 rounded-xl border transition-all duration-300",
         countdown.isUrgent
           ? "border-red-500/50 bg-red-500/10"
           : "border-[#2a2a4a] bg-[#1a1a2e]/80"

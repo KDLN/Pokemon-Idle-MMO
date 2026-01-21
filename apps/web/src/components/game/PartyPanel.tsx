@@ -58,7 +58,7 @@ export function PartyPanel() {
   }
 
   return (
-    <Card variant="glass" padding="none" className="p-2 sm:p-3">
+    <Card variant="glass" padding="none" className="texture-noise p-2 sm:p-3">
       {/* Header */}
       <CardHeader
         icon={<PokeballIcon className="w-4 h-4 sm:w-5 sm:h-5" />}
