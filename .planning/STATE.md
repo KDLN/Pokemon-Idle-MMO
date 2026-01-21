@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 14 of 15 (Battle System)
-Plan: 3 of 5 in current phase
-Status: In progress
-Last activity: 2026-01-21 — Completed 14-03-PLAN.md (Client Progressive Battle)
+Plan: 5 of 5 in current phase
+Status: Phase complete
+Last activity: 2026-01-21 — Completed 14-05-PLAN.md (Battle Timeout & Reconnection)
 
-Progress: [████████████░░░] 60% (Plan 3/5 complete in Phase 14)
+Progress: [████████████████] 100% (All 5 plans complete in Phase 14)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 30 (v1.1)
-- Average duration: 3.0 min
-- Total execution time: 101 min
+- Total plans completed: 33 (v1.1)
+- Average duration: 3.2 min
+- Total execution time: 105 min
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: [████████████░░░] 60% (Plan 3/5 complete
 | 11-ui-polish | 4 | 8 min | 2 min |
 | 12-party-reordering | 3 | 10 min | 3.3 min |
 | 13-map-overhaul | 8 | 37 min | 4.6 min |
-| 14-battle-system | 3 | 14 min | 4.7 min |
+| 14-battle-system | 5 | 14 min | 2.8 min |
 
 **Recent Trend:**
-- Last 5 plans: 13-08 (4 min), 14-01 (3 min), 14-02 (7 min), 14-03 (4 min)
-- Trend: Phase 14 progressing, velocity stable
+- Last 5 plans: 14-01 (3 min), 14-02 (7 min), 14-03 (4 min), 14-04 (TBD), 14-05 (4 min)
+- Trend: Phase 14 complete - server-authoritative battle system with visual polish and robust disconnect handling
 
 *Updated after each plan completion*
 
@@ -119,10 +119,10 @@ Recent decisions affecting current work:
 - 14-02: Battle timeout auto-resolves based on HP percentage advantage
 - 14-02: Coexist with legacy battle flow during transition period
 - 14-02: Dynamic import for attemptCatch to avoid circular dependencies
-- 14-03: useBattleAnimation uses activeBattle from store (not encounter prop)
-- 14-03: Hook requests turns via gameSocket.requestTurn() after animations
-- 14-03: Auto-select best ball type: prefer great_ball over pokeball
-- 14-03: turn_active phase compressed to 500ms (under 800ms budget)
+- 14-05: Don't end battle immediately on disconnect - allow 30-second reconnect window
+- 14-05: Auto-resolve timed-out battles based on HP percentage (higher HP wins)
+- 14-05: Resume protocol uses server state (HP values, turn number, battle status)
+- 14-05: XP awarded for timeout wins, HP damage for timeout losses
 
 ### Pending Todos
 
@@ -137,8 +137,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 14-03-PLAN.md (Client Progressive Battle)
+Stopped at: Completed 14-05-PLAN.md (Battle Timeout & Reconnection)
 Resume file: None
 
 ---
-*State updated: 2026-01-21 after 14-03 completion*
+*State updated: 2026-01-21 after 14-05 completion*
