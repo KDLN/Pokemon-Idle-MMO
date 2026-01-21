@@ -7,7 +7,7 @@ This milestone transforms the functional MVP into a polished product through sys
 ## Milestones
 
 - v1.0 Guilds - Phases 1-7 (shipped 2026-01-19) - See `.planning/milestones/v1.0-ROADMAP.md`
-- v1.1 UI/UX Polish - Phases 8-15 (in progress)
+- v1.1 UI/UX Polish - Phases 8-15 (complete)
 
 ## Phases
 
@@ -18,7 +18,7 @@ This milestone transforms the functional MVP into a polished product through sys
 - [x] **Phase 12: Party Reordering** - Drag-to-reorder party with persistence
 - [x] **Phase 13: Map Overhaul** - Visual styling, interactions, zone connections
 - [x] **Phase 14: Battle System** - Progressive turn calculation and animation
-- [ ] **Phase 15: Theme Exploration** - Component showcase and theme comparison tools
+- [x] **Phase 15: Theme Exploration** - Component showcase and theme comparison tools
 
 ## Phase Details
 
@@ -162,10 +162,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 15-01-PLAN.md — Create Pokemon Clean Modern theme tokens and Storybook theme switching
-- [ ] 15-02-PLAN.md — Create beveled/3D button variant using Josh Comeau layered approach
-- [ ] 15-03-PLAN.md — Create component showcase MDX pages organized by screen context
-- [ ] 15-04-PLAN.md — Create MockGameScreen and theme comparison route at /theme-compare
+- [x] 15-01-PLAN.md — Create Pokemon Clean Modern theme tokens and Storybook theme switching
+- [x] 15-02-PLAN.md — Create beveled/3D button variant using Josh Comeau layered approach
+- [x] 15-03-PLAN.md — Create component showcase MDX pages organized by screen context
+- [x] 15-04-PLAN.md — Create MockGameScreen and theme comparison route at /theme-compare
 
 ## Progress
 
@@ -181,7 +181,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 12. Party Reordering | v1.1 | 3/3 | Complete | 2026-01-20 |
 | 13. Map Overhaul | v1.1 | 8/8 | Complete | 2026-01-20 |
 | 14. Battle System | v1.1 | 5/5 | Complete | 2026-01-21 |
-| 15. Theme Exploration | v1.1 | 0/4 | Not started | - |
+| 15. Theme Exploration | v1.1 | 4/4 | Complete | 2026-01-21 |
 
 ---
 *Roadmap created: 2026-01-19*

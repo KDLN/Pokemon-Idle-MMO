@@ -53,19 +53,19 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 ### Battle System
 
-- [ ] **BATTLE-01**: Battle turns calculated one at a time on server (not pre-computed)
-- [ ] **BATTLE-02**: Client receives turns progressively and animates each
-- [ ] **BATTLE-03**: HP bars animate down as damage is dealt
-- [ ] **BATTLE-04**: Catch success/failure calculated at throw moment (not pre-decided)
-- [ ] **BATTLE-05**: Battle has timeout protection (30 seconds)
-- [ ] **BATTLE-06**: Disconnected battles auto-resolve on server
-- [ ] **BATTLE-07**: Battle animation fits within tick timing (800ms max per turn)
+- [x] **BATTLE-01**: Battle turns calculated one at a time on server (not pre-computed)
+- [x] **BATTLE-02**: Client receives turns progressively and animates each
+- [x] **BATTLE-03**: HP bars animate down as damage is dealt
+- [x] **BATTLE-04**: Catch success/failure calculated at throw moment (not pre-decided)
+- [x] **BATTLE-05**: Battle has timeout protection (30 seconds)
+- [x] **BATTLE-06**: Disconnected battles auto-resolve on server
+- [x] **BATTLE-07**: Battle animation fits within tick timing (800ms max per turn)
 
 ### Theme Exploration
 
-- [ ] **THEME-01**: Component showcase page displays all UI elements
-- [ ] **THEME-02**: Mock game screen shows "Pokemon clean modern" theme direction
-- [ ] **THEME-03**: Side-by-side comparison tool shows current vs proposed theme
+- [x] **THEME-01**: Component showcase page displays all UI elements
+- [x] **THEME-02**: Mock game screen shows "Pokemon clean modern" theme direction
+- [x] **THEME-03**: Side-by-side comparison tool shows current vs proposed theme
 
 ## v2 Requirements
 
@@ -131,16 +131,16 @@ Which phases cover which requirements.
 | MAP-03 | Phase 13 | Complete |
 | MAP-04 | Phase 13 | Complete |
 | MAP-05 | Phase 13 | Complete |
-| BATTLE-01 | Phase 14 | Pending |
-| BATTLE-02 | Phase 14 | Pending |
-| BATTLE-03 | Phase 14 | Pending |
-| BATTLE-04 | Phase 14 | Pending |
-| BATTLE-05 | Phase 14 | Pending |
-| BATTLE-06 | Phase 14 | Pending |
-| BATTLE-07 | Phase 14 | Pending |
-| THEME-01 | Phase 15 | Pending |
-| THEME-02 | Phase 15 | Pending |
-| THEME-03 | Phase 15 | Pending |
+| BATTLE-01 | Phase 14 | Complete |
+| BATTLE-02 | Phase 14 | Complete |
+| BATTLE-03 | Phase 14 | Complete |
+| BATTLE-04 | Phase 14 | Complete |
+| BATTLE-05 | Phase 14 | Complete |
+| BATTLE-06 | Phase 14 | Complete |
+| BATTLE-07 | Phase 14 | Complete |
+| THEME-01 | Phase 15 | Complete |
+| THEME-02 | Phase 15 | Complete |
+| THEME-03 | Phase 15 | Complete |
 
 **Coverage:**
 - v1 requirements: 39 total
@@ -149,4 +149,4 @@ Which phases cover which requirements.
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-20 after Phase 13 completion*
+*Last updated: 2026-01-21 after Phase 15 completion (milestone complete)*
