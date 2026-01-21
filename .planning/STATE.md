@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 
 ## Current Position
 
-Phase: 16 - Layout Migration (COMPLETE)
-Plan: 02 of 2 complete
-Status: Phase complete
-Last activity: 2026-01-21 - Completed 16-02-PLAN.md (Mobile and tablet layout verification)
+Phase: 17 - Theme Styling (IN PROGRESS)
+Plan: 02 of 3 complete
+Status: In progress
+Last activity: 2026-01-21 - Completed 17-02-PLAN.md (Visual texture and atmosphere)
 
-Progress: v1.0 + v1.1 shipped, v1.2 plan 2/~12 complete
+Progress: v1.0 + v1.1 shipped, v1.2 plan 4/~12 complete
 
 ## Milestones
 
@@ -26,9 +26,9 @@ Progress: v1.0 + v1.1 shipped, v1.2 plan 2/~12 complete
 
 ## Next Steps
 
-Phase 16 Layout Migration complete. Continue with:
-1. Plan Phase 17 (Theme Colors) or next v1.2 phase
-2. Run `/gsd:plan-phase 17` to begin next phase
+Phase 17 Theme Styling in progress (plan 02 of 03 complete). Continue with:
+1. Execute remaining Phase 17 plans
+2. Run `/gsd:execute-phase 17 03` to continue theme styling
 
 ## Accumulated Context
 
@@ -49,6 +49,12 @@ All v1.0 and v1.1 decisions documented in PROJECT.md Key Decisions table.
 - Mobile: NO h-64 constraint - zone content fills available space (primary focus on mobile)
 - Breakpoint: 1024px boundary in both JS and CSS (<=1024 = mobile, >=1025 = desktop)
 
+**Phase 17-02 Decisions:**
+- Type-colored background overlay uses 20% opacity for subtle effect
+- Sidebar gradients use CSS variables (--color-surface-elevated to --color-surface-base)
+- Ambient particles only visible on route/forest zones, not towns
+- Particles use green/yellow/emerald/lime color mix for natural atmosphere
+
 ### Open Items
 
 - Sound/audio system: Consider for v1.3
@@ -66,8 +72,8 @@ Production migration notes (apply if not already done):
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 16-02-PLAN.md (Phase 16 complete)
-Resume file: None - ready for Phase 17 planning
+Stopped at: Completed 17-02-PLAN.md (Visual texture and atmosphere)
+Resume file: None
 
 ---
-*State updated: 2026-01-21 after completing 16-02-PLAN.md*
+*State updated: 2026-01-21 after completing 17-02-PLAN.md*
