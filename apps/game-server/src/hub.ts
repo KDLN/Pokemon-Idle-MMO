@@ -391,6 +391,7 @@ export class GameHub {
       await this.sendFriendsData(client)
       await this.sendTradesData(client)
       await this.sendGuildData(client)
+      await this.checkAndResumeActiveBattle(client)
       // Notify other players in the zone that this player joined
       if (client.session) {
         this.broadcastNearbyPlayersToZone(client.session.zone.id)
@@ -945,6 +946,69 @@ export class GameHub {
     }
 
     return { outcome: 'win', message: 'Victory!' }
+  }
+
+  private async checkAndResumeActiveBattle(client: Client) {
+    if (!client.session) return
+    const playerId = client.session.player.id
+
+    const battle = this.battleManager.getBattle(playerId)
+    if (!battle) return
+
+    // Check if battle timed out while disconnected
+    if (battle.status === 'timeout') {
+      // Auto-resolve and send summary
+      const summary = this.resolveBattleSummary(battle)
+
+      // Apply results
+      if (summary.outcome === 'win') {
+        // Player won - give XP but no catch (timed out during catch)
+        const xpEarned = Math.floor((battle.wildPokemon.species.base_xp_yield * battle.wildPokemon.level) / 7)
+        const leadPokemon = client.session.party[0]
+        if (leadPokemon) {
+          leadPokemon.xp += xpEarned
+          await savePokemonXP(leadPokemon.id, leadPokemon.xp)
+        }
+      } else if (summary.outcome === 'lose') {
+        // Player lost - apply HP damage to lead Pokemon
+        if (client.session.party[0]) {
+          client.session.party[0].current_hp = 0
+          await updatePokemonHP(client.session.party[0].id, 0)
+        }
+      }
+
+      // Clean up battle
+      this.battleManager.endBattle(playerId)
+
+      // Set encounter cooldown
+      client.session.encounterCooldown = 8
+
+      // Send summary to client
+      this.send(client, 'battle_summary', summary)
+      return
+    }
+
+    // Battle still active - send current state so client can resume
+    this.send(client, 'encounter_start', {
+      wild_pokemon: battle.wildPokemon,
+      lead_pokemon: {
+        id: battle.leadPokemon.id,
+        name: battle.leadSpecies.name,
+        level: battle.leadPokemon.level,
+        current_hp: battle.playerHP,
+        max_hp: battle.playerMaxHP,
+        species_id: battle.leadPokemon.species_id,
+        is_shiny: battle.leadPokemon.is_shiny
+      },
+      player_first: battle.playerFirst,
+      resume: true,  // Flag that this is a resume, not new battle
+      current_turn: battle.turnNumber,
+      player_hp: battle.playerHP,
+      wild_hp: battle.wildHP,
+      status: battle.status
+    })
+
+    console.log(`[Battle] Client ${playerId} reconnected - resuming battle at turn ${battle.turnNumber}`)
   }
 
   private async handleDisconnect(client: Client) {
