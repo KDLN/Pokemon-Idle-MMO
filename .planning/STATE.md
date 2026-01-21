@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 14 of 15 (Battle System)
-Plan: 0 of ? in current phase
-Status: Not started (Phase 13 verified complete)
-Last activity: 2026-01-20 — Completed Phase 13 (Map Overhaul)
+Plan: 1 of ? in current phase
+Status: In progress
+Last activity: 2026-01-21 — Completed 14-01-PLAN.md (Battle State Foundation)
 
-Progress: [██████████] 100% (Phase 13 verified)
+Progress: [██████████] 100% (Phase 13 complete, Phase 14 started)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 28 (v1.1)
+- Total plans completed: 29 (v1.1)
 - Average duration: 2.9 min
-- Total execution time: 91 min
+- Total execution time: 94 min
 
 **By Phase:**
 
@@ -33,10 +33,11 @@ Progress: [██████████] 100% (Phase 13 verified)
 | 11-ui-polish | 4 | 8 min | 2 min |
 | 12-party-reordering | 3 | 10 min | 3.3 min |
 | 13-map-overhaul | 8 | 37 min | 4.6 min |
+| 14-battle-system | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 13-05 (4 min), 13-06 (5 min), 13-07 (5 min), 13-08 (4 min)
-- Trend: Phase 13 complete
+- Last 5 plans: 13-06 (5 min), 13-07 (5 min), 13-08 (4 min), 14-01 (3 min)
+- Trend: Phase 14 started, maintaining velocity
 
 *Updated after each plan completion*
 
@@ -110,6 +111,9 @@ Recent decisions affecting current work:
 - 13-07: Animated player marker with 1.5s ease-in-out gentle bounce
 - 13-08: Use gameStore directly in InteractiveMap instead of props
 - 13-08: Keep travel buttons section below map for alternative UI
+- 14-01: 30-second timeout for battle inactivity with 5-second cleanup interval
+- 14-01: Speed comparison determines turn order (playerFirst flag)
+- 14-01: Battle state includes separate current HP and max HP for both combatants
 
 ### Pending Todos
 
@@ -123,9 +127,9 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-01-20
-Stopped at: Phase 13 verified complete, ready for Phase 14
+Last session: 2026-01-21
+Stopped at: Completed 14-01-PLAN.md (Battle State Foundation)
 Resume file: None
 
 ---
-*State updated: 2026-01-20 after Phase 13 verification*
+*State updated: 2026-01-21 after 14-01 completion*
