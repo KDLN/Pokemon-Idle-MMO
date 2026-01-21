@@ -4,6 +4,7 @@
 @import "../styles/tokens/spacing.css";
 @import "../styles/tokens/typography.css";
 @import "../styles/button-3d.css";
+@import "../styles/noise-texture.css";
 
 :root {
   /* ========== LEGACY ALIASES ========== */
