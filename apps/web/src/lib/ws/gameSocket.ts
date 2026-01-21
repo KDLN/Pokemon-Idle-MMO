@@ -1,5 +1,6 @@
 import { useGameStore } from '@/stores/gameStore'
-import type { TickResult, GameState, Zone, Pokemon, ShopItem, PendingEvolution, EvolutionEvent, LeaderboardEntry, LeaderboardType, LeaderboardTimeframe, PlayerRank } from '@/types/game'
+import type { TickResult, GameState, Zone, Pokemon, ShopItem, PendingEvolution, EvolutionEvent, LeaderboardEntry, LeaderboardType, LeaderboardTimeframe, PlayerRank, WildPokemon } from '@/types/game'
+import type { BattleTurn } from '@pokemon-idle/shared'
 import type { GymLeader, GymBattleResult } from '@/components/game/GymBattlePanel'
 import type { ChatMessageData, ChatChannel, WhisperMessageData, BlockedPlayerData } from '@/types/chat'
 import type { Friend, FriendRequest, OutgoingFriendRequest } from '@/types/friends'
@@ -204,6 +205,12 @@ class GameSocket {
     this.handlers.set('guild_statistics', this.handleGuildStatistics)
     this.handlers.set('guild_leaderboard', this.handleGuildLeaderboard)
     this.handlers.set('guild_shop_error', this.handleGuildShopError)
+    // Progressive battle handlers
+    this.handlers.set('encounter_start', this.handleEncounterStart)
+    this.handlers.set('battle_turn', this.handleBattleTurn)
+    this.handlers.set('catch_result', this.handleCatchResult)
+    this.handlers.set('catch_complete', this.handleCatchComplete)
+    this.handlers.set('battle_summary', this.handleBattleSummary)
   }
 
   connect(token: string) {
@@ -1880,6 +1887,128 @@ class GameSocket {
 
   sendGetGuildLeaderboard(metric: string, limit: number = 50) {
     this.send('get_guild_leaderboard', { metric, limit })
+  }
+
+  // ============================================
+  // PROGRESSIVE BATTLE METHODS
+  // ============================================
+
+  // Request next battle turn from server
+  requestTurn() {
+    this.send('request_turn', {})
+  }
+
+  // Attempt to catch the wild Pokemon
+  attemptCatch(ballType: 'pokeball' | 'great_ball') {
+    this.send('attempt_catch', { ball_type: ballType })
+  }
+
+  // ============================================
+  // PROGRESSIVE BATTLE HANDLERS
+  // ============================================
+
+  private handleEncounterStart = (payload: unknown) => {
+    const data = payload as {
+      wild_pokemon: WildPokemon
+      lead_pokemon: {
+        id: string
+        name: string
+        level: number
+        current_hp: number
+        max_hp: number
+        species_id: number
+        is_shiny: boolean
+      }
+      player_first: boolean
+    }
+
+    const store = useGameStore.getState()
+    store.setActiveBattle({
+      wildPokemon: data.wild_pokemon,
+      leadPokemon: data.lead_pokemon,
+      playerFirst: data.player_first,
+      status: 'intro',
+      currentTurn: null,
+      playerHP: data.lead_pokemon.current_hp,
+      wildHP: data.wild_pokemon.max_hp,
+      playerMaxHP: data.lead_pokemon.max_hp,
+      wildMaxHP: data.wild_pokemon.max_hp,
+      canCatch: false,
+      catchResult: null,
+      catchComplete: null,
+      battleSummary: null
+    })
+  }
+
+  private handleBattleTurn = (payload: unknown) => {
+    const data = payload as {
+      turn: BattleTurn
+      battleStatus: 'ongoing' | 'player_win' | 'player_faint'
+      playerHP: number
+      wildHP: number
+      canCatch: boolean
+    }
+
+    const store = useGameStore.getState()
+    store.setBattleTurn({
+      turn: data.turn,
+      battleStatus: data.battleStatus,
+      playerHP: data.playerHP,
+      wildHP: data.wildHP,
+      canCatch: data.canCatch
+    })
+  }
+
+  private handleCatchResult = (payload: unknown) => {
+    const data = payload as {
+      shakeCount: number
+      success: boolean
+      isNewPokedexEntry: boolean
+      catchStrength: number
+      ball_type: string
+      pokeballs: number
+      great_balls: number
+    }
+
+    const store = useGameStore.getState()
+    store.setCatchResult(data)
+
+    // Update inventory
+    store.setInventory({
+      ...store.inventory,
+      pokeball: data.pokeballs,
+      great_ball: data.great_balls
+    })
+    store.setPokeballs(data.pokeballs)
+  }
+
+  private handleCatchComplete = (payload: unknown) => {
+    const data = payload as {
+      caught_pokemon: Pokemon
+      xp_earned: number
+      is_new_pokedex_entry: boolean
+    }
+
+    const store = useGameStore.getState()
+    store.setCatchComplete(data)
+
+    // Add caught Pokemon to box
+    store.addToBox(data.caught_pokemon)
+
+    // Apply XP to lead Pokemon
+    if (data.xp_earned > 0) {
+      store.applyXPGains({ [store.party[0]?.id || '']: data.xp_earned })
+    }
+  }
+
+  private handleBattleSummary = (payload: unknown) => {
+    const data = payload as {
+      outcome: 'timeout' | 'win' | 'lose'
+      message: string
+    }
+
+    const store = useGameStore.getState()
+    store.setBattleSummary(data)
   }
 }
 
