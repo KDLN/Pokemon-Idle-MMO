@@ -25,15 +25,20 @@ export function WorldView({ className = '' }: WorldViewProps) {
   const [trainerPosition, setTrainerPosition] = useState(50) // Position percentage
 
   // Derived state - determine visual zone type
-  const getVisualZoneType = (): 'town' | 'route' | 'forest' => {
+  const getVisualZoneType = (): 'town' | 'route' | 'forest' | 'cave' | 'water' => {
     if (!currentZone) return 'route'
     if (currentZone.zone_type === 'town') return 'town'
+    const nameLower = currentZone.name.toLowerCase()
     // Special visual for forest zones
-    if (currentZone.name.toLowerCase().includes('forest')) return 'forest'
+    if (nameLower.includes('forest')) return 'forest'
+    // Special visual for cave zones
+    if (nameLower.includes('cave') || nameLower.includes('tunnel') || nameLower.includes('rock')) return 'cave'
+    // Special visual for water zones
+    if (nameLower.includes('sea') || nameLower.includes('lake') || nameLower.includes('river') || nameLower.includes('beach') || nameLower.includes('ocean')) return 'water'
     return 'route'
   }
   const zoneType = getVisualZoneType()
-  const isRoute = zoneType === 'route' || zoneType === 'forest'
+  const isRoute = zoneType === 'route' || zoneType === 'forest' || zoneType === 'cave' || zoneType === 'water'
   const isWalking = isConnected && isRoute
 
   // Get lead Pokemon
@@ -80,7 +85,7 @@ export function WorldView({ className = '' }: WorldViewProps) {
 
   return (
     <div
-      className={`relative w-full h-48 md:h-56 rounded-xl overflow-hidden poke-border ${className}`}
+      className={`texture-noise relative w-full h-full rounded-xl overflow-hidden border border-[var(--color-border-subtle)] ${className}`}
     >
       {/* Background layer */}
       <BackgroundLayer
@@ -91,6 +96,23 @@ export function WorldView({ className = '' }: WorldViewProps) {
 
       {/* Time of day overlay */}
       <TimeOfDayOverlay />
+
+      {/* Center content - "Exploring..." overlay */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+        <div className="text-center">
+          <div className="font-pixel text-sm text-[var(--color-text-primary)] mb-2">
+            {isRoute ? 'Exploring...' : 'In Town'}
+          </div>
+          <div className="text-[var(--color-text-secondary)] text-sm mb-1">
+            {currentZone?.name}
+          </div>
+          {isRoute && (
+            <div className="text-[10px] text-[var(--color-text-muted)]">
+              Wild Pokemon may appear!
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Trainer and Pokemon */}
       <div className="absolute inset-0">
@@ -154,6 +176,17 @@ export function WorldView({ className = '' }: WorldViewProps) {
           <div className="absolute bottom-16 left-16 w-1 h-1 rounded-full bg-green-400/50 animate-pulse" aria-hidden="true" />
           <div className="absolute top-20 left-1/4 w-1 h-1 rounded-full bg-emerald-300/40 animate-pulse" aria-hidden="true" />
           <div className="absolute bottom-12 right-1/4 w-1.5 h-1.5 rounded-full bg-lime-300/30 animate-pulse" aria-hidden="true" />
+        </>
+      )}
+
+      {/* Town particles - golden sparkles for magical/settled feel */}
+      {zoneType === 'town' && (
+        <>
+          <div className="absolute top-8 left-12 w-1 h-1 rounded-full bg-yellow-300/40 animate-pulse" aria-hidden="true" />
+          <div className="absolute top-16 right-16 w-1.5 h-1.5 rounded-full bg-amber-300/30 animate-pulse" aria-hidden="true" />
+          <div className="absolute bottom-20 left-20 w-1 h-1 rounded-full bg-yellow-200/35 animate-pulse" aria-hidden="true" />
+          <div className="absolute top-24 left-1/3 w-1 h-1 rounded-full bg-amber-200/40 animate-pulse" aria-hidden="true" />
+          <div className="absolute bottom-16 right-1/3 w-1.5 h-1.5 rounded-full bg-yellow-300/30 animate-pulse" aria-hidden="true" />
         </>
       )}
 
