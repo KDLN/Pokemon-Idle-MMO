@@ -1,0 +1,119 @@
+/* ============================================
+ * POKEMON CLEAN MODERN THEME TOKENS
+ * Applied when data-theme="modern" attribute is present
+ * Higher saturation, warmer surfaces, vibrant colors
+ * ============================================ */
+
+@layer base {
+  [data-theme="modern"] {
+    /* ========== SURFACE COLORS ========== */
+    /* Warmer, more saturated than base theme */
+    --color-surface-base: #141820;
+    --color-surface-elevated: #1c2230;
+    --color-surface-hover: #252d3d;
+
+    /* ========== BRAND COLORS ========== */
+    /* Higher saturation for vibrancy */
+    --color-brand-primary: #4B5CDA;
+    --color-brand-primary-dark: #3B4CCA;
+    --color-brand-primary-light: #6B7EFA;
+
+    --color-brand-secondary: #FF2828;
+    --color-brand-secondary-dark: #DD1111;
+    --color-brand-secondary-light: #FF5555;
+
+    --color-brand-accent: #FFE633;
+    --color-brand-accent-dark: #E6CC00;
+    --color-brand-gold: #C4B22F;
+
+    /* ========== TEXT COLORS ========== */
+    --color-text-primary: #f8f9fc;
+    --color-text-secondary: #b0b8d0;
+    --color-text-muted: #707890;
+
+    /* ========== BORDER COLORS ========== */
+    --color-border-subtle: #2a3348;
+    --color-border-bright: #3a4568;
+
+    /* ========== SEMANTIC COLORS ========== */
+    --color-success: #2DD866;
+    --color-warning: #F5C518;
+    --color-error: #F54848;
+
+    /* ========== POKEMON TYPE COLORS ========== */
+    /* Boosted saturation for vibrant type badges */
+    --color-type-normal: #B8B888;
+    --color-type-normal-dark: #7D7D5E;
+
+    --color-type-fire: #FF6B35;
+    --color-type-fire-dark: #B84A25;
+
+    --color-type-water: #4A90E2;
+    --color-type-water-dark: #3366AA;
+
+    --color-type-electric: #FFD93D;
+    --color-type-electric-dark: #B8A32F;
+
+    --color-type-grass: #5CB85C;
+    --color-type-grass-dark: #3D8B3D;
+
+    --color-type-ice: #7DD8E8;
+    --color-type-ice-dark: #5AA8B8;
+
+    --color-type-fighting: #D83030;
+    --color-type-fighting-dark: #9A2020;
+
+    --color-type-poison: #B050B0;
+    --color-type-poison-dark: #783A78;
+
+    --color-type-ground: #E8C868;
+    --color-type-ground-dark: #A88E48;
+
+    --color-type-flying: #B8A0F0;
+    --color-type-flying-dark: #8070B0;
+
+    --color-type-psychic: #FF6090;
+    --color-type-psychic-dark: #B84060;
+
+    --color-type-bug: #B8C820;
+    --color-type-bug-dark: #8A9818;
+
+    --color-type-rock: #C8B040;
+    --color-type-rock-dark: #8A7830;
+
+    --color-type-ghost: #8060A8;
+    --color-type-ghost-dark: #584070;
+
+    --color-type-dragon: #8050F8;
+    --color-type-dragon-dark: #5828B0;
+
+    --color-type-dark: #806058;
+    --color-type-dark-dark: #584040;
+
+    --color-type-steel: #C0C0D8;
+    --color-type-steel-dark: #888898;
+
+    --color-type-fairy: #F0A0B8;
+    --color-type-fairy-dark: #A87080;
+
+    /* ========== LAYOUT-B COLORS ========== */
+    /* Extended palette for 3-column layout */
+    --color-lb-base: #141820;
+    --color-lb-elevated: #1c2230;
+    --color-lb-hover: #252d3d;
+    --color-lb-border: #3a4560;
+    --color-lb-text-dim: #6a7088;
+    --color-lb-accent: #7078F8;
+    --color-lb-accent-glow: rgba(112, 120, 248, 0.35);
+
+    /* ========== BUTTON 3D EFFECT TOKENS ========== */
+    /* For beveled button styling */
+    --btn-shadow-offset: 4px;
+    --btn-edge-visible: 1;
+
+    /* ========== TEXTURE TOKENS ========== */
+    /* Subtle noise and corner accents */
+    --texture-noise-opacity: 0.04;
+    --corner-accent-visible: 1;
+  }
+}
