@@ -950,6 +950,19 @@ export class GameHub {
   private async handleDisconnect(client: Client) {
     console.log(`Client disconnected: ${client.userId}`)
 
+    // Clean up active battle if exists
+    if (client.session) {
+      const playerId = client.session.player.id
+      const battle = this.battleManager.getBattle(playerId)
+
+      if (battle && battle.status !== 'complete') {
+        console.log(`[Battle] Client ${playerId} disconnected with active battle - marking for timeout`)
+        // Don't end immediately - let timeout handle it for reconnect opportunity
+        // The BattleManager cleanup interval will mark it as 'timeout' after 30 seconds
+        // If player reconnects before timeout, they can continue
+      }
+    }
+
     // Clean up trade ready states for any active trades this player was in
     // Use Promise.all to ensure all notifications complete before removing client
     // Inner try-catch ensures one failure doesn't stop other cleanups
