@@ -176,6 +176,7 @@ import {
   getPlayerGuildRank
 } from './db.js'
 import { processTick, simulateGymBattle, checkEvolutions, calculateEvolutionStats, applyEvolution, createEvolutionEvent, recalculateStats } from './game.js'
+import { BattleManager } from './battle/index.js'
 
 interface Client {
   ws: WebSocket
@@ -219,6 +220,8 @@ export class GameHub {
   private whisperRateLimits: Map<string, number[]> = new Map()
   // Guild buff cache with 5-second TTL
   private guildBuffCache: Map<string, { buffs: ActiveGuildBuffs | null; expiresAt: number }> = new Map()
+  // Battle state management
+  private battleManager: BattleManager = new BattleManager()
 
   constructor(port: number) {
     this.wss = new WebSocketServer({ port })
@@ -347,6 +350,7 @@ export class GameHub {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval)
     }
+    this.battleManager.stop()
     this.wss.close()
   }
 
