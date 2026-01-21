@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { Button, IconButton } from './Button'
+import { Button, IconButton, BeveledButton } from './Button'
 
 const meta = {
   title: 'UI/Button',
@@ -166,6 +166,91 @@ export const IconButtons: Story = {
     docs: {
       description: {
         story: 'IconButton is a circular icon-only button. Always provide a label for accessibility.',
+      },
+    },
+  },
+}
+
+// BeveledButton - 3D effect
+export const Beveled: Story = {
+  render: () => (
+    <BeveledButton>
+      Click Me
+    </BeveledButton>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story: '3D beveled button with raised shadow effect. Hover to lift, click to press down. Uses transform-based animations for smooth performance.',
+      },
+    },
+  },
+}
+
+// BeveledButton color variants
+export const BeveledColors: Story = {
+  render: () => (
+    <div className="flex flex-wrap gap-6">
+      <BeveledButton hue={240}>
+        Blue (Primary)
+      </BeveledButton>
+      <BeveledButton hue={0} saturation={70} lightness={50}>
+        Red (Danger)
+      </BeveledButton>
+      <BeveledButton hue={120} saturation={50} lightness={40}>
+        Green (Success)
+      </BeveledButton>
+      <BeveledButton hue={45} saturation={90} lightness={50}>
+        Yellow (Warning)
+      </BeveledButton>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Color variants via HSL hue property. Blue for primary actions, red for danger/pokeball, green for success, yellow for warnings.',
+      },
+    },
+  },
+}
+
+// BeveledButton interactive demo
+export const BeveledInteractive: Story = {
+  render: () => (
+    <div className="flex flex-col items-center gap-4">
+      <BeveledButton hue={240}>
+        Click me to see the press effect!
+      </BeveledButton>
+      <p className="text-sm text-gray-400">
+        Hover to lift the button, click to press it down.
+      </p>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Interactive demo. The button lifts on hover with a bouncy animation (250ms with overshoot), and presses down snappily on click (34ms).',
+      },
+    },
+  },
+}
+
+// BeveledButton disabled state
+export const BeveledDisabled: Story = {
+  render: () => (
+    <div className="flex gap-6">
+      <BeveledButton disabled>
+        Disabled
+      </BeveledButton>
+      <BeveledButton hue={0} disabled>
+        Disabled Red
+      </BeveledButton>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Disabled beveled buttons have grayscale filter and flattened depth.',
       },
     },
   },
