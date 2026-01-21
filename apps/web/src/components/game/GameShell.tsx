@@ -602,13 +602,22 @@ export function GameShell({ accessToken }: GameShellProps) {
 
         {/* Center: World + Social */}
         <div className="center-column">
-          <div className="game-world">
-            {!hasEncounter ? <WorldView /> : <EncounterDisplay />}
-            {isInTown && !hasEncounter && <TownMenu />}
-          </div>
+          {/* Inner flex wrapper for padding and gap */}
+          <div className="flex flex-col p-3 gap-3 min-w-0 overflow-hidden h-full">
+            {/* Zone content - constrained height (256px) */}
+            <div className="h-64 shrink-0">
+              <div className="game-world h-full">
+                {!hasEncounter ? <WorldView /> : <EncounterDisplay />}
+                {isInTown && !hasEncounter && <TownMenu />}
+              </div>
+            </div>
 
-          <div className="social-section">
-            <SocialSidebar onOpenTrade={handleOpenTrade} />
+            {/* Social - fills remaining space */}
+            <div className="flex-1 min-h-0">
+              <div className="social-section h-full">
+                <SocialSidebar onOpenTrade={handleOpenTrade} />
+              </div>
+            </div>
           </div>
         </div>
 
