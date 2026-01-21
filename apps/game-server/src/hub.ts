@@ -1434,6 +1434,41 @@ export class GameHub {
 
       const result = processTick(client.session, this.speciesMap, guildBuffs)
 
+      // Progressive battle: Start battle on encounter instead of auto-resolving
+      // This runs alongside existing logic during transition period
+      if (result.encounter) {
+        const wild = result.encounter.wild_pokemon
+        const lead = client.session.party.find(p => p && p.current_hp > 0)
+
+        if (lead) {
+          const leadSpecies = this.speciesMap.get(lead.species_id)
+          if (leadSpecies) {
+            // Start progressive battle (coexists with legacy battle_result)
+            const battle = this.battleManager.startBattle(
+              client.session.player.id,
+              wild,
+              lead,
+              leadSpecies
+            )
+
+            // Send encounter_start for new progressive protocol
+            this.send(client, 'encounter_start', {
+              wild_pokemon: wild,
+              lead_pokemon: {
+                id: lead.id,
+                name: leadSpecies.name,
+                level: lead.level,
+                current_hp: lead.current_hp,
+                max_hp: lead.max_hp,
+                species_id: lead.species_id,
+                is_shiny: lead.is_shiny
+              },
+              player_first: battle.playerFirst
+            })
+          }
+        }
+      }
+
       // Handle catch attempt (save ball consumption regardless of success)
       if (result.encounter?.catch_result) {
         const catchResult = result.encounter.catch_result
