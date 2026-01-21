@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 14 of 15 (Battle System)
-Plan: 1 of ? in current phase
+Plan: 2 of 5 in current phase
 Status: In progress
-Last activity: 2026-01-21 — Completed 14-01-PLAN.md (Battle State Foundation)
+Last activity: 2026-01-21 — Completed 14-02-PLAN.md (Progressive Turn Protocol)
 
-Progress: [██████████] 100% (Phase 13 complete, Phase 14 started)
+Progress: [██████████░░░░░] 40% (Plan 2/5 complete in Phase 14)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 29 (v1.1)
-- Average duration: 2.9 min
-- Total execution time: 94 min
+- Total plans completed: 30 (v1.1)
+- Average duration: 3.0 min
+- Total execution time: 101 min
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: [██████████] 100% (Phase 13 complete, Phase 14 sta
 | 11-ui-polish | 4 | 8 min | 2 min |
 | 12-party-reordering | 3 | 10 min | 3.3 min |
 | 13-map-overhaul | 8 | 37 min | 4.6 min |
-| 14-battle-system | 1 | 3 min | 3 min |
+| 14-battle-system | 2 | 10 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 13-06 (5 min), 13-07 (5 min), 13-08 (4 min), 14-01 (3 min)
-- Trend: Phase 14 started, maintaining velocity
+- Last 5 plans: 13-07 (5 min), 13-08 (4 min), 14-01 (3 min), 14-02 (7 min)
+- Trend: Phase 14 progressing, velocity stable
 
 *Updated after each plan completion*
 
@@ -114,6 +114,11 @@ Recent decisions affecting current work:
 - 14-01: 30-second timeout for battle inactivity with 5-second cleanup interval
 - 14-01: Speed comparison determines turn order (playerFirst flag)
 - 14-01: Battle state includes separate current HP and max HP for both combatants
+- 14-02: Always show 3 shakes for suspense (per CONTEXT.md design)
+- 14-02: Catch success calculated NOW at throw moment (not pre-decided)
+- 14-02: Battle timeout auto-resolves based on HP percentage advantage
+- 14-02: Coexist with legacy battle flow during transition period
+- 14-02: Dynamic import for attemptCatch to avoid circular dependencies
 
 ### Pending Todos
 
@@ -128,8 +133,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 14-01-PLAN.md (Battle State Foundation)
+Stopped at: Completed 14-02-PLAN.md (Progressive Turn Protocol)
 Resume file: None
 
 ---
-*State updated: 2026-01-21 after 14-01 completion*
+*State updated: 2026-01-21 after 14-02 completion*
