@@ -287,12 +287,9 @@ export function ChatInput({
             placeholder={getPlaceholder()}
             disabled={disabled || isSystemChannel}
             className={`
-              w-full px-3 py-2 rounded-lg text-sm
-              bg-[#0f0f1a] border border-[#2a2a4a]
-              text-white placeholder-[#606080]
-              focus:outline-none focus:border-[#5B6EEA]
+              input-inset w-full px-3 py-2 rounded-lg text-sm
+              text-[var(--color-text-primary)]
               disabled:opacity-50 disabled:cursor-not-allowed
-              transition-colors
               ${message.startsWith('/') ? 'border-purple-500/50' : ''}
             `}
           />
