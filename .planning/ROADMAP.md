@@ -17,7 +17,7 @@ This milestone transforms the functional MVP into a polished product through sys
 - [x] **Phase 11: UI Polish** - Navigation order, naming, display improvements
 - [x] **Phase 12: Party Reordering** - Drag-to-reorder party with persistence
 - [x] **Phase 13: Map Overhaul** - Visual styling, interactions, zone connections
-- [ ] **Phase 14: Battle System** - Progressive turn calculation and animation
+- [x] **Phase 14: Battle System** - Progressive turn calculation and animation
 - [ ] **Phase 15: Theme Exploration** - Component showcase and theme comparison tools
 
 ## Phase Details
@@ -145,11 +145,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 14-01-PLAN.md — Create BattleManager for server-side battle state with timeout tracking
-- [ ] 14-02-PLAN.md — Implement progressive turn calculation and request/response protocol
-- [ ] 14-03-PLAN.md — Update client for server-driven battle animation
-- [ ] 14-04-PLAN.md — Compress animations for 800ms budget and add HP bar polish
-- [ ] 14-05-PLAN.md — Handle disconnect/reconnect and battle timeout resolution
+- [x] 14-01-PLAN.md — Create BattleManager for server-side battle state with timeout tracking
+- [x] 14-02-PLAN.md — Implement progressive turn calculation and request/response protocol
+- [x] 14-03-PLAN.md — Update client for server-driven battle animation
+- [x] 14-04-PLAN.md — Compress animations for 800ms budget and add HP bar polish
+- [x] 14-05-PLAN.md — Handle disconnect/reconnect and battle timeout resolution
 
 ### Phase 15: Theme Exploration
 **Goal**: Provide tools to visualize and compare theme directions
@@ -177,7 +177,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 11. UI Polish | v1.1 | 4/4 | Complete | 2026-01-20 |
 | 12. Party Reordering | v1.1 | 3/3 | Complete | 2026-01-20 |
 | 13. Map Overhaul | v1.1 | 8/8 | Complete | 2026-01-20 |
-| 14. Battle System | v1.1 | 0/5 | Not started | - |
+| 14. Battle System | v1.1 | 5/5 | Complete | 2026-01-21 |
 | 15. Theme Exploration | v1.1 | 0/? | Not started | - |
 
 ---

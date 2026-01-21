@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Polish the game to feel like a real product, not a prototype — consistent visuals, responsive layouts, satisfying battle feedback.
-**Current focus:** Phase 14 - Battle System
+**Current focus:** Phase 15 - Theme Exploration
 
 ## Current Position
 
-Phase: 14 of 15 (Battle System)
-Plan: 4 of 5 in current phase
-Status: In progress
-Last activity: 2026-01-21 — Completed 14-04-PLAN.md (Battle Animation Polish)
+Phase: 15 of 15 (Theme Exploration)
+Plan: 0 of ? in current phase
+Status: Not started (Phase 14 verified complete)
+Last activity: 2026-01-21 — Completed Phase 14 (Battle System)
 
-Progress: [█████████████░░░] 80% (Plan 4/5 complete in Phase 14)
+Progress: [██████████] 100% (Phase 14 verified)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 31 (v1.1)
-- Average duration: 3.1 min
-- Total execution time: 114 min
+- Total plans completed: 33 (v1.1)
+- Average duration: 3.2 min
+- Total execution time: 118 min
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: [█████████████░░░] 80% (Plan 4/5 compl
 | 11-ui-polish | 4 | 8 min | 2 min |
 | 12-party-reordering | 3 | 10 min | 3.3 min |
 | 13-map-overhaul | 8 | 37 min | 4.6 min |
-| 14-battle-system | 4 | 23 min | 5.75 min |
+| 14-battle-system | 5 | 27 min | 5.4 min |
 
 **Recent Trend:**
-- Last 5 plans: 13-08 (4 min), 14-01 (3 min), 14-02 (7 min), 14-03 (4 min), 14-04 (9 min)
-- Trend: Phase 14 progressing - battle animations polished with server-driven architecture
+- Last 5 plans: 14-01 (3 min), 14-02 (7 min), 14-03 (4 min), 14-04 (9 min), 14-05 (4 min)
+- Trend: Phase 14 complete
 
 *Updated after each plan completion*
 
@@ -119,11 +119,16 @@ Recent decisions affecting current work:
 - 14-02: Battle timeout auto-resolves based on HP percentage advantage
 - 14-02: Coexist with legacy battle flow during transition period
 - 14-02: Dynamic import for attemptCatch to avoid circular dependencies
+- 14-03: useBattleAnimation reads activeBattle from store (not encounter prop)
+- 14-03: waiting_for_turn and waiting_for_catch phases pause until server responds
+- 14-03: Auto-select best ball type (great_ball > pokeball) for catch attempts
 - 14-04: Reduced attack-lunge from 0.3s to 0.25s for snappier feel
 - 14-04: Reduced pokeball-wobble from 0.7s to 0.6s while maintaining suspense
 - 14-04: HP transitions over 0.4s for smooth drain effect
 - 14-04: Critical HP pulses infinitely at <20% for urgency
 - 14-04: Switched from currentEncounter to activeBattle for server-driven battles
+- 14-05: Battle not ended immediately on disconnect - allows 30s reconnect window
+- 14-05: checkAndResumeActiveBattle sends encounter_start with resume flag or battle_summary
 
 ### Pending Todos
 
@@ -138,8 +143,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 14-04-PLAN.md (Battle Animation Polish)
+Stopped at: Phase 14 verified complete, ready for Phase 15
 Resume file: None
 
 ---
-*State updated: 2026-01-21 after 14-04 completion*
+*State updated: 2026-01-21 after Phase 14 verification*
