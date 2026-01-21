@@ -287,6 +287,7 @@ export function ChatInput({
             onKeyDown={handleKeyDown}
             placeholder={getPlaceholder()}
             disabled={disabled || isSystemChannel}
+            autoComplete="off"
             className={`
               input-inset w-full px-3 py-2 rounded-lg text-sm
               text-[var(--color-text-primary)]

@@ -143,13 +143,6 @@ function TownBackground({ zoneName }: { zoneName?: string }) {
       <div className="absolute bottom-1/3 right-4">
         <Tree />
       </div>
-
-      {/* Zone name */}
-      {zoneName && (
-        <div className="absolute top-4 left-4 bg-white/80 px-3 py-1 rounded-full text-sm font-medium text-gray-800 shadow">
-          {zoneName}
-        </div>
-      )}
     </div>
   )
 }
@@ -274,13 +267,6 @@ function ForestBackground({ zoneName, isAnimated }: { zoneName?: string; isAnima
           style={{ left: '80%', top: '-10%' }}
         />
       </div>
-
-      {/* Zone name */}
-      {zoneName && (
-        <div className="absolute top-4 left-4 bg-green-950/80 px-3 py-1 rounded-full text-sm font-medium text-green-200 shadow border border-green-800">
-          {zoneName}
-        </div>
-      )}
     </div>
   )
 }
@@ -303,13 +289,6 @@ function CaveBackground({ zoneName }: { zoneName?: string }) {
       <div className="absolute top-0 left-1/4 w-4 h-12 bg-gradient-to-b from-stone-800 to-transparent rounded-b-full opacity-40" />
       <div className="absolute top-0 left-1/2 w-6 h-16 bg-gradient-to-b from-stone-800 to-transparent rounded-b-full opacity-50" />
       <div className="absolute top-0 right-1/4 w-3 h-10 bg-gradient-to-b from-stone-800 to-transparent rounded-b-full opacity-35" />
-
-      {/* Zone name */}
-      {zoneName && (
-        <div className="absolute top-4 left-4 bg-stone-950/80 px-3 py-1 rounded-full text-sm font-medium text-stone-200 shadow border border-stone-700">
-          {zoneName}
-        </div>
-      )}
     </div>
   )
 }
@@ -330,13 +309,6 @@ function WaterBackground({ zoneName }: { zoneName?: string }) {
       {/* Wave lines */}
       <div className="absolute bottom-1/3 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent" />
       <div className="absolute bottom-1/4 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-300/20 to-transparent" />
-
-      {/* Zone name */}
-      {zoneName && (
-        <div className="absolute top-4 left-4 bg-blue-950/80 px-3 py-1 rounded-full text-sm font-medium text-blue-200 shadow border border-blue-700">
-          {zoneName}
-        </div>
-      )}
     </div>
   )
 }

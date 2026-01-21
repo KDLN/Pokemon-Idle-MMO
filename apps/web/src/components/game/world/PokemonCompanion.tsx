@@ -84,17 +84,6 @@ export function PokemonCompanion({
           </div>
         )}
 
-        {/* Shadow */}
-        <div
-          className="absolute bg-black/20 rounded-full"
-          style={{
-            width: 32 * scale,
-            height: 8 * scale,
-            left: 8 * scale,
-            bottom: -4 * scale,
-            transform: `scaleY(${1 - Math.abs(hopY) * 0.05})`,
-          }}
-        />
       </div>
     </div>
   )

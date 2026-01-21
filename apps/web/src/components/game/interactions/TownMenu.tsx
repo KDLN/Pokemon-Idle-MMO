@@ -74,19 +74,11 @@ function TownMenuButton({
       className="w-full"
       title={action.description}
     >
-      <div className="flex flex-col items-center gap-2 py-1">
+      <div className="flex flex-col items-center gap-1 py-0.5">
         {/* Icon */}
-        <div className="text-3xl">{action.icon}</div>
-
+        <div className="text-2xl">{action.icon}</div>
         {/* Label */}
-        <div className="text-center">
-          <div className="text-sm font-medium">{action.label}</div>
-          {action.description && (
-            <div className="text-[10px] opacity-80 mt-0.5 max-w-[80px] truncate">
-              {action.description}
-            </div>
-          )}
-        </div>
+        <div className="text-xs font-medium">{action.label}</div>
       </div>
     </BeveledButton>
   )
@@ -132,18 +124,9 @@ export function TownMenu({ onAction }: TownMenuProps) {
   }
 
   return (
-    <div className="poke-border p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-white font-semibold flex items-center gap-2">
-          <span>🏠</span>
-          <span>{currentZone.name}</span>
-        </h3>
-        <span className="text-xs text-[#606080]">Town Services</span>
-      </div>
-
-      {/* Action buttons grid - auto-fit ensures all items visible */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+    <div className="p-2 pt-3">
+      {/* Action buttons grid */}
+      <div className="grid grid-cols-4 gap-2">
         {actions.map((action) => (
           <TownMenuButton
             key={action.id}

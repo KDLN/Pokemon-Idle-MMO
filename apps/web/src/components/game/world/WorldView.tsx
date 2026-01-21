@@ -10,9 +10,11 @@ import { getTimeOfDay, formatGameTime, type TimeOfDay } from '@/lib/time/timeOfD
 
 interface WorldViewProps {
   className?: string
+  /** Remove border and rounding when embedded in a container */
+  embedded?: boolean
 }
 
-export function WorldView({ className = '' }: WorldViewProps) {
+export function WorldView({ className = '', embedded = false }: WorldViewProps) {
   const currentZone = useGameStore((state) => state.currentZone)
   const party = useGameStore((state) => state.party)
   const isConnected = useGameStore((state) => state.isConnected)
@@ -83,10 +85,12 @@ export function WorldView({ className = '' }: WorldViewProps) {
     return () => clearInterval(interval)
   }, [isWalking, walkDirection])
 
+  const baseClasses = embedded
+    ? 'texture-noise relative w-full h-full overflow-hidden'
+    : 'texture-noise relative w-full h-full rounded-xl overflow-hidden border border-[var(--color-border-subtle)]'
+
   return (
-    <div
-      className={`texture-noise relative w-full h-full rounded-xl overflow-hidden border border-[var(--color-border-subtle)] ${className}`}
-    >
+    <div className={`${baseClasses} ${className}`}>
       {/* Background layer */}
       <BackgroundLayer
         zoneType={zoneType}
@@ -96,23 +100,6 @@ export function WorldView({ className = '' }: WorldViewProps) {
 
       {/* Time of day overlay */}
       <TimeOfDayOverlay />
-
-      {/* Center content - "Exploring..." overlay */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
-        <div className="text-center">
-          <div className="font-pixel text-sm text-[var(--color-text-primary)] mb-2">
-            {isRoute ? 'Exploring...' : 'In Town'}
-          </div>
-          <div className="text-[var(--color-text-secondary)] text-sm mb-1">
-            {currentZone?.name}
-          </div>
-          {isRoute && (
-            <div className="text-[10px] text-[var(--color-text-muted)]">
-              Wild Pokemon may appear!
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Trainer and Pokemon */}
       <div className="absolute inset-0">
@@ -190,20 +177,21 @@ export function WorldView({ className = '' }: WorldViewProps) {
         </>
       )}
 
-      {/* Status overlay */}
-      <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end pointer-events-none">
-        {/* Zone info */}
-        <div className="bg-black/50 backdrop-blur-sm px-3 py-1 rounded-lg text-sm">
-          <div className="text-white font-medium">{currentZone?.name}</div>
+      {/* Status overlay - top left zone name, bottom right time */}
+      <div className="absolute top-2 left-2 pointer-events-none">
+        <div className="bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+          <div className="font-pixel text-sm text-white">{currentZone?.name}</div>
           {isRoute && currentZone && 'level_range' in currentZone && (
-            <div className="text-gray-300 text-xs">
+            <div className="text-gray-300 text-[10px]">
               Lv. {(currentZone as { level_range?: { min: number; max: number } }).level_range?.min}-
               {(currentZone as { level_range?: { min: number; max: number } }).level_range?.max}
             </div>
           )}
         </div>
+      </div>
 
-        {/* Time display */}
+      {/* Time display - bottom right */}
+      <div className="absolute bottom-2 right-2 pointer-events-none">
         <div className="bg-black/50 backdrop-blur-sm px-3 py-1 rounded-lg text-sm text-white">
           {gameTime}
         </div>

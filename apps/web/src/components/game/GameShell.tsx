@@ -30,7 +30,7 @@ import { GuildPanel } from './guild'
 import { PlayerActionModal } from './PlayerActionModal'
 import { BoostCard } from './BoostCard'
 import { BoostExpiredToast } from './BoostExpiredToast'
-import { InteractiveMap } from './map'
+import { MiniMap } from './map/MiniMap'
 import type { GuildBuffType } from '@pokemon-idle/shared'
 
 // ============================================================================
@@ -71,19 +71,9 @@ function MapSidebar({ className = '' }: { className?: string }) {
 
   return (
     <div className={`map-sidebar ${className}`}>
-      {/* Map with handheld device aesthetic */}
-      <div className="map-device">
-        {/* Header bar with indicator dots */}
-        <div className="map-device-header">
-          <div className="map-indicator-dots">
-            <div className="map-dot-red" />
-            <div className="map-dot-yellow" />
-            <div className="map-dot-green" />
-          </div>
-          <span className="map-device-label">Map</span>
-        </div>
-        {/* Interactive Map */}
-        <InteractiveMap />
+      {/* Static Mini Map showing whole world */}
+      <div className="px-3 pt-3">
+        <MiniMap />
       </div>
 
       <div className="current-location">
@@ -94,21 +84,27 @@ function MapSidebar({ className = '' }: { className?: string }) {
       <div className="travel-section">
         <div className="section-label">Travel to</div>
         <div className="travel-list">
-          {sortedConnectedZones.map(zone => (
-            <button
-              key={zone.id}
-              className="travel-btn texture-noise"
-              onClick={() => gameSocket.moveToZone(zone.id)}
-            >
-              {zone.direction && (
-                <span className="direction-arrow text-[var(--color-text-muted)]">
-                  {DIRECTION_ARROWS[zone.direction]}
-                </span>
-              )}
-              <span className="zone-icon">{zone.zone_type === 'town' ? '🏠' : '🌿'}</span>
-              <span className="zone-name">{zone.name}</span>
-            </button>
-          ))}
+          {sortedConnectedZones.length === 0 ? (
+            <div className="text-xs text-[var(--color-text-muted)] py-2 px-3">
+              No connected routes available
+            </div>
+          ) : (
+            sortedConnectedZones.map(zone => (
+              <button
+                key={zone.id}
+                className="travel-btn texture-noise"
+                onClick={() => gameSocket.moveToZone(zone.id)}
+              >
+                {zone.direction && (
+                  <span className="direction-arrow text-[var(--color-text-muted)]">
+                    {DIRECTION_ARROWS[zone.direction]}
+                  </span>
+                )}
+                <span className="zone-icon">{zone.zone_type === 'town' ? '🏠' : '🌿'}</span>
+                <span className="zone-name">{zone.name}</span>
+              </button>
+            ))
+          )}
         </div>
       </div>
 
@@ -318,11 +314,15 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
 }
 
 // ===== PARTY COLUMN COMPONENT =====
+type PartyColumnTab = 'party' | 'box'
+
 function PartyColumn({ className = '' }: { className?: string }) {
+  const [activeTab, setActiveTab] = useState<PartyColumnTab>('party')
   const worldLog = useGameStore((state) => state.worldLog)
   const guildActiveBuffs = useGameStore((state) => state.guildActiveBuffs)
   const addExpiredBoost = useGameStore((state) => state.addExpiredBoost)
   const clearExpiredBuff = useGameStore((state) => state.clearExpiredBuff)
+  const box = useGameStore((state) => state.box)
 
   const handleBoostExpire = (buffType: GuildBuffType) => {
     addExpiredBoost(buffType)
@@ -337,62 +337,98 @@ function PartyColumn({ className = '' }: { className?: string }) {
 
   return (
     <div className={`party-column ${className}`}>
-      <div className="party-header">
-        <span>{'\u2694\uFE0F'}</span>
-        <span className="party-title">Party</span>
-      </div>
-      <div className="party-content">
-        <PartyPanel />
+      {/* Tab Header */}
+      <div className="flex border-b border-[var(--color-border-subtle)]">
+        <button
+          onClick={() => setActiveTab('party')}
+          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-pixel uppercase tracking-wider transition-colors ${
+            activeTab === 'party'
+              ? 'text-[var(--color-text-primary)] border-b-2 border-[var(--color-brand-primary)] bg-[var(--color-surface-hover)]/50'
+              : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
+          }`}
+        >
+          <span>{'\u2694\uFE0F'}</span>
+          <span>Party</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('box')}
+          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-pixel uppercase tracking-wider transition-colors ${
+            activeTab === 'box'
+              ? 'text-[var(--color-text-primary)] border-b-2 border-[var(--color-brand-primary)] bg-[var(--color-surface-hover)]/50'
+              : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
+          }`}
+        >
+          <span>{'\uD83D\uDCE6'}</span>
+          <span>Box</span>
+          {box.length > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-[var(--color-brand-primary)]/20 text-[var(--color-brand-primary)] text-[10px]">
+              {box.length}
+            </span>
+          )}
+        </button>
       </div>
 
-      <div className="buffs-section">
-        <div className="buffs-header">
-          <span>{'\u26A1'}</span>
-          <span className="buffs-title">Boosts</span>
-        </div>
-        <div className="buffs-list">
-          {guildActiveBuffs && (
-            <>
-              {guildActiveBuffs.xp_bonus && (
-                <BoostCard
-                  key="xp_bonus"
-                  buff={guildActiveBuffs.xp_bonus}
-                  onExpire={() => handleBoostExpire('xp_bonus')}
-                />
-              )}
-              {guildActiveBuffs.catch_rate && (
-                <BoostCard
-                  key="catch_rate"
-                  buff={guildActiveBuffs.catch_rate}
-                  onExpire={() => handleBoostExpire('catch_rate')}
-                />
-              )}
-              {guildActiveBuffs.encounter_rate && (
-                <BoostCard
-                  key="encounter_rate"
-                  buff={guildActiveBuffs.encounter_rate}
-                  onExpire={() => handleBoostExpire('encounter_rate')}
-                />
-              )}
-            </>
-          )}
-          {!hasActiveBoosts && (
-            <div className="text-xs text-[var(--color-text-muted)] text-center py-4">
-              Use a boost from your guild shop to enhance your training!
+      {/* Tab Content */}
+      {activeTab === 'party' ? (
+        <>
+          <div className="party-content">
+            <PartyPanel />
+          </div>
+
+          <div className="buffs-section">
+            <div className="buffs-header">
+              <span>{'\u26A1'}</span>
+              <span className="buffs-title">Boosts</span>
             </div>
-          )}
-        </div>
-      </div>
+            <div className="buffs-list">
+              {guildActiveBuffs && (
+                <>
+                  {guildActiveBuffs.xp_bonus && (
+                    <BoostCard
+                      key="xp_bonus"
+                      buff={guildActiveBuffs.xp_bonus}
+                      onExpire={() => handleBoostExpire('xp_bonus')}
+                    />
+                  )}
+                  {guildActiveBuffs.catch_rate && (
+                    <BoostCard
+                      key="catch_rate"
+                      buff={guildActiveBuffs.catch_rate}
+                      onExpire={() => handleBoostExpire('catch_rate')}
+                    />
+                  )}
+                  {guildActiveBuffs.encounter_rate && (
+                    <BoostCard
+                      key="encounter_rate"
+                      buff={guildActiveBuffs.encounter_rate}
+                      onExpire={() => handleBoostExpire('encounter_rate')}
+                    />
+                  )}
+                </>
+              )}
+              {!hasActiveBoosts && (
+                <div className="text-xs text-[var(--color-text-muted)] text-center py-4">
+                  Use a boost from your guild shop to enhance your training!
+                </div>
+              )}
+            </div>
+          </div>
 
-      <div className="activity-section">
-        <div className="activity-header">
-          <span>{'\uD83D\uDCCB'}</span>
-          <span className="activity-title">Activity</span>
+          <div className="activity-section">
+            <div className="activity-header">
+              <span>{'\uD83D\uDCCB'}</span>
+              <span className="activity-title">Activity</span>
+            </div>
+            <div className="activity-log">
+              <WorldLog entries={worldLog} />
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="flex-1 overflow-hidden">
+          <BoxPanel embedded />
         </div>
-        <div className="activity-log">
-          <WorldLog entries={worldLog} />
-        </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -614,18 +650,20 @@ export function GameShell({ accessToken }: GameShellProps) {
 
         {/* Center: World + Social */}
         <div className="center-column">
-          {/* Inner flex wrapper for padding and gap */}
-          <div className="flex flex-col p-3 gap-3 min-w-0 overflow-hidden h-full">
-            {/* Zone content - constrained height (256px) */}
-            <div className="h-64 shrink-0">
-              <div className="game-world h-full">
-                {!hasEncounter ? <WorldView /> : <EncounterDisplay />}
-                {isInTown && !hasEncounter && <TownMenu />}
+          {/* Inner flex wrapper */}
+          <div className="flex flex-col p-3 gap-3 h-full min-h-0">
+            {/* Zone container - world view + town buttons in one box */}
+            <div className="poke-border rounded-xl overflow-hidden flex-none flex flex-col" style={{ minHeight: '400px' }}>
+              {/* WorldView fills available space */}
+              <div className="flex-1">
+                {!hasEncounter ? <WorldView embedded /> : <EncounterDisplay />}
               </div>
+              {/* TownMenu buttons at bottom */}
+              {isInTown && !hasEncounter && <TownMenu />}
             </div>
 
             {/* Social - fills remaining space */}
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 overflow-hidden">
               <div className="social-section h-full">
                 <SocialSidebar onOpenTrade={handleOpenTrade} />
               </div>
