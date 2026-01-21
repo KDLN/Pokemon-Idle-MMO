@@ -28,12 +28,12 @@ function HeldItemSlot({ itemId, size = 'sm' }: HeldItemSlotProps) {
       <div
         className={cn(
           sizeClasses,
-          'rounded bg-[#1a1a2e] border border-dashed border-[#2a2a4a]',
+          'rounded bg-[var(--color-surface-elevated)] border border-dashed border-[var(--color-border-subtle)]',
           'flex items-center justify-center opacity-40'
         )}
         title="No held item"
       >
-        <span className="text-[8px] text-[#606080]">-</span>
+        <span className="text-[8px] text-[var(--color-text-muted)]">-</span>
       </div>
     )
   }
@@ -42,7 +42,7 @@ function HeldItemSlot({ itemId, size = 'sm' }: HeldItemSlotProps) {
     <div
       className={cn(
         sizeClasses,
-        'rounded bg-[#1a1a2e] border border-[#3a3a6a]',
+        'rounded bg-[var(--color-surface-elevated)] border border-[var(--color-border-bright)]',
         'flex items-center justify-center cursor-help',
         'transition-transform hover:scale-110'
       )}
@@ -83,8 +83,8 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
           'texture-noise group relative flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-xl cursor-pointer transition-all duration-200',
           typeBorderClass,
           selected
-            ? 'bg-[#3B4CCA]/20 border-2 border-l-4 border-[#5B6EEA] shadow-lg shadow-[#3B4CCA]/20'
-            : 'bg-[#1a1a2e] border-2 border-l-4 border-[#2a2a4a] hover:border-[#3a3a6a] hover:bg-[#252542]',
+            ? 'bg-[var(--color-brand-primary)]/20 border-2 border-l-4 border-[var(--color-brand-primary-light)] shadow-lg shadow-[var(--color-brand-primary)]/20'
+            : 'bg-[var(--color-surface-elevated)] border-2 border-l-4 border-[var(--color-border-subtle)] hover:border-[var(--color-border-bright)] hover:bg-[var(--color-surface-hover)]',
           isShiny && 'ring-2 ring-yellow-400/50'
         )}
         style={{ borderLeftColor: isShiny ? '#FFD700' : speciesData.color }}
@@ -131,13 +131,13 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
           <div className="flex items-center gap-1 sm:gap-2 mb-0.5 sm:mb-1">
             <span className={cn(
               'text-xs sm:text-sm font-semibold truncate',
-              isShiny ? 'text-yellow-300' : 'text-white'
+              isShiny ? 'text-yellow-300' : 'text-[var(--color-text-primary)]'
             )}>
               {name}
             </span>
             <TypeBadge type={speciesData.type} size="sm" />
           </div>
-          <div className="text-[10px] sm:text-xs text-[#a0a0c0]">Lv. {pokemon.level}</div>
+          <div className="text-[10px] sm:text-xs text-[var(--color-text-secondary)]">Lv. {pokemon.level}</div>
         </div>
       </div>
     )
@@ -152,10 +152,10 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
         'texture-noise group relative rounded-xl overflow-hidden transition-all duration-300 h-full',
         typeBorderClass,
         onClick && 'cursor-pointer',
-        selected && cn('ring-2 ring-[#5B6EEA] ring-offset-2 ring-offset-[#0f0f1a] scale-[1.02]', typeGlowClass),
+        selected && cn('ring-2 ring-[var(--color-brand-primary-light)] ring-offset-2 ring-offset-[var(--color-surface-base)] scale-[1.02]', typeGlowClass),
         !selected && 'hover:scale-[1.02]',
         isShiny && 'ring-2 ring-yellow-400/60',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5B6EEA] focus-visible:ring-offset-2'
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-primary-light)] focus-visible:ring-offset-2'
       )}
       style={{ borderLeftColor: isShiny ? '#FFD700' : speciesData.color }}
       tabIndex={onClick ? 0 : undefined}
@@ -209,7 +209,7 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
       )}
 
       {/* Card background with type color accent */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a2e] to-[#0f0f1a]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-surface-elevated)] to-[var(--color-surface-base)]" />
       <div
         className="absolute top-0 left-0 right-0 h-16 sm:h-24 opacity-20"
         style={{
@@ -231,7 +231,7 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
               <Badge variant="shiny" size="sm">SHINY</Badge>
             )}
           </div>
-          <span className="font-pixel text-[8px] sm:text-[10px] text-[#606080]">
+          <span className="font-pixel text-[8px] sm:text-[10px] text-[var(--color-text-muted)]">
             Lv.{pokemon.level}
           </span>
         </div>
@@ -261,7 +261,7 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
         <div className="flex items-center justify-between mb-2 sm:mb-3">
           <div className={cn(
             'font-semibold text-xs sm:text-sm truncate',
-            isShiny ? 'text-yellow-300' : 'text-white'
+            isShiny ? 'text-yellow-300' : 'text-[var(--color-text-primary)]'
           )}>
             {name}
           </div>
@@ -294,7 +294,7 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
 
       {/* Border */}
       <div
-        className="absolute inset-0 rounded-xl border-2 border-l-4 border-[#2a2a4a] group-hover:border-[#3a3a6a] transition-colors pointer-events-none"
+        className="absolute inset-0 rounded-xl border-2 border-l-4 border-[var(--color-border-subtle)] group-hover:border-[var(--color-border-bright)] transition-colors pointer-events-none"
         style={{ borderLeftColor: isShiny ? '#FFD700' : speciesData.color }}
       />
     </div>
@@ -310,19 +310,19 @@ export function EmptyPokemonSlot({ slot, onClick }: { slot: number; onClick?: ()
       className={cn(
         'relative rounded-xl overflow-hidden min-h-[100px] sm:min-h-[140px] h-full',
         'flex flex-col items-center justify-center gap-1.5 sm:gap-2',
-        'bg-[#1a1a2e]/50 border-2 border-dashed border-[#2a2a4a]',
-        onClick && 'cursor-pointer hover:border-[#3a3a6a] hover:bg-[#1a1a2e]',
+        'bg-[var(--color-surface-elevated)]/50 border-2 border-dashed border-[var(--color-border-subtle)]',
+        onClick && 'cursor-pointer hover:border-[var(--color-border-bright)] hover:bg-[var(--color-surface-elevated)]',
         'transition-all duration-200',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5B6EEA] focus-visible:ring-offset-2'
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-primary-light)] focus-visible:ring-offset-2'
       )}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
     >
       {/* Pokeball outline */}
-      <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-[#2a2a4a] flex items-center justify-center opacity-30" aria-hidden="true">
-        <div className="w-full h-0.5 bg-[#2a2a4a]" />
+      <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-[var(--color-border-subtle)] flex items-center justify-center opacity-30" aria-hidden="true">
+        <div className="w-full h-0.5 bg-[var(--color-border-subtle)]" />
       </div>
-      <span className="text-[#606080] text-[10px] sm:text-xs">Slot {slot}</span>
+      <span className="text-[var(--color-text-muted)] text-[10px] sm:text-xs">Slot {slot}</span>
     </div>
   )
 }

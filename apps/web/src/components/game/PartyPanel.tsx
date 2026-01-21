@@ -72,11 +72,11 @@ export function PartyPanel() {
                 <StarIcon
                   key={star}
                   filled={star <= powerStars}
-                  className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${star <= powerStars ? 'text-[#FFDE00]' : 'text-[#2a2a4a]'}`}
+                  className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${star <= powerStars ? 'text-[var(--color-brand-accent)]' : 'text-[var(--color-border-subtle)]'}`}
                 />
               ))}
             </div>
-            <span className="text-[10px] sm:text-xs text-[#a0a0c0] font-mono">
+            <span className="text-[10px] sm:text-xs text-[var(--color-text-secondary)] font-mono">
               {totalLevel}
             </span>
           </div>

@@ -89,7 +89,7 @@ function MapSidebar({ className = '' }: { className?: string }) {
               onClick={() => gameSocket.moveToZone(zone.id)}
             >
               {zone.direction && (
-                <span className="direction-arrow text-[#a0a0c0]">
+                <span className="direction-arrow text-[var(--color-text-secondary)]">
                   {DIRECTION_ARROWS[zone.direction]}
                 </span>
               )}
@@ -365,7 +365,7 @@ function PartyColumn({ className = '' }: { className?: string }) {
             </>
           )}
           {!hasActiveBoosts && (
-            <div className="text-xs text-[#606080] text-center py-4">
+            <div className="text-xs text-[var(--color-text-muted)] text-center py-4">
               Use a boost from your guild shop to enhance your training!
             </div>
           )}
@@ -509,18 +509,18 @@ export function GameShell({ accessToken }: GameShellProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen min-h-[100dvh] bg-[#0f0f1a] flex items-center justify-center p-4">
+      <div className="min-h-screen min-h-[100dvh] bg-[var(--color-surface-base)] flex items-center justify-center p-4">
         <div className="text-center">
           {/* Pokeball loading spinner */}
           <div className="relative w-16 h-16 mx-auto mb-6">
             <div className="absolute inset-0 rounded-full bg-gradient-to-b from-[#EE1515] to-[#CC0000] overflow-hidden animate-spin">
               <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-b from-[#f0f0f0] to-[#d0d0d0]" />
-              <div className="absolute top-1/2 left-0 right-0 h-1 bg-[#1a1a2e] -translate-y-1/2" />
-              <div className="absolute top-1/2 left-1/2 w-4 h-4 bg-[#f0f0f0] rounded-full -translate-x-1/2 -translate-y-1/2 border-2 border-[#1a1a2e]" />
+              <div className="absolute top-1/2 left-0 right-0 h-1 bg-[var(--color-surface-elevated)] -translate-y-1/2" />
+              <div className="absolute top-1/2 left-1/2 w-4 h-4 bg-[#f0f0f0] rounded-full -translate-x-1/2 -translate-y-1/2 border-2 border-[var(--color-surface-elevated)]" />
             </div>
           </div>
-          <div className="font-pixel text-sm text-white tracking-wider mb-2">LOADING</div>
-          <div className="text-[#606080] text-sm">Connecting to server...</div>
+          <div className="font-pixel text-sm text-[var(--color-text-primary)] tracking-wider mb-2">LOADING</div>
+          <div className="text-[var(--color-text-muted)] text-sm">Connecting to server...</div>
         </div>
       </div>
     )
