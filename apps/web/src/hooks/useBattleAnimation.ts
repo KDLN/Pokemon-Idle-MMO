@@ -3,7 +3,7 @@
 import { useReducer, useEffect, useCallback, useRef } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
-import type { BattleTurn, ActiveBattle } from '@pokemon-idle/shared'
+import type { BattleTurn } from '@pokemon-idle/shared'
 
 // Compressed phase durations to fit 800ms budget (BATTLE-07)
 const PHASE_DURATIONS = {
@@ -67,7 +67,7 @@ function describeTurn(turn: BattleTurn): string {
 }
 
 type BattleAnimationAction =
-  | { type: 'START_BATTLE'; battle: ActiveBattle }
+  | { type: 'START_BATTLE'; playerHP: number; wildHP: number; playerMaxHP: number; wildMaxHP: number; wildPokemonName: string }
   | { type: 'SET_PHASE'; phase: BattlePhase; updates?: Partial<BattleAnimationState> }
   | { type: 'PROCESS_TURN'; turn: BattleTurn; playerHP: number; wildHP: number; canCatch: boolean }
   | { type: 'PROCESS_CATCH_RESULT'; shakeCount: number; success: boolean; isNewPokedexEntry: boolean }
@@ -80,13 +80,13 @@ function battleAnimationReducer(state: BattleAnimationState, action: BattleAnima
       return {
         phase: 'appear',
         currentTurn: null,
-        playerHP: action.battle.playerHP,
-        wildHP: action.battle.wildHP,
-        playerMaxHP: action.battle.playerMaxHP,
-        wildMaxHP: action.battle.wildMaxHP,
+        playerHP: action.playerHP,
+        wildHP: action.wildHP,
+        playerMaxHP: action.playerMaxHP,
+        wildMaxHP: action.wildMaxHP,
         currentShake: 0,
         totalShakes: 3,
-        messageText: `Wild ${action.battle.wildPokemon.species.name} appeared!`,
+        messageText: `Wild ${action.wildPokemonName} appeared!`,
         showDamageNumber: false,
         damageAmount: 0,
         damageTarget: 'wild',
@@ -204,7 +204,14 @@ export function useBattleAnimation(onComplete: () => void) {
     if (activeBattle && activeBattle !== battleRef.current && activeBattle.status === 'intro') {
       battleRef.current = activeBattle
       clearPendingTimeout()
-      dispatch({ type: 'START_BATTLE', battle: activeBattle })
+      dispatch({
+        type: 'START_BATTLE',
+        playerHP: activeBattle.playerHP,
+        wildHP: activeBattle.wildHP,
+        playerMaxHP: activeBattle.playerMaxHP,
+        wildMaxHP: activeBattle.wildMaxHP,
+        wildPokemonName: activeBattle.wildPokemon.species.name
+      })
     }
 
     // Update battleRef when battle changes

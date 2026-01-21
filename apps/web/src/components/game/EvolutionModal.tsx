@@ -22,11 +22,11 @@ function seededRandom(seed: number): number {
 type EvolutionState = {
   phase: EvolutionPhase
   canCancel: boolean
-  evolutionId: number | null
+  evolutionId: string | null
 }
 
 type EvolutionAction =
-  | { type: 'START_NEW_EVOLUTION'; evolutionId: number }
+  | { type: 'START_NEW_EVOLUTION'; evolutionId: string }
   | { type: 'SET_PHASE'; phase: EvolutionPhase }
   | { type: 'DISABLE_CANCEL' }
 
