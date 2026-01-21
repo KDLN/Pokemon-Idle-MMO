@@ -252,7 +252,7 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
             <img
               src={getPokemonSpriteUrl(pokemon.species_id, isShiny)}
               alt={name}
-              className="w-12 h-12 sm:w-16 sm:h-16 pixelated relative z-10 group-hover:animate-bounce-gentle"
+              className="w-12 h-12 sm:w-16 sm:h-16 pixelated relative z-10 group-hover:scale-110 transition-transform"
             />
           </div>
         </div>
@@ -292,10 +292,14 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
       {/* Shine effect on hover */}
       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
-      {/* Border */}
+      {/* Border - type-colored left border with subtle type tint on all borders */}
       <div
-        className="absolute inset-0 rounded-xl border-2 border-l-4 border-[var(--color-border-subtle)] group-hover:border-[var(--color-border-bright)] transition-colors pointer-events-none"
-        style={{ borderLeftColor: isShiny ? '#FFD700' : speciesData.color }}
+        className="absolute inset-0 rounded-xl border-2 border-l-4 group-hover:border-[var(--color-border-bright)] transition-colors pointer-events-none"
+        style={{
+          borderLeftColor: isShiny ? '#FFD700' : speciesData.color,
+          borderColor: `${isShiny ? '#FFD700' : speciesData.color}40`, // 25% opacity for subtle type tint
+          borderLeftWidth: '4px',
+        }}
       />
     </div>
   )

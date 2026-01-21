@@ -29,9 +29,10 @@ export function ProgressBar({
 
   const getBarColorClass = () => {
     if (variant === 'hp') {
-      if (percentage > 50) return 'bg-gradient-to-r from-green-400 to-green-500'
-      if (percentage > 25) return 'bg-gradient-to-r from-yellow-400 to-yellow-500'
-      return 'bg-gradient-to-r from-red-400 to-red-500'
+      // HP color thresholds: >50% green, 30-50% yellow, <30% red
+      if (percentage > 50) return 'bg-[var(--color-success)]'
+      if (percentage >= 30) return 'bg-[var(--color-warning)]'
+      return 'bg-[var(--color-error)]'
     }
     if (variant === 'xp') {
       return 'bg-gradient-to-r from-[#5B6EEA] to-[#3B4CCA]'
