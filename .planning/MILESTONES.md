@@ -1,5 +1,33 @@
 # Project Milestones: Pokemon Idle MMO
 
+## v1.1 UI/UX Polish (Shipped: 2026-01-21)
+
+**Delivered:** Complete UI/UX overhaul transforming the functional prototype into a polished product with design system foundations, responsive layouts, interactive map, progressive battle animations, and theme exploration tools.
+
+**Phases completed:** 8-15 (37 plans total)
+
+**Key accomplishments:**
+
+- Design system with CVA component patterns, Storybook 10 documentation, and semantic design tokens (colors, typography, spacing)
+- Responsive layouts working on mobile (375px) to desktop (1280px+) with 16px minimum text and 44px touch targets
+- Party drag-and-drop reordering with touch/mouse support, persistence, and visual feedback
+- Interactive map with pan/zoom navigation, fog-of-war, clickable zones/paths, and Gen 4-5 Pokemon styling
+- Progressive battle system with server-authoritative turn-by-turn calculation, real-time catch determination, and smooth HP animations
+- Theme exploration tools including component showcase and `/theme-compare` route for evaluating design directions
+
+**Stats:**
+
+- 168 files created/modified
+- 32,865 lines of TypeScript (+30,657 net change)
+- 8 phases, 37 plans, 39 requirements
+- 2 days from start to ship
+
+**Git range:** `feat(08-02)` → `feat(15-04)`
+
+**What's next:** v1.2 — Theme finalization, sound effects, or content expansion based on theme comparison results
+
+---
+
 ## v1.0 Guilds (Shipped: 2026-01-19)
 
 **Delivered:** Complete guild system transforming the solo idle experience into a social, cooperative game with shared resources, quests, buffs, and leaderboards.
@@ -29,3 +57,4 @@
 ---
 
 *Milestones file created: 2026-01-19*
+*Last updated: 2026-01-21 after v1.1 milestone*
