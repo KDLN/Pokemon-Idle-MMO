@@ -14,7 +14,7 @@ const config: StorybookConfig = {
     name: "@storybook/nextjs-vite",
     options: {},
   },
-  staticDirs: ["../public"],
+  // staticDirs removed - causes recursive copy error when outputDir is public/storybook
 };
 
 export default config;
