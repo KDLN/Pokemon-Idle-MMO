@@ -1,0 +1,122 @@
+/**
+ * 3D Beveled Button Styles
+ * Based on Josh Comeau's layered button approach
+ * https://www.joshwcomeau.com/animation/3d-button/
+ *
+ * Structure:
+ * <button class="btn-3d">
+ *   <span class="btn-3d-shadow"></span>
+ *   <span class="btn-3d-edge"></span>
+ *   <span class="btn-3d-front">Content</span>
+ * </button>
+ */
+
+/* CSS custom property for hue-based color theming */
+.btn-3d {
+  --btn-hue: 240; /* Default blue */
+  --btn-saturation: 60%;
+  --btn-lightness: 50%;
+
+  position: relative;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  outline-offset: 4px;
+  transition: filter 250ms;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-3d:hover {
+  filter: brightness(110%);
+}
+
+.btn-3d:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Shadow layer - creates depth illusion */
+.btn-3d-shadow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: hsl(0deg 0% 0% / 0.25);
+  will-change: transform;
+  transform: translateY(2px);
+  transition: transform 600ms cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+/* Edge layer - creates the beveled edge appearance */
+.btn-3d-edge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: linear-gradient(
+    to left,
+    hsl(var(--btn-hue) calc(var(--btn-saturation) * 0.8) calc(var(--btn-lightness) * 0.6)) 0%,
+    hsl(var(--btn-hue) var(--btn-saturation) calc(var(--btn-lightness) * 0.8)) 8%,
+    hsl(var(--btn-hue) var(--btn-saturation) calc(var(--btn-lightness) * 0.8)) 92%,
+    hsl(var(--btn-hue) calc(var(--btn-saturation) * 0.8) calc(var(--btn-lightness) * 0.6)) 100%
+  );
+}
+
+/* Front layer - the visible button face */
+.btn-3d-front {
+  display: block;
+  position: relative;
+  padding: 12px 42px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  background: hsl(var(--btn-hue) var(--btn-saturation) var(--btn-lightness));
+  will-change: transform;
+  transform: translateY(-4px);
+  transition: transform 600ms cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+/* Hover state - button lifts up */
+.btn-3d:hover .btn-3d-front {
+  transform: translateY(-6px);
+  transition: transform 250ms cubic-bezier(0.3, 0.7, 0.4, 1.5);
+}
+
+.btn-3d:hover .btn-3d-shadow {
+  transform: translateY(4px);
+  transition: transform 250ms cubic-bezier(0.3, 0.7, 0.4, 1.5);
+}
+
+/* Active state - button presses down */
+.btn-3d:active .btn-3d-front {
+  transform: translateY(-2px);
+  transition: transform 34ms;
+}
+
+.btn-3d:active .btn-3d-shadow {
+  transform: translateY(1px);
+  transition: transform 34ms;
+}
+
+/* Disabled state */
+.btn-3d:disabled {
+  cursor: not-allowed;
+  filter: grayscale(40%) brightness(80%);
+}
+
+.btn-3d:disabled .btn-3d-front,
+.btn-3d:disabled .btn-3d-shadow {
+  transform: translateY(0);
+}
+
+/* Focus visible state for accessibility */
+.btn-3d:focus-visible {
+  outline: 2px solid hsl(var(--btn-hue) var(--btn-saturation) 70%);
+  outline-offset: 4px;
+}
