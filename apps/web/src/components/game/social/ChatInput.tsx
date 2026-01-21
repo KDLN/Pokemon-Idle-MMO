@@ -4,6 +4,7 @@ import { useState, useRef, KeyboardEvent } from 'react'
 import type { ChatChannel, ChatMessageData } from '@/types/chat'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import { useGameStore } from '@/stores/gameStore'
+import { BeveledButton } from '@/components/ui/Button'
 
 interface ChatInputProps {
   channel: ChatChannel
@@ -306,20 +307,16 @@ export function ChatInput({
           )}
         </div>
 
-        <button
+        <BeveledButton
+          hue={240}
+          saturation={60}
+          lightness={45}
           onClick={handleSend}
           disabled={disabled || isSystemChannel || !message.trim()}
-          className={`
-            px-4 py-2 rounded-lg text-sm font-medium
-            transition-all duration-200
-            ${message.trim() && !disabled && !isSystemChannel
-              ? 'bg-[#3B4CCA] text-white hover:bg-[#5B6EEA]'
-              : 'bg-[#2a2a4a] text-[#606080] cursor-not-allowed'
-            }
-          `}
+          className="px-4 py-2 text-sm font-medium"
         >
           Send
-        </button>
+        </BeveledButton>
       </div>
 
       {isSystemChannel && (
