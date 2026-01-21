@@ -12,9 +12,9 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 Phase: 17 - Theme Styling (IN PROGRESS)
 Plan: 02 of 3 complete
 Status: In progress
-Last activity: 2026-01-21 - Completed 17-02-PLAN.md (Visual texture and atmosphere)
+Last activity: 2026-01-21 - Completed 17-01-PLAN.md (Enable Modern theme globally)
 
-Progress: v1.0 + v1.1 shipped, v1.2 plan 4/~12 complete
+Progress: v1.0 + v1.1 shipped, v1.2 plan 5/~12 complete
 
 ## Milestones
 
@@ -49,6 +49,13 @@ All v1.0 and v1.1 decisions documented in PROJECT.md Key Decisions table.
 - Mobile: NO h-64 constraint - zone content fills available space (primary focus on mobile)
 - Breakpoint: 1024px boundary in both JS and CSS (<=1024 = mobile, >=1025 = desktop)
 
+**Phase 17-01 Decisions:**
+- Enabled Modern theme globally at body element for automatic cascade
+- Preserved unique Pokedex/Leaderboard button gradients as brand identity elements
+- Preserved Pokeball red in loading spinner as brand color
+- Preserved dynamic type colors from speciesData.color
+- Preserved shiny Pokemon #FFD700 as visual identity color
+
 **Phase 17-02 Decisions:**
 - Type-colored background overlay uses 20% opacity for subtle effect
 - Sidebar gradients use CSS variables (--color-surface-elevated to --color-surface-base)
@@ -72,8 +79,8 @@ Production migration notes (apply if not already done):
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 17-02-PLAN.md (Visual texture and atmosphere)
+Stopped at: Completed 17-01-PLAN.md (Enable Modern theme globally)
 Resume file: None
 
 ---
-*State updated: 2026-01-21 after completing 17-02-PLAN.md*
+*State updated: 2026-01-21 after completing 17-01-PLAN.md*
