@@ -176,7 +176,8 @@ import {
   getPlayerGuildRank
 } from './db.js'
 import { processTick, simulateGymBattle, checkEvolutions, calculateEvolutionStats, applyEvolution, createEvolutionEvent, recalculateStats } from './game.js'
-import { BattleManager } from './battle/index.js'
+import { BattleManager, calculateSingleTurn } from './battle/index.js'
+import type { ActiveBattle } from './battle/battleManager.js'
 
 interface Client {
   ws: WebSocket
@@ -508,6 +509,9 @@ export class GameHub {
         case 'get_state':
           this.sendGameState(client)
           break
+        case 'request_turn':
+          this.handleRequestTurn(client)
+          break
         case 'debug_levelup':
           // Only allow in development environment
           if (process.env.NODE_ENV === 'development') {
@@ -753,6 +757,81 @@ export class GameHub {
     } catch (err) {
       console.error('Failed to handle message:', err)
     }
+  }
+
+  private handleRequestTurn(client: Client) {
+    if (!client.session) return
+    const playerId = client.session.player.id
+
+    const battle = this.battleManager.getBattle(playerId)
+    if (!battle) {
+      this.send(client, 'error', { message: 'No active battle' })
+      return
+    }
+
+    // Check for timeout
+    if (battle.status === 'timeout') {
+      // Battle timed out - send summary and clean up
+      const summary = this.resolveBattleSummary(battle)
+      this.battleManager.endBattle(playerId)
+      this.send(client, 'battle_summary', summary)
+      return
+    }
+
+    // Calculate next turn
+    const result = calculateSingleTurn(battle)
+
+    // Update battle state
+    this.battleManager.updateBattle(playerId, {
+      playerHP: result.newPlayerHP,
+      wildHP: result.newWildHP,
+      turnNumber: battle.turnNumber + 1,
+      status: result.battleEnded ? (result.playerWon ? 'catching' : 'complete') : 'battling'
+    })
+
+    // If player's Pokemon fainted, update HP in session
+    if (result.newPlayerHP <= 0 && client.session.party[0]) {
+      client.session.party[0].current_hp = 0
+    }
+
+    // Send turn to client
+    this.send(client, 'battle_turn', {
+      turn: result.turn,
+      battleStatus: result.battleEnded ? (result.playerWon ? 'player_win' : 'player_faint') : 'ongoing',
+      playerHP: result.newPlayerHP,
+      wildHP: result.newWildHP,
+      canCatch: result.playerWon
+    })
+
+    // If battle ended and player lost, clean up
+    if (result.battleEnded && !result.playerWon) {
+      this.battleManager.endBattle(playerId)
+    }
+  }
+
+  private resolveBattleSummary(battle: ActiveBattle): {
+    outcome: 'timeout' | 'win' | 'lose'
+    message: string
+  } {
+    // For timeout, auto-resolve based on current HP advantage
+    if (battle.status === 'timeout') {
+      const playerHpPct = battle.playerHP / battle.playerMaxHP
+      const wildHpPct = battle.wildHP / battle.wildMaxHP
+
+      if (playerHpPct > wildHpPct) {
+        return {
+          outcome: 'win',
+          message: `Battle timed out. You won against ${battle.wildPokemon.species.name}!`
+        }
+      } else {
+        return {
+          outcome: 'lose',
+          message: `Battle timed out. ${battle.wildPokemon.species.name} got away.`
+        }
+      }
+    }
+
+    return { outcome: 'win', message: 'Victory!' }
   }
 
   private async handleDisconnect(client: Client) {
