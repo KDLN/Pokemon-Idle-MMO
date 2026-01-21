@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Polish the game to feel like a real product, not a prototype — consistent visuals, responsive layouts, satisfying battle feedback.
-**Current focus:** Phase 15 - Theme Exploration
+**Current focus:** Phase 15 - Theme Exploration (COMPLETE)
 
 ## Current Position
 
 Phase: 15 of 15 (Theme Exploration)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-01-21 — Completed 15-03-PLAN.md (Component Showcase)
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-01-21 — Completed 15-04-PLAN.md (Mock Game Screen & Theme Comparison)
 
-Progress: [██████████] 100% + 15-01, 15-02, 15-03
+Progress: [██████████] 100% (All phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 33 (v1.1)
-- Average duration: 3.2 min
-- Total execution time: 118 min
+- Total plans completed: 37 (v1.1 + Phase 15)
+- Average duration: 3.3 min
+- Total execution time: 133 min
 
 **By Phase:**
 
@@ -34,10 +34,11 @@ Progress: [██████████] 100% + 15-01, 15-02, 15-03
 | 12-party-reordering | 3 | 10 min | 3.3 min |
 | 13-map-overhaul | 8 | 37 min | 4.6 min |
 | 14-battle-system | 5 | 27 min | 5.4 min |
+| 15-theme-exploration | 4 | 15 min | 3.75 min |
 
 **Recent Trend:**
-- Last 5 plans: 14-04 (9 min), 14-05 (4 min), 15-01 (3 min), 15-02 (4 min), 15-03 (4 min)
-- Trend: Phase 15 in progress
+- Last 5 plans: 15-01 (3 min), 15-02 (4 min), 15-03 (4 min), 15-04 (4 min)
+- Trend: Phase 15 complete
 
 *Updated after each plan completion*
 
@@ -135,6 +136,9 @@ Recent decisions affecting current work:
 - 15-03: Organize showcase by screen context (Battle, Party, Map, Social, Inventory, Core)
 - 15-03: Include placeholder sections for components without stories
 - 15-03: CoreUI is comprehensive - references all available story variants
+- 15-04: Use PokeAPI sprite URLs for realistic Pokemon display in mock screen
+- 15-04: Toggle switch uses data-theme attribute for CSS-only theme switching
+- 15-04: MockGameScreen is 724 lines for comprehensive theme demonstration
 
 ### Pending Todos
 
@@ -149,8 +153,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 15-03-PLAN.md (Component Showcase)
+Stopped at: Completed 15-04-PLAN.md (Mock Game Screen & Theme Comparison)
 Resume file: None
 
 ---
-*State updated: 2026-01-21 after 15-03 completion*
+*State updated: 2026-01-21 after 15-04 completion*
