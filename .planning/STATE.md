@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 14 of 15 (Battle System)
-Plan: 5 of 5 in current phase
-Status: Phase complete
-Last activity: 2026-01-21 — Completed 14-05-PLAN.md (Battle Timeout & Reconnection)
+Plan: 4 of 5 in current phase
+Status: In progress
+Last activity: 2026-01-21 — Completed 14-04-PLAN.md (Battle Animation Polish)
 
-Progress: [████████████████] 100% (All 5 plans complete in Phase 14)
+Progress: [█████████████░░░] 80% (Plan 4/5 complete in Phase 14)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 33 (v1.1)
-- Average duration: 3.2 min
-- Total execution time: 105 min
+- Total plans completed: 31 (v1.1)
+- Average duration: 3.1 min
+- Total execution time: 114 min
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: [████████████████] 100% (All 5 plans c
 | 11-ui-polish | 4 | 8 min | 2 min |
 | 12-party-reordering | 3 | 10 min | 3.3 min |
 | 13-map-overhaul | 8 | 37 min | 4.6 min |
-| 14-battle-system | 5 | 14 min | 2.8 min |
+| 14-battle-system | 4 | 23 min | 5.75 min |
 
 **Recent Trend:**
-- Last 5 plans: 14-01 (3 min), 14-02 (7 min), 14-03 (4 min), 14-04 (TBD), 14-05 (4 min)
-- Trend: Phase 14 complete - server-authoritative battle system with visual polish and robust disconnect handling
+- Last 5 plans: 13-08 (4 min), 14-01 (3 min), 14-02 (7 min), 14-03 (4 min), 14-04 (9 min)
+- Trend: Phase 14 progressing - battle animations polished with server-driven architecture
 
 *Updated after each plan completion*
 
@@ -119,10 +119,11 @@ Recent decisions affecting current work:
 - 14-02: Battle timeout auto-resolves based on HP percentage advantage
 - 14-02: Coexist with legacy battle flow during transition period
 - 14-02: Dynamic import for attemptCatch to avoid circular dependencies
-- 14-05: Don't end battle immediately on disconnect - allow 30-second reconnect window
-- 14-05: Auto-resolve timed-out battles based on HP percentage (higher HP wins)
-- 14-05: Resume protocol uses server state (HP values, turn number, battle status)
-- 14-05: XP awarded for timeout wins, HP damage for timeout losses
+- 14-04: Reduced attack-lunge from 0.3s to 0.25s for snappier feel
+- 14-04: Reduced pokeball-wobble from 0.7s to 0.6s while maintaining suspense
+- 14-04: HP transitions over 0.4s for smooth drain effect
+- 14-04: Critical HP pulses infinitely at <20% for urgency
+- 14-04: Switched from currentEncounter to activeBattle for server-driven battles
 
 ### Pending Todos
 
@@ -137,8 +138,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 14-05-PLAN.md (Battle Timeout & Reconnection)
+Stopped at: Completed 14-04-PLAN.md (Battle Animation Polish)
 Resume file: None
 
 ---
-*State updated: 2026-01-21 after 14-05 completion*
+*State updated: 2026-01-21 after 14-04 completion*
