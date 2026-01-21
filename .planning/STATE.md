@@ -10,12 +10,12 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 ## Current Position
 
 Phase: 19 - Cleanup & Polish (IN PROGRESS)
-Plan: 01 of ~2 complete
+Plan: 02 of ~3 complete
 Status: In progress
-Last activity: 2026-01-21 - Completed 19-01-PLAN.md (Remove experimental code, fix ESLint errors)
+Last activity: 2026-01-21 - Completed 19-02-PLAN.md (Storybook production integration)
 
-Progress: v1.0 + v1.1 shipped, v1.2 plan 10/~12 complete
-[###########-------] 83%
+Progress: v1.0 + v1.1 shipped, v1.2 plan 11/~12 complete
+[###########-------] 92%
 
 ## Milestones
 
@@ -94,6 +94,13 @@ All v1.0 and v1.1 decisions documented in PROJECT.md Key Decisions table.
 - setTimeout(..., 0) pattern for queuing state updates outside effect body
 - Removed experimental MockGameScreen and /theme-compare route after Modern theme adoption complete
 
+**Phase 19-02 Decisions:**
+- Exclude MDX files from Storybook build due to @storybook/blocks Vite resolution issue
+- Output Storybook to public/storybook instead of default storybook-static
+- Remove staticDirs from Storybook config to prevent recursive copy error
+- Add Storybook output to gitignore - regenerates during deploy
+- Component documentation served at /storybook via Next.js static file serving
+
 ### Open Items
 
 - Sound/audio system: Consider for v1.3
@@ -116,8 +123,8 @@ Production migration notes (apply if not already done):
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 19-01-PLAN.md (Cleanup & Polish)
+Stopped at: Completed 19-02-PLAN.md (Storybook Production Integration)
 Resume file: None
 
 ---
-*State updated: 2026-01-21 after completing 19-01-PLAN.md*
+*State updated: 2026-01-21 after completing 19-02-PLAN.md*
