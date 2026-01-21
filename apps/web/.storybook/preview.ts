@@ -14,6 +14,7 @@ const preview: Preview = {
       default: 'dark',
       values: [
         { name: 'dark', value: '#0f0f1a' },
+        { name: 'dark-modern', value: '#141820' },
         { name: 'light', value: '#ffffff' },
       ],
     },
@@ -22,9 +23,10 @@ const preview: Preview = {
   decorators: [
     withThemeByDataAttribute({
       themes: {
-        dark: "dark",
+        current: "",
+        modern: "modern",
       },
-      defaultTheme: "dark",
+      defaultTheme: "current",
       attributeName: "data-theme",
     }),
   ],
