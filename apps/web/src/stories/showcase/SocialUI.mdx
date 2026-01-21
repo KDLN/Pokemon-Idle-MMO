@@ -1,0 +1,131 @@
+import { Canvas, Meta } from '@storybook/blocks';
+import * as ButtonStories from '../../components/ui/Button.stories';
+import * as CardStories from '../../components/ui/Card.stories';
+import * as BadgeStories from '../../components/ui/Badge.stories';
+
+<Meta title="Showcase/Social UI" />
+
+# Social UI Components
+
+Components for chat, friends, trades, and guild features. These enable player-to-player interaction.
+
+---
+
+## Action Buttons
+
+Buttons for social actions like sending messages, adding friends, and initiating trades.
+
+<Canvas of={ButtonStories.Variants} />
+
+### Icon Buttons
+
+Compact buttons for social action shortcuts.
+
+<Canvas of={ButtonStories.IconButtons} />
+
+---
+
+## Social Cards
+
+Container cards for user profiles, friend lists, and guild information.
+
+<Canvas of={CardStories.Variants} />
+
+### Cards with Headers
+
+Section headers for social panels.
+
+<Canvas of={CardStories.WithHeader} />
+
+### Nested Cards
+
+User list items within a larger panel.
+
+<Canvas of={CardStories.Nested} />
+
+---
+
+## Status Badges
+
+Online status and activity indicators.
+
+<Canvas of={BadgeStories.Variants} />
+
+### Status in Context
+
+How status badges appear in friend/guild lists.
+
+<Canvas of={BadgeStories.StatusInContext} />
+
+---
+
+## Beveled Buttons (Modern Theme)
+
+3D buttons for primary social actions in the modern theme.
+
+<Canvas of={ButtonStories.Beveled} />
+
+### Color Variants
+
+Different colors for various social actions.
+
+<Canvas of={ButtonStories.BeveledColors} />
+
+---
+
+## Loading States
+
+Buttons during async social operations.
+
+<Canvas of={ButtonStories.Loading} />
+
+## Disabled States
+
+Actions unavailable (already friends, trade cooldown).
+
+<Canvas of={ButtonStories.Disabled} />
+
+---
+
+## Components Without Stories (Planned)
+
+The following social-specific components don't have dedicated stories yet:
+
+### Chat Interface
+- Message list with timestamps
+- Message input field
+- Send button
+- Tab navigation (Global, Guild, Whisper)
+- Message bubbles with sender info
+
+### Friend List
+- Friend cards with online status
+- Last seen timestamp
+- Quick action buttons (whisper, trade, view profile)
+- Friend request incoming/outgoing
+
+### Trade Interface
+- Two-panel layout (your offer / their offer)
+- Pokemon selection grid
+- Item selection
+- Confirm/Cancel buttons
+- Trade status indicator
+
+### Guild Panel
+- Guild info header (name, level, member count)
+- Member list with roles
+- Guild bank access
+- Quest board
+- Buff activation buttons
+
+### Player Profile Card
+- Avatar/trainer sprite
+- Username and title
+- Stats summary (Pokemon caught, playtime)
+- Achievement badges
+- Add friend / Block buttons
+
+### Notification Badge
+- Unread message count
+- New friend request indicator
+- Trade request alert

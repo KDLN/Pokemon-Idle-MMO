@@ -1,0 +1,105 @@
+import { Canvas, Meta } from '@storybook/blocks';
+import * as ButtonStories from '../../components/ui/Button.stories';
+import * as CardStories from '../../components/ui/Card.stories';
+
+<Meta title="Showcase/Map UI" />
+
+# Map UI Components
+
+Components for the interactive world map. Players navigate between zones using this map interface.
+
+---
+
+## Navigation Buttons
+
+Buttons for traveling between zones and map controls.
+
+<Canvas of={ButtonStories.Variants} />
+
+### Button Sizes
+
+Various button sizes for different map UI elements.
+
+<Canvas of={ButtonStories.Sizes} />
+
+---
+
+## Map Panel
+
+Container card for the map interface.
+
+<Canvas of={CardStories.Variants} />
+
+### Map Header
+
+Zone information display with actions.
+
+<Canvas of={CardStories.WithHeader} />
+
+---
+
+## Beveled Navigation (Modern Theme)
+
+3D beveled buttons for zone travel in the modern theme.
+
+<Canvas of={ButtonStories.Beveled} />
+
+<Canvas of={ButtonStories.BeveledColors} />
+
+---
+
+## Loading States
+
+Travel button during zone transition.
+
+<Canvas of={ButtonStories.Loading} />
+
+## Disabled States
+
+Travel buttons when destination is locked or player is in battle.
+
+<Canvas of={ButtonStories.Disabled} />
+
+---
+
+## Components Without Stories (Planned)
+
+The following map-specific components don't have dedicated stories yet:
+
+### Zone Nodes
+- Different visual styles per zone type
+- Town nodes (amber, 56px, larger)
+- Route nodes (green, 44px, standard)
+- Cave nodes (stone color)
+- Forest nodes (emerald)
+- Visited vs mystery state
+- Current location indicator with bounce animation
+
+### Zone Connections
+- SVG lines connecting zones
+- Solid stroke for active (accessible) connections
+- Dashed stroke for inactive connections
+- Glow filter effect on hover
+- Invisible hit area for click targets (20px stroke)
+
+### Map Controls
+- Zoom in/out buttons
+- Center on current location
+- Zoom limits: 0.5x - 2x
+
+### Player Marker
+- Animated current position indicator
+- 1.5s ease-in-out gentle bounce
+- Pokeball or trainer icon
+
+### Map Frame
+- Handheld device aesthetic
+- Header bar with indicator dots
+- Subtle corner pokeball decorations
+- Device bezel effect
+
+### Zone Info Popup
+- Shows zone name and type
+- Available Pokemon preview
+- Travel time estimate
+- Connect/disconnect status
