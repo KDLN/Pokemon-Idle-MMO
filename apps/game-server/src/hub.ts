@@ -51,7 +51,9 @@ import type {
   // Guild Shop & Statistics Payloads
   ActiveGuildBuffs,
   PurchaseGuildBuffPayload,
-  GetGuildLeaderboardPayload
+  GetGuildLeaderboardPayload,
+  // Battle Payloads
+  AttemptCatchPayload
 } from './types.js'
 import {
   getPlayerByUserId,
@@ -512,6 +514,9 @@ export class GameHub {
         case 'request_turn':
           this.handleRequestTurn(client)
           break
+        case 'attempt_catch':
+          this.handleAttemptCatch(client, msg.payload as AttemptCatchPayload)
+          break
         case 'debug_levelup':
           // Only allow in development environment
           if (process.env.NODE_ENV === 'development') {
@@ -807,6 +812,114 @@ export class GameHub {
     if (result.battleEnded && !result.playerWon) {
       this.battleManager.endBattle(playerId)
     }
+  }
+
+  private async handleAttemptCatch(client: Client, payload: AttemptCatchPayload) {
+    if (!client.session) return
+    const playerId = client.session.player.id
+
+    const battle = this.battleManager.getBattle(playerId)
+    if (!battle || battle.status !== 'catching') {
+      this.send(client, 'error', { message: 'Cannot catch - battle not in catching state' })
+      return
+    }
+
+    const { ball_type } = payload
+
+    // Get ball count from session
+    const ballCount = ball_type === 'great_ball'
+      ? client.session.great_balls
+      : client.session.pokeballs
+
+    if (ballCount <= 0) {
+      this.send(client, 'error', { message: `No ${ball_type}s remaining` })
+      return
+    }
+
+    // Get guild buff for catch rate
+    let catchRateMultiplier = 1.0
+    if (client.session.guild?.id) {
+      const buffs = await this.getGuildBuffsCached(client.session.guild.id)
+      catchRateMultiplier = buffs?.catch_rate?.multiplier || 1.0
+    }
+
+    // Import attemptCatch from game.ts
+    const { attemptCatch } = await import('./game.js')
+
+    // Calculate catch result NOW (not pre-computed)
+    const { result, newBallCount } = attemptCatch(
+      battle.wildPokemon,
+      ballCount,
+      ball_type,
+      catchRateMultiplier
+    )
+
+    // Update ball count in session
+    if (ball_type === 'great_ball') {
+      client.session.great_balls = newBallCount
+      await updatePlayerGreatBalls(playerId, newBallCount)
+    } else {
+      client.session.pokeballs = newBallCount
+      await updatePlayerPokeballs(playerId, newBallCount)
+    }
+
+    // Check if this is a new Pokedex entry
+    const caughtSpecies = await getCaughtSpeciesForPlayer(playerId, [battle.wildPokemon.species_id])
+    const isNewEntry = !caughtSpecies.has(battle.wildPokemon.species_id)
+
+    // Always show 3 shakes for suspense (per CONTEXT.md decision)
+    const shakeCount = 3
+
+    // Send catch result to client
+    this.send(client, 'catch_result', {
+      shakeCount,
+      success: result.success,
+      isNewPokedexEntry: isNewEntry && result.success,
+      catchStrength: result.catch_strength || 0.5,
+      ball_type,
+      pokeballs: client.session.pokeballs,
+      great_balls: client.session.great_balls
+    })
+
+    if (result.success) {
+      // Save caught Pokemon
+      const caughtPokemon = await saveCaughtPokemon(
+        playerId,
+        battle.wildPokemon,
+        client.session.zone.name  // catchLocation parameter
+      )
+
+      // Update Pokedex
+      await updatePokedex(playerId, battle.wildPokemon.species_id, true)
+
+      // Calculate XP for lead Pokemon
+      const xpEarned = Math.floor((battle.wildPokemon.species.base_xp_yield * battle.wildPokemon.level) / 7)
+      const leadPokemon = client.session.party[0]
+      if (leadPokemon && caughtPokemon) {
+        leadPokemon.xp += xpEarned
+        await savePokemonXP(leadPokemon.id, leadPokemon.xp)
+      }
+
+      // Send catch success with rewards
+      if (caughtPokemon) {
+        this.send(client, 'catch_complete', {
+          caught_pokemon: caughtPokemon,
+          xp_earned: xpEarned,
+          is_new_pokedex_entry: isNewEntry
+        })
+      }
+
+      // Record guild activity if in guild
+      if (client.session.guild?.id) {
+        await recordGuildActivity(client.session.guild.id, 'catch', 1)
+      }
+    }
+
+    // End battle
+    this.battleManager.endBattle(playerId)
+
+    // Set encounter cooldown
+    client.session.encounterCooldown = 8  // ENCOUNTER_COOLDOWN_TICKS
   }
 
   private resolveBattleSummary(battle: ActiveBattle): {
