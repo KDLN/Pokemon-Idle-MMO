@@ -1920,17 +1920,30 @@ class GameSocket {
         is_shiny: boolean
       }
       player_first: boolean
+      resume?: boolean
+      current_turn?: number
+      player_hp?: number
+      wild_hp?: number
+      status?: string
     }
 
     const store = useGameStore.getState()
+
+    // If resuming, use server's HP values
+    const playerHP = data.resume ? (data.player_hp ?? data.lead_pokemon.current_hp) : data.lead_pokemon.current_hp
+    const wildHP = data.resume ? (data.wild_hp ?? data.wild_pokemon.max_hp) : data.wild_pokemon.max_hp
+
+    // Determine initial status
+    const status = data.resume && data.status === 'catching' ? 'catching' : 'intro'
+
     store.setActiveBattle({
       wildPokemon: data.wild_pokemon,
       leadPokemon: data.lead_pokemon,
       playerFirst: data.player_first,
-      status: 'intro',
+      status,
       currentTurn: null,
-      playerHP: data.lead_pokemon.current_hp,
-      wildHP: data.wild_pokemon.max_hp,
+      playerHP,
+      wildHP,
       playerMaxHP: data.lead_pokemon.max_hp,
       wildMaxHP: data.wild_pokemon.max_hp,
       canCatch: false,
@@ -1938,6 +1951,21 @@ class GameSocket {
       catchComplete: null,
       battleSummary: null
     })
+
+    if (data.resume) {
+      console.log(`[Battle] Resuming battle at turn ${data.current_turn}, status: ${data.status}`)
+
+      // If battle was in catching state, auto-trigger catch sequence
+      if (data.status === 'catching') {
+        // Determine ball type and attempt catch
+        const inventory = store.inventory
+        const ballType = (inventory.great_ball || 0) > 0 ? 'great_ball' : 'pokeball'
+        gameSocket.attemptCatch(ballType)
+      } else {
+        // Request next turn to resume battle
+        gameSocket.requestTurn()
+      }
+    }
   }
 
   private handleBattleTurn = (payload: unknown) => {
