@@ -80,7 +80,7 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
       <div
         onClick={onClick}
         className={cn(
-          'group relative flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-xl cursor-pointer transition-all duration-200',
+          'texture-noise group relative flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-xl cursor-pointer transition-all duration-200',
           typeBorderClass,
           selected
             ? 'bg-[#3B4CCA]/20 border-2 border-l-4 border-[#5B6EEA] shadow-lg shadow-[#3B4CCA]/20'
@@ -149,7 +149,7 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
       role="article"
       aria-label={`${name}, level ${pokemon.level}${isShiny ? ', shiny' : ''}`}
       className={cn(
-        'group relative rounded-xl overflow-hidden transition-all duration-300 h-full',
+        'texture-noise group relative rounded-xl overflow-hidden transition-all duration-300 h-full',
         typeBorderClass,
         onClick && 'cursor-pointer',
         selected && cn('ring-2 ring-[#5B6EEA] ring-offset-2 ring-offset-[#0f0f1a] scale-[1.02]', typeGlowClass),
@@ -239,6 +239,11 @@ export function PokemonCard({ pokemon, showXP = false, onClick, selected, compac
         {/* Pokemon Sprite */}
         <div className="relative flex justify-center mb-2 sm:mb-3">
           <div className="relative">
+            {/* Type-colored background overlay */}
+            <div
+              className="absolute inset-0 rounded-lg opacity-20"
+              style={{ backgroundColor: isShiny ? '#FFD700' : speciesData.color }}
+            />
             {/* Glow effect */}
             <div
               className={cn('absolute inset-0 blur-xl opacity-30 scale-75', isShiny && 'animate-pulse')}
