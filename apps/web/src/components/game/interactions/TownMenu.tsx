@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { getTownActions, type TownAction } from '@/lib/zones/townActions'
 import { gameSocket } from '@/lib/ws/gameSocket'
+import { BeveledButton } from '@/components/ui/Button'
 
 interface TownMenuProps {
   onAction?: (action: string) => void
@@ -18,52 +19,76 @@ function TownMenuButton({
 }) {
   const isLocked = action.locked
 
-  return (
-    <button
-      onClick={onClick}
-      disabled={isLocked}
-      className={`
-        group relative flex flex-col items-center gap-2 p-4 rounded-xl
-        transition-all duration-200
-        ${isLocked
-          ? 'bg-[#1a1a2e]/50 border border-dashed border-[#2a2a4a] cursor-not-allowed opacity-60'
-          : 'bg-gradient-to-br from-[#1a1a2e] to-[#252542] border border-[#2a2a4a] hover:border-[#3a3a6a] hover:shadow-lg hover:scale-105 cursor-pointer'
-        }
-      `}
-      title={isLocked ? action.lockReason : action.description}
-    >
-      {/* Icon */}
-      <div
-        className={`
-          text-3xl transition-transform
-          ${!isLocked && 'group-hover:scale-110 group-hover:animate-bounce-gentle'}
-        `}
+  // Determine button color based on action type
+  const getButtonColor = (): { hue: number; saturation: number; lightness: number } => {
+    switch (action.action) {
+      case 'shop':
+        return { hue: 120, saturation: 60, lightness: 40 } // Green - commerce/positive
+      case 'gym':
+        return { hue: 0, saturation: 70, lightness: 45 } // Red - combat/challenging
+      case 'pokecenter':
+        return { hue: 200, saturation: 60, lightness: 45 } // Blue - healing/utility
+      case 'museum':
+      case 'daycare':
+      default:
+        return { hue: 220, saturation: 60, lightness: 45 } // Blue - neutral/informational
+    }
+  }
+
+  const { hue, saturation, lightness } = getButtonColor()
+
+  if (isLocked) {
+    // Locked state - use muted button with dashed border
+    return (
+      <button
+        onClick={onClick}
+        disabled={true}
+        className="group relative flex flex-col items-center gap-2 p-4 rounded-xl bg-[#1a1a2e]/50 border border-dashed border-[#2a2a4a] cursor-not-allowed opacity-60 transition-all duration-200"
+        title={action.lockReason}
       >
-        {action.icon}
-      </div>
+        {/* Icon */}
+        <div className="text-3xl">{action.icon}</div>
 
-      {/* Label */}
-      <div className="text-center">
-        <div className={`text-sm font-medium ${isLocked ? 'text-[#606080]' : 'text-white'}`}>
-          {action.label}
+        {/* Label */}
+        <div className="text-center">
+          <div className="text-sm font-medium text-[#606080]">{action.label}</div>
+          {action.description && (
+            <div className="text-[10px] text-[#606080] mt-0.5 max-w-[80px] truncate">
+              {action.description}
+            </div>
+          )}
         </div>
-        {action.description && (
-          <div className="text-[10px] text-[#606080] mt-0.5 max-w-[80px] truncate">
-            {action.description}
-          </div>
-        )}
-      </div>
 
-      {/* Lock indicator */}
-      {isLocked && (
+        {/* Lock indicator */}
         <div className="absolute top-2 right-2 text-sm">🔒</div>
-      )}
+      </button>
+    )
+  }
 
-      {/* Shine effect */}
-      {!isLocked && (
-        <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-      )}
-    </button>
+  return (
+    <BeveledButton
+      onClick={onClick}
+      hue={hue}
+      saturation={saturation}
+      lightness={lightness}
+      className="w-full"
+      title={action.description}
+    >
+      <div className="flex flex-col items-center gap-2 py-1">
+        {/* Icon */}
+        <div className="text-3xl">{action.icon}</div>
+
+        {/* Label */}
+        <div className="text-center">
+          <div className="text-sm font-medium">{action.label}</div>
+          {action.description && (
+            <div className="text-[10px] opacity-80 mt-0.5 max-w-[80px] truncate">
+              {action.description}
+            </div>
+          )}
+        </div>
+      </div>
+    </BeveledButton>
   )
 }
 
