@@ -1,0 +1,105 @@
+import { Canvas, Meta } from '@storybook/blocks';
+import * as CardStories from '../../components/ui/Card.stories';
+import * as BadgeStories from '../../components/ui/Badge.stories';
+import * as ButtonStories from '../../components/ui/Button.stories';
+
+<Meta title="Showcase/Party UI" />
+
+# Party UI Components
+
+Components for displaying and managing the player's party of Pokemon. The party panel is visible on the main game screen.
+
+---
+
+## Pokemon Cards
+
+Cards displaying Pokemon in the party panel. Each card shows the Pokemon's sprite, name, level, and type(s).
+
+<Canvas of={CardStories.Default} />
+
+### Card Variants
+
+Different card styles for various contexts (selected, active in battle, fainted).
+
+<Canvas of={CardStories.Variants} />
+
+### Cards with Headers
+
+Party section headers with actions.
+
+<Canvas of={CardStories.WithHeader} />
+
+---
+
+## Type Badges
+
+Display Pokemon types on party cards.
+
+<Canvas of={BadgeStories.PokemonTypes} />
+
+### Type Badge Sizes
+
+Smaller badges fit better on compact party cards.
+
+<Canvas of={BadgeStories.TypeBadgeSizes} />
+
+---
+
+## Status Badges
+
+Quality indicators and status effects.
+
+<Canvas of={BadgeStories.Variants} />
+
+### Status in Context
+
+How status badges appear in a list (online status, battle status).
+
+<Canvas of={BadgeStories.StatusInContext} />
+
+---
+
+## Party Actions
+
+Buttons for party management.
+
+<Canvas of={ButtonStories.Variants} />
+
+### Icon Buttons
+
+Compact actions for party slots.
+
+<Canvas of={ButtonStories.IconButtons} />
+
+---
+
+## Components Without Stories (Planned)
+
+The following party-specific components don't have dedicated stories yet:
+
+### Pokemon Card (Game Component)
+- Full party Pokemon display
+- Sprite, name, level, types
+- HP bar, XP bar
+- IV grade indicator
+- Drag handle for reordering
+
+### XP Progress Bar
+- Shows progress to next level
+- Smooth fill animation
+- Level up celebration effect
+
+### IV Grade Badge
+- S/A/B/C/D grade indicator
+- Color-coded quality rating
+- Tooltip with IV breakdown
+
+### Party Slot
+- Empty slot placeholder
+- Drop zone for drag-and-drop
+- "Add Pokemon" button
+
+### Party Reorder Controls
+- Drag handle icon
+- Long-press for mobile
+- Visual feedback during drag

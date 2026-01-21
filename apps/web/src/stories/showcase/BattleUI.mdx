@@ -1,0 +1,96 @@
+import { Canvas, Meta } from '@storybook/blocks';
+import * as ButtonStories from '../../components/ui/Button.stories';
+import * as BadgeStories from '../../components/ui/Badge.stories';
+
+<Meta title="Showcase/Battle UI" />
+
+# Battle UI Components
+
+Components used in the battle encounter screen. This screen handles Pokemon battles with attack, catch, and run actions.
+
+---
+
+## Action Buttons
+
+Primary buttons for battle actions - Attack, Catch (throw Pokeball), and Run.
+
+<Canvas of={ButtonStories.Variants} />
+
+## Button Sizes
+
+Different sizes for various battle UI contexts.
+
+<Canvas of={ButtonStories.Sizes} />
+
+---
+
+## Pokemon Type Badges
+
+Display Pokemon types during battle. Used to show the opponent's type(s) for strategic decisions.
+
+<Canvas of={BadgeStories.PokemonTypes} />
+
+## Type Badges in Context
+
+How type badges appear on Pokemon info displays.
+
+<Canvas of={BadgeStories.InContext} />
+
+---
+
+## Beveled Buttons (Modern Theme)
+
+3D beveled buttons for the modern theme direction. These give a classic game button feel with raised appearance and satisfying press animation.
+
+<Canvas of={ButtonStories.Beveled} />
+
+### Beveled Button Colors
+
+Color variants for different battle actions.
+
+<Canvas of={ButtonStories.BeveledColors} />
+
+### Interactive Demo
+
+Test the press effect - hover to lift, click to press down.
+
+<Canvas of={ButtonStories.BeveledInteractive} />
+
+---
+
+## Loading States
+
+Button states during async operations (attack processing, catch attempt).
+
+<Canvas of={ButtonStories.Loading} />
+
+## Disabled States
+
+Buttons when actions are unavailable (no Pokeballs, Pokemon fainted).
+
+<Canvas of={ButtonStories.Disabled} />
+
+---
+
+## Components Without Stories (Planned)
+
+The following battle-specific components don't have dedicated stories yet:
+
+### HP Bar
+- Progress bar showing Pokemon health
+- Red color at critical HP (<20%)
+- Smooth transition animation on damage
+
+### Battle Log
+- Scrollable text area for battle messages
+- "Pikachu used Thunder Shock!"
+- Damage numbers and effectiveness text
+
+### Catch Animation
+- Pokeball throw and wobble sequence
+- 3 shakes for suspense
+- Success/failure indication
+
+### Turn Indicator
+- Shows whose turn it is
+- Highlights active combatant
