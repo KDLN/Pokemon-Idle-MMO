@@ -46,24 +46,6 @@ function formatTime(date: Date): string {
   }).format(date)
 }
 
-// Keep for backward compatibility on system messages
-function getChannelColor(channel: ChatChannel): string {
-  switch (channel) {
-    case 'global':
-      return 'text-white'
-    case 'trade':
-      return 'text-green-400'
-    case 'guild':
-      return 'text-purple-400'
-    case 'system':
-      return 'text-blue-400'
-    case 'whisper':
-      return 'text-pink-400' // Pink/purple for whispers (like WoW)
-    default:
-      return 'text-white'
-  }
-}
-
 export function ChatMessage({ message, isOwnMessage }: ChatMessageProps) {
   const isWhisper = message.channel === 'whisper'
   const isGuildChat = message.channel === 'guild' && message.playerRole

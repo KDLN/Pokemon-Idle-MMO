@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, KeyboardEvent } from 'react'
-import type { ChatChannel, ChatMessageData } from '@/types/chat'
+import type { ChatChannel } from '@/types/chat'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import { useGameStore } from '@/stores/gameStore'
 import { BeveledButton } from '@/components/ui/Button'
