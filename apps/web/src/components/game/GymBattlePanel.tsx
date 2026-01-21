@@ -123,6 +123,7 @@ export function GymBattlePanel() {
   const [faintingPokemon, setFaintingPokemon] = useState<'player' | 'enemy' | null>(null)
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const prevGymIdRef = useRef<string | null>(null)
 
   // Clear pending timeouts
   const clearPendingTimeout = useCallback(() => {
@@ -132,21 +133,32 @@ export function GymBattlePanel() {
     }
   }, [])
 
-  // Reset state when panel opens
+  // Reset callback for when gym opens
+  const resetGymState = useCallback(() => {
+    setBattlePhase('intro')
+    setBattleResult(null)
+    setDialogText('')
+    setDialogIndex(0)
+    setCurrentMatchupIndex(0)
+    setCurrentTurnIndex(0)
+    setCurrentTurn(null)
+    setShowDamageNumber(false)
+    setMessageText('')
+    setFaintingPokemon(null)
+  }, [])
+
+  // Reset state when panel opens (track gym ID to detect changes)
   useEffect(() => {
-    if (isGymOpen && currentGymLeader) {
-      setBattlePhase('intro')
-      setBattleResult(null)
-      setDialogText('')
-      setDialogIndex(0)
-      setCurrentMatchupIndex(0)
-      setCurrentTurnIndex(0)
-      setCurrentTurn(null)
-      setShowDamageNumber(false)
-      setMessageText('')
-      setFaintingPokemon(null)
+    const currentGymId = currentGymLeader?.id || null
+    if (isGymOpen && currentGymId && currentGymId !== prevGymIdRef.current) {
+      prevGymIdRef.current = currentGymId
+      // Use timeout to queue reset after current render
+      const resetTimer = setTimeout(() => resetGymState(), 0)
+      return () => clearTimeout(resetTimer)
+    } else if (!isGymOpen) {
+      prevGymIdRef.current = null
     }
-  }, [isGymOpen, currentGymLeader])
+  }, [isGymOpen, currentGymLeader?.id, resetGymState])
 
   // Typewriter effect for dialog
   useEffect(() => {
@@ -190,8 +202,9 @@ export function GymBattlePanel() {
     const matchups = battleResult.matchups
     const currentMatchup = matchups[currentMatchupIndex]
     if (!currentMatchup) {
-      setBattlePhase('result')
-      return
+      // Queue state update asynchronously
+      const timer = setTimeout(() => setBattlePhase('result'), 0)
+      return () => clearTimeout(timer)
     }
 
     clearPendingTimeout()
@@ -313,13 +326,13 @@ export function GymBattlePanel() {
   // React to gym battle results from the store
   useEffect(() => {
     if (pendingGymBattleResult) {
-      setBattleResult(pendingGymBattleResult)
-
-      // Start the battle animation
-      startBattleAnimation(pendingGymBattleResult)
-
-      // Clear the pending result so we don't re-trigger
-      setPendingGymBattleResult(null)
+      // Queue state updates asynchronously to avoid setState in effect
+      const timer = setTimeout(() => {
+        setBattleResult(pendingGymBattleResult)
+        startBattleAnimation(pendingGymBattleResult)
+        setPendingGymBattleResult(null)
+      }, 0)
+      return () => clearTimeout(timer)
     }
   }, [pendingGymBattleResult, startBattleAnimation, setPendingGymBattleResult])
 
@@ -350,10 +363,6 @@ export function GymBattlePanel() {
     setBattlePhase('intro')
     setBattleResult(null)
   }
-
-  // Calculate HP percentages
-  const playerHPPercent = playerMaxHP > 0 ? (playerHP / playerMaxHP) * 100 : 100
-  const gymHPPercent = gymMaxHP > 0 ? (gymHP / gymMaxHP) * 100 : 100
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
