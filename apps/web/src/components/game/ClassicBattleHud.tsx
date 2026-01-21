@@ -13,6 +13,7 @@ interface ClassicBattleHudProps {
   side: 'enemy' | 'player'
   gender?: 'male' | 'female' | null
   showHpDrain?: boolean
+  hpColorClass?: string
 }
 
 function getHpBarColor(percent: number): string {
@@ -31,7 +32,8 @@ export function ClassicBattleHud({
   expPercent = 0,
   side,
   gender,
-  showHpDrain = false
+  showHpDrain = false,
+  hpColorClass
 }: ClassicBattleHudProps) {
   const hpPercent = maxHp > 0 ? (currentHp / maxHp) * 100 : 0
 
@@ -65,7 +67,7 @@ export function ClassicBattleHud({
               <div
                 className={cn(
                   'classic-hp-bar-fill',
-                  getHpBarColor(hpPercent),
+                  hpColorClass || getHpBarColor(hpPercent),
                   showHpDrain && 'draining'
                 )}
                 style={{ width: `${Math.max(0, Math.min(100, hpPercent))}%` }}
@@ -114,6 +116,7 @@ interface ClassicBattleArenaProps {
     maxHp: number
     sprite: string
     expPercent?: number
+    hpColorClass?: string
   }
   enemyPokemon: {
     name: string
@@ -121,6 +124,7 @@ interface ClassicBattleArenaProps {
     currentHp: number
     maxHp: number
     sprite: string
+    hpColorClass?: string
   }
   messageText?: string
   children?: React.ReactNode
@@ -158,6 +162,7 @@ export function ClassicBattleArena({
             maxHp={enemyPokemon.maxHp}
             side="enemy"
             showHpDrain={showHpDrain === 'enemy'}
+            hpColorClass={enemyPokemon.hpColorClass}
           />
         </div>
 
@@ -228,6 +233,7 @@ export function ClassicBattleArena({
             expPercent={playerPokemon.expPercent ?? 0}
             side="player"
             showHpDrain={showHpDrain === 'player'}
+            hpColorClass={playerPokemon.hpColorClass}
           />
         </div>
       </div>
