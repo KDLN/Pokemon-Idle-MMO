@@ -456,7 +456,7 @@ a:focus-visible {
 }
 
 .animate-damage-flash {
-  animation: damage-flash 0.15s ease-in-out 3;
+  animation: damage-flash 0.15s ease-out 3;  /* Kept 0.15s, optimized easing */
 }
 
 /* Damage number pop */
@@ -519,7 +519,7 @@ a:focus-visible {
 }
 
 .animate-attack-slash {
-  animation: attack-slash 0.4s ease-out forwards;
+  animation: attack-slash 0.3s ease-out forwards;  /* Reduced from 0.4s */
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 200, 100, 0.6);
 }
 
@@ -968,8 +968,13 @@ html {
 }
 
 .animate-pokeball-wobble {
-  animation: pokeball-wobble 0.7s ease-in-out;
+  animation: pokeball-wobble 0.6s ease-in-out;  /* Reduced from 0.7s */
 }
+
+/* Suspenseful shake delays - longer pauses for more tension */
+.catch-shake-1 { animation-delay: 0s; }
+.catch-shake-2 { animation-delay: 0.7s; }  /* Extra pause before second shake */
+.catch-shake-3 { animation-delay: 1.5s; }  /* Longest pause before final shake */
 
 /* Catch success burst */
 @keyframes catch-burst {
@@ -1045,6 +1050,35 @@ html {
   animation: hp-drain 0.4s ease-out forwards;
 }
 
+/* HP bar smooth transition */
+.hp-bar-fill {
+  transition: width 0.4s ease-out, background-color 0.3s ease-out;
+}
+
+/* HP bar color thresholds */
+.hp-bar-fill.hp-high {
+  background: linear-gradient(to right, #4ade80, #22c55e);
+}
+
+.hp-bar-fill.hp-medium {
+  background: linear-gradient(to right, #facc15, #eab308);
+}
+
+.hp-bar-fill.hp-low {
+  background: linear-gradient(to right, #f87171, #ef4444);
+}
+
+/* Critical HP pulse animation */
+@keyframes hp-critical-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.hp-bar-fill.hp-critical {
+  animation: hp-critical-pulse 0.5s ease-in-out infinite;
+  background: linear-gradient(to right, #dc2626, #b91c1c);
+}
+
 /* Player Pokemon slide in */
 @keyframes player-slide-in {
   0% {
@@ -1085,7 +1119,7 @@ html {
 }
 
 .animate-attack-lunge {
-  animation: attack-lunge 0.3s ease-out;
+  animation: attack-lunge 0.25s ease-out;  /* Reduced from 0.3s */
 }
 
 /* Wild attack lunge (opposite direction) */
@@ -1096,7 +1130,7 @@ html {
 }
 
 .animate-attack-lunge-wild {
-  animation: attack-lunge-wild 0.3s ease-out;
+  animation: attack-lunge-wild 0.25s ease-out;  /* Reduced from 0.3s */
 }
 
 /* Pokemon faint */
@@ -1176,6 +1210,24 @@ html {
 
 .animate-screen-shake {
   animation: screen-shake 0.4s ease-out;
+}
+
+/* Critical hit screen shake - more intense */
+@keyframes screen-shake-critical {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-4px, -3px); }
+  20% { transform: translate(4px, 3px); }
+  30% { transform: translate(-4px, 2px); }
+  40% { transform: translate(4px, -2px); }
+  50% { transform: translate(-3px, 3px); }
+  60% { transform: translate(3px, -3px); }
+  70% { transform: translate(-2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+  90% { transform: translate(-1px, 1px); }
+}
+
+.animate-screen-shake-critical {
+  animation: screen-shake-critical 0.4s ease-out;
 }
 
 /* Text typewriter cursor blink */
