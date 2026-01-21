@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 
 ## Current Position
 
-Phase: 17 - Theme Styling (COMPLETE)
-Plan: 03 of 3 complete
-Status: Phase complete
-Last activity: 2026-01-21 - Completed 17-03-PLAN.md (Button & Input Styling)
+Phase: 18 - Component Updates (IN PROGRESS)
+Plan: 01 of 3 complete
+Status: In progress
+Last activity: 2026-01-21 - Completed 18-01-PLAN.md (Upper Screen Components)
 
-Progress: v1.0 + v1.1 shipped, v1.2 plan 6/~12 complete
+Progress: v1.0 + v1.1 shipped, v1.2 plan 7/~12 complete
 
 ## Milestones
 
@@ -26,7 +26,7 @@ Progress: v1.0 + v1.1 shipped, v1.2 plan 6/~12 complete
 
 ## Next Steps
 
-Phase 17 Theme Styling complete. Ready for Phase 18 or next phase planning.
+Phase 18-01 complete. Ready for 18-02 (Zone view styling) or 18-03 (Social area styling).
 
 ## Accumulated Context
 
@@ -68,6 +68,12 @@ All v1.0 and v1.1 decisions documented in PROJECT.md Key Decisions table.
 - Disabled shop buy buttons use flat gray, not beveled (no tactile feel when unusable)
 - Input inset shadow creates pressed-in appearance matching beveled buttons
 
+**Phase 18-01 Decisions:**
+- Header already matches MockHeader - no changes needed (verification only)
+- Ticker simplified to horizontal event list with LIVE indicator
+- Map device wrapper uses red/yellow/green indicator dots for retro handheld feel
+- Travel buttons get texture-noise class and updated hover states
+
 ### Open Items
 
 - Sound/audio system: Consider for v1.3
@@ -76,7 +82,7 @@ All v1.0 and v1.1 decisions documented in PROJECT.md Key Decisions table.
 
 ### Blockers/Concerns
 
-None - Phase 16 complete
+None - Phase 18-01 complete
 
 Production migration notes (apply if not already done):
 - 031_fix_quest_details.sql
@@ -85,8 +91,8 @@ Production migration notes (apply if not already done):
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 17-03-PLAN.md (Button & Input Styling)
+Stopped at: Completed 18-01-PLAN.md (Upper Screen Components)
 Resume file: None
 
 ---
-*State updated: 2026-01-21 after completing 17-03-PLAN.md*
+*State updated: 2026-01-21 after completing 18-01-PLAN.md*
