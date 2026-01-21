@@ -27,6 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
+        data-theme="modern"
         className={`${outfit.variable} ${pressStart2P.variable} antialiased`}
       >
         {children}
