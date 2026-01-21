@@ -2688,7 +2688,20 @@ html {
 }
 
 .mobile-tab-bar button.active {
-  color: var(--lb-accent);
+  color: var(--color-brand-primary);
+  position: relative;
+}
+
+/* Underline indicator for active mobile tab */
+.mobile-tab-bar button.active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: var(--color-brand-primary);
+  border-radius: 0 0 1px 1px;
 }
 
 .mobile-tab-bar .tab-icon {

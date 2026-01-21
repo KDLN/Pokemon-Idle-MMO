@@ -411,36 +411,37 @@ function MobileTabBar({
 }) {
   return (
     <div className="mobile-tab-bar">
-      <button
-        className={activeTab === 'map' ? 'active' : ''}
-        onClick={() => onTabChange('map')}
-      >
-        <span className="tab-icon">🗺️</span>
-        <span>Map</span>
-      </button>
+      {/* Tab order: Zone / Party / Social / Map per CONTEXT.md */}
       <button
         className={activeTab === 'game' ? 'active' : ''}
         onClick={() => onTabChange('game')}
       >
-        <span className="tab-icon">🎮</span>
-        <span>Game</span>
+        <span className="tab-icon">{'\uD83D\uDDFA\uFE0F'}</span>
+        <span>Zone</span>
       </button>
       <button
         className={activeTab === 'party' ? 'active' : ''}
         onClick={() => onTabChange('party')}
       >
-        <span className="tab-icon">⚔️</span>
+        <span className="tab-icon">{'\u2694\uFE0F'}</span>
         <span>Party</span>
       </button>
       <button
         className={`relative ${activeTab === 'social' ? 'active' : ''}`}
         onClick={() => onTabChange('social')}
       >
-        <span className="tab-icon">💬</span>
+        <span className="tab-icon">{'\uD83D\uDCAC'}</span>
         <span>Social</span>
         {(badges.friends > 0 || badges.trades > 0) && (
           <span className="tab-badge">{badges.friends + badges.trades}</span>
         )}
+      </button>
+      <button
+        className={activeTab === 'map' ? 'active' : ''}
+        onClick={() => onTabChange('map')}
+      >
+        <span className="tab-icon">{'\uD83C\uDFAE'}</span>
+        <span>Map</span>
       </button>
     </div>
   )
