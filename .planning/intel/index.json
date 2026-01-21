@@ -1,0 +1,281 @@
+{
+  "version": 1,
+  "updated": 1737360330000,
+  "files": {
+    "apps/game-server/src/index.ts": {
+      "exports": [],
+      "imports": ["./hub.js", "./db.js"],
+      "indexed": 1737360330000
+    },
+    "apps/game-server/src/hub.ts": {
+      "exports": ["GameHub"],
+      "imports": ["ws", "jose", "./types.js", "./db.js", "./game.js"],
+      "indexed": 1737360330000
+    },
+    "apps/game-server/src/game.ts": {
+      "exports": ["processTick", "simulateGymBattle", "checkEvolutions", "calculateEvolutionStats", "applyEvolution", "createEvolutionEvent", "recalculateStats", "calculateHP", "calculateStat", "xpForLevel", "xpForLevelWithTotal", "getTypeEffectiveness", "TYPE_CHART"],
+      "imports": ["./types.js", "./db.js", "./ivs.js"],
+      "indexed": 1737360330000
+    },
+    "apps/game-server/src/db.ts": {
+      "exports": ["initDatabase", "getSupabase", "getPlayerByUserId", "getPlayerParty", "getPlayerPokeballs", "updatePlayerPokeballs", "getPlayerGreatBalls", "updatePlayerGreatBalls", "updatePlayerLastOnline", "updatePlayerZone", "getZone", "getConnectedZones", "getEncounterTable", "getSpecies", "getAllSpecies", "saveCaughtPokemon", "updatePokedex", "getCaughtSpeciesForPlayer", "updatePokemonStats", "evolvePokemon", "updatePokemonHP", "getPlayerBox", "swapPartyMember", "removeFromParty", "reorderParty", "savePokemonXP", "updatePlayerMoney", "buyItem", "getPlayerInventory", "useInventoryItem", "addInventoryItem", "getPotionHealAmount", "SHOP_ITEMS", "getGymLeaderByZone", "hasPlayerDefeatedGym", "recordGymVictory", "addBadgeToPlayer", "getRecentChatMessages", "saveChatMessage", "getPlayerByUsername", "sendFriendRequest", "acceptFriendRequest", "declineFriendRequest", "getIncomingFriendRequests", "getOutgoingFriendRequests", "getFriendsList", "removeFriend", "getPlayersInZone", "arePlayersFriends", "createTradeRequest", "getIncomingTradeRequests", "getOutgoingTradeRequests", "cancelTradeRequest", "acceptTradeRequest", "declineTradeRequest", "completeTrade", "addTradeOffer", "removeTradeOffer", "getTradeOffers", "getActiveTradeIds", "getTradeHistory", "getMuseumMembership", "purchaseMuseumMembership", "blockPlayer", "unblockPlayer", "getBlockedPlayers", "isPlayerBlocked", "getLeaderboard", "getPlayerRank", "updateWeeklyStats", "createGuild", "joinGuild", "leaveGuild", "getGuildById", "getGuildMembers", "getPlayerGuild", "searchGuilds", "promoteMember", "demoteMember", "kickMember", "transferLeadership", "disbandGuild", "getGuildMemberByPlayerId", "sendGuildInvite", "acceptGuildInvite", "declineGuildInvite", "cancelGuildInvite", "getIncomingGuildInvites", "getOutgoingGuildInvites", "getGuildChatHistory", "saveGuildMessage", "getGuildBank", "depositCurrencyToBank", "withdrawCurrencyFromBank", "depositItemToBank", "withdrawItemFromBank", "depositPokemonToBank", "withdrawPokemonFromBank", "expandBankPokemonSlots", "createBankRequest", "fulfillBankRequest", "cancelBankRequest", "getBankRequests", "getBankLogs", "setBankPermission", "setBankLimit", "setPlayerBankOverride", "removePlayerBankOverride", "updateGuildQuestProgress", "recordGuildActivity", "getGuildQuests", "getQuestDetails", "rerollQuest", "getQuestHistory", "purchaseGuildBuff", "getActiveGuildBuffs", "getGuildStatistics", "getGuildLeaderboard", "getPlayerGuildRank"],
+      "imports": ["@supabase/supabase-js", "./types.js", "./game.js"],
+      "indexed": 1737360330000
+    },
+    "apps/game-server/src/types.ts": {
+      "exports": ["Move", "EncounterTableEntry", "PlayerSession", "WeeklyStats"],
+      "imports": ["@pokemon-idle/shared"],
+      "indexed": 1737360330000
+    },
+    "apps/game-server/src/ivs.ts": {
+      "exports": ["IVs", "IVGenerationOptions", "generateSingleIV", "generateIVs", "getTotalIVs", "getIVGrade", "countPerfectIVs", "ivsToDbFormat", "dbFormatToIVs"],
+      "imports": [],
+      "indexed": 1737360330000
+    },
+    "packages/shared/src/index.ts": {
+      "exports": ["CHAT_CHANNELS", "xpForLevel", "getXPProgress"],
+      "imports": ["./types/index.js"],
+      "indexed": 1737360330000
+    },
+    "packages/shared/src/types/index.ts": {
+      "exports": [],
+      "imports": ["./core.js", "./battle.js", "./catching.js", "./progression.js", "./social.js", "./trade.js", "./leaderboard.js", "./common.js", "./guild.js"],
+      "indexed": 1737360330000
+    },
+    "packages/shared/src/types/core.ts": {
+      "exports": ["Player", "PokemonSpecies", "Pokemon", "Zone", "WildPokemon"],
+      "imports": [],
+      "indexed": 1737360330000
+    },
+    "packages/shared/src/types/battle.ts": {
+      "exports": ["BattleTurn", "BattleSequence", "GymBattleMatchup"],
+      "imports": [],
+      "indexed": 1737360330000
+    },
+    "packages/shared/src/types/catching.ts": {
+      "exports": ["BallType", "CatchSequence", "CatchResult", "EncounterEvent"],
+      "imports": [],
+      "indexed": 1737360330000
+    },
+    "packages/shared/src/types/progression.ts": {
+      "exports": ["LevelUpEvent", "PendingEvolution", "EvolutionEvent"],
+      "imports": [],
+      "indexed": 1737360330000
+    },
+    "packages/shared/src/types/social.ts": {
+      "exports": ["ChatChannel", "ChatMessageEntry", "FriendStatus", "Friend", "FriendRequest", "OutgoingFriendRequest", "WhisperMessage", "BlockedPlayer"],
+      "imports": [],
+      "indexed": 1737360330000
+    },
+    "packages/shared/src/types/trade.ts": {
+      "exports": ["TradeStatus", "Trade", "TradeOfferPokemon", "TradeOffer", "TradeRequest", "OutgoingTradeRequest", "TradeHistoryPokemon", "TradeHistoryEntry"],
+      "imports": [],
+      "indexed": 1737360330000
+    },
+    "packages/shared/src/types/leaderboard.ts": {
+      "exports": ["LeaderboardEntry", "LeaderboardType", "LeaderboardTimeframe", "PlayerRank"],
+      "imports": [],
+      "indexed": 1737360330000
+    },
+    "packages/shared/src/types/common.ts": {
+      "exports": ["WSMessage", "ShopItem", "TickResult"],
+      "imports": [],
+      "indexed": 1737360330000
+    },
+    "packages/shared/src/types/guild.ts": {
+      "exports": ["Guild", "GuildMember", "GuildRole", "GuildJoinMode", "GuildPreview", "PlayerGuildInfo", "CreateGuildPayload", "JoinGuildPayload", "SearchGuildsPayload", "UpdateGuildSettingsPayload", "GuildDataPayload", "GuildListPayload", "GuildMemberJoinedPayload", "GuildMemberLeftPayload", "GuildMemberKickedPayload", "GuildRoleChangedPayload", "GuildDisbandedPayload", "GuildErrorPayload", "PromoteMemberPayload", "DemoteMemberPayload", "KickMemberPayload", "TransferLeadershipPayload", "DisbandGuildPayload", "GuildInvite", "GuildOutgoingInvite", "SendGuildInvitePayload", "AcceptGuildInvitePayload", "DeclineGuildInvitePayload", "CancelGuildInvitePayload", "GuildInviteSentPayload", "GuildInviteReceivedPayload", "GuildInvitesListPayload", "GuildOutgoingInvitesPayload", "GuildInviteAcceptedPayload", "GuildInviteDeclinedPayload", "GuildInviteCancelledPayload", "GuildMessageEntry", "GuildChatHistoryPayload", "GuildChatMessagePayload", "BankCategory", "BankAction", "BankRequestStatus", "GuildBank", "GuildBankItem", "GuildBankPokemon", "GuildBankPermission", "GuildBankLimit", "GuildBankPlayerOverride", "GuildBankLog", "GuildBankLogDetails", "GuildBankRequest", "GuildBankRequestDetails", "GetGuildBankPayload", "DepositCurrencyPayload", "WithdrawCurrencyPayload", "DepositItemPayload", "WithdrawItemPayload", "DepositPokemonPayload", "WithdrawPokemonPayload", "CreateBankRequestPayload", "FulfillBankRequestPayload", "CancelBankRequestPayload", "GetBankLogsPayload", "GetBankRequestsPayload", "SetBankPermissionPayload", "SetBankLimitPayload", "SetPlayerOverridePayload", "RemovePlayerOverridePayload", "ExpandPokemonSlotsPayload", "GuildBankDataPayload", "GuildBankCurrencyUpdatedPayload", "GuildBankItemUpdatedPayload", "GuildBankPokemonAddedPayload", "GuildBankPokemonRemovedPayload", "GuildBankSlotsExpandedPayload", "GuildBankLogsPayload", "GuildBankRequestsPayload", "GuildBankRequestCreatedPayload", "GuildBankRequestFulfilledPayload", "GuildBankMyLimitsPayload", "GuildBankErrorPayload", "GuildBankSuccessPayload", "QuestType", "QuestPeriod", "GuildQuest", "GuildQuestWithContribution", "QuestContribution", "GuildQuestDetailed", "QuestRerollStatus", "QuestResetTimes", "GuildQuestsState", "GuildQuestHistory", "GetGuildQuestsPayload", "GetQuestDetailsPayload", "RerollQuestPayload", "GetQuestHistoryPayload", "GuildQuestsDataPayload", "GuildQuestDetailsPayload", "GuildQuestProgressPayload", "GuildQuestMilestonePayload", "GuildQuestCompletedPayload", "GuildQuestRerolledPayload", "GuildQuestHistoryPayload", "GuildQuestsResetPayload", "GuildQuestErrorPayload", "GuildBuffType", "GuildBuff", "ActiveGuildBuffs", "GuildStatistics", "LeaderboardMetric", "GuildLeaderboardEntry", "GuildRankInfo", "PurchaseGuildBuffPayload", "GetGuildLeaderboardPayload", "GuildActiveBuffsPayload", "GuildBuffPurchasedPayload", "GuildStatisticsPayload", "GuildLeaderboardPayload", "GuildShopErrorPayload", "GuildBuffExpiredPayload"],
+      "imports": [],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/stores/gameStore.ts": {
+      "exports": ["useGameStore"],
+      "imports": ["zustand", "zustand/middleware", "@/types/game", "@/types/chat", "@/types/friends", "@/types/trade", "@/components/game/interactions/WorldLog", "@/components/game/social/WorldEventsTicker", "@/components/game/GymBattlePanel", "@/lib/time/timeOfDay", "@/lib/sprites/trainerCustomization", "@/components/game/world/SpriteTrainer", "@pokemon-idle/shared"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/lib/ws/gameSocket.ts": {
+      "exports": ["ONLINE_THRESHOLD_MS", "gameSocket"],
+      "imports": ["@/stores/gameStore", "@/types/game", "@/components/game/GymBattlePanel", "@/types/chat", "@/types/friends", "@/types/trade", "@pokemon-idle/shared"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/GameShell.tsx": {
+      "exports": ["default"],
+      "imports": ["react", "@/stores/gameStore", "@/lib/ws/gameSocket", "./Header", "./EncounterDisplay", "./PartyPanel", "./BoxPanel", "./LevelUpToast", "./world", "./social/WorldEventsTicker", "./social/ChatSidebar", "./social/FriendsList", "./social/FriendRequests", "./social/AddFriend", "./social/TradeRequests", "./social/TradeHistory", "./social/TradeModal", "./interactions/TownMenu", "./interactions/WorldLog", "./NearbyPlayersSection", "./ShopPanel", "./GymBattlePanel", "./interactions/MuseumPanel", "./EvolutionModal", "@/lib/utils/friendUtils", "@/types/trade", "./guild", "./PlayerActionModal", "./BoostCard", "./BoostExpiredToast", "./map", "@pokemon-idle/shared"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/ui/index.ts": {
+      "exports": ["Card", "CardHeader", "Badge", "TypeBadge", "Button", "IconButton", "ProgressBar", "HPBar", "XPBar"],
+      "imports": ["./Card", "./Badge", "./Button", "./ProgressBar"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/ui/Card.tsx": {
+      "exports": ["Card", "CardHeader"],
+      "imports": [],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/ui/Badge.tsx": {
+      "exports": ["Badge", "TypeBadge"],
+      "imports": [],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/ui/Button.tsx": {
+      "exports": ["Button", "IconButton"],
+      "imports": [],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/ui/ProgressBar.tsx": {
+      "exports": ["ProgressBar", "HPBar", "XPBar"],
+      "imports": [],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/index.ts": {
+      "exports": ["GameShell"],
+      "imports": ["./GameShell"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/Header.tsx": {
+      "exports": ["Header"],
+      "imports": ["react", "@/stores/gameStore", "@pokemon-idle/shared"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/PartyPanel.tsx": {
+      "exports": ["PartyPanel"],
+      "imports": ["react", "@/stores/gameStore", "@/lib/ws/gameSocket", "./PartySlot"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/BoxPanel.tsx": {
+      "exports": ["BoxPanel"],
+      "imports": ["react", "@/stores/gameStore", "@/lib/ws/gameSocket"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/EncounterDisplay.tsx": {
+      "exports": ["EncounterDisplay"],
+      "imports": ["react", "@/stores/gameStore", "@/types/game"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/ShopPanel.tsx": {
+      "exports": ["ShopPanel"],
+      "imports": ["react", "@/stores/gameStore", "@/lib/ws/gameSocket"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/GymBattlePanel.tsx": {
+      "exports": ["GymBattlePanel", "GymLeader", "GymBattleResult"],
+      "imports": ["react", "@/stores/gameStore", "@/lib/ws/gameSocket", "@pokemon-idle/shared"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/EvolutionModal.tsx": {
+      "exports": ["EvolutionModal"],
+      "imports": ["react", "@/stores/gameStore", "@/lib/ws/gameSocket"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/LevelUpToast.tsx": {
+      "exports": ["LevelUpToast"],
+      "imports": ["react", "@/stores/gameStore"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/world/index.ts": {
+      "exports": ["WorldView"],
+      "imports": ["./WorldView"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/social/ChatSidebar.tsx": {
+      "exports": ["ChatSidebar"],
+      "imports": ["react", "@/stores/gameStore", "@/lib/ws/gameSocket", "@/types/chat"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/social/FriendsList.tsx": {
+      "exports": ["FriendsList"],
+      "imports": ["react", "@/stores/gameStore", "@/lib/ws/gameSocket", "@/lib/utils/friendUtils"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/social/TradeModal.tsx": {
+      "exports": ["TradeModal"],
+      "imports": ["react", "@/stores/gameStore", "@/lib/ws/gameSocket", "@/types/trade"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/guild/index.ts": {
+      "exports": ["GuildPanel"],
+      "imports": ["./GuildPanel"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/guild/GuildPanel.tsx": {
+      "exports": ["GuildPanel"],
+      "imports": ["react", "@/stores/gameStore", "@/lib/ws/gameSocket", "./GuildOverview", "./GuildMembers", "./GuildBank", "./GuildQuests", "./GuildShop"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/map/index.ts": {
+      "exports": ["InteractiveMap"],
+      "imports": ["./InteractiveMap"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/components/game/map/InteractiveMap.tsx": {
+      "exports": ["InteractiveMap"],
+      "imports": ["react", "@/stores/gameStore", "@/lib/ws/gameSocket"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/types/game.ts": {
+      "exports": ["Player", "Pokemon", "PokemonSpecies", "Zone", "EncounterEvent", "LevelUpEvent", "PendingEvolution", "EvolutionEvent", "ShopItem", "TickResult", "GameState", "LeaderboardEntry", "LeaderboardType", "LeaderboardTimeframe", "PlayerRank"],
+      "imports": ["@pokemon-idle/shared"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/types/chat.ts": {
+      "exports": ["ChatChannel", "ChatMessageData", "WhisperMessageData", "BlockedPlayerData"],
+      "imports": ["@pokemon-idle/shared"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/types/friends.ts": {
+      "exports": ["Friend", "FriendRequest", "OutgoingFriendRequest"],
+      "imports": ["@pokemon-idle/shared"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/types/trade.ts": {
+      "exports": ["IncomingTradeRequest", "OutgoingTradeRequest", "ActiveTradeSession", "TradeOffer", "TradeStatus", "TradeHistoryEntry"],
+      "imports": ["@pokemon-idle/shared"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/lib/supabase/client.ts": {
+      "exports": ["createClient"],
+      "imports": ["@supabase/ssr"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/lib/supabase/server.ts": {
+      "exports": ["createClient"],
+      "imports": ["@supabase/ssr", "next/headers"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/lib/utils/friendUtils.ts": {
+      "exports": ["isOnline", "countOnlineFriends", "formatLastSeen"],
+      "imports": ["@/lib/ws/gameSocket"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/lib/time/timeOfDay.ts": {
+      "exports": ["TimeOfDay", "getTimeOfDay", "getTimeColors", "useTimeOfDay"],
+      "imports": ["react"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/lib/sprites/trainerCustomization.ts": {
+      "exports": ["TrainerCustomization", "DEFAULT_TRAINER_CUSTOMIZATION", "generateTrainerSprite"],
+      "imports": [],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/app/layout.tsx": {
+      "exports": ["metadata", "default"],
+      "imports": ["./globals.css", "next/font/google"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/app/page.tsx": {
+      "exports": ["default"],
+      "imports": ["next/link", "react"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/app/game/page.tsx": {
+      "exports": ["default"],
+      "imports": ["./GameClient"],
+      "indexed": 1737360330000
+    },
+    "apps/web/src/app/game/GameClient.tsx": {
+      "exports": ["default"],
+      "imports": ["react", "@/lib/supabase/client", "@/stores/gameStore", "@/lib/ws/gameSocket", "@/components/game"],
+      "indexed": 1737360330000
+    }
+  }
+}

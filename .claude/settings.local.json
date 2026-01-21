@@ -12,7 +12,10 @@
       "Bash(npm run dev:*)",
       "Bash(git commit:*)",
       "mcp__plugin_supabase_supabase__execute_sql",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(git tag -a v1.0 -m \"$\\(cat <<''EOF''\nv1.0 Guilds\n\nDelivered: Complete guild system transforming the solo idle experience into\na social, cooperative game with shared resources, quests, buffs, and leaderboards.\n\nKey accomplishments:\n- Guild foundation with create, join, leave, search, and WoW-style role management\n- Guild bank with currency, items, Pokemon storage, daily limits, and audit logging\n- Guild quests with daily/weekly shared goals and contribution leaderboards\n- Guild shop with purchasable buffs \\(+10% XP, catch rate, encounter rate\\)\n- Guild statistics and competitive leaderboards \\(top 50 guilds\\)\n- Cerulean City zone expansion with Misty''s Gym and Routes 24-25\n\nStats: 7 phases, 27 plans, 55 requirements, 140 files, 48K LOC\n\nSee .planning/MILESTONES.md for full details.\nEOF\n\\)\")",
+      "Bash(npm run storybook:*)"
     ]
   }
 }

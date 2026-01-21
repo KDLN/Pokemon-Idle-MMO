@@ -371,7 +371,7 @@ function MockMapSidebar() {
 /** Mock World View */
 function MockWorldView() {
   return (
-    <div className="texture-noise flex-1 relative rounded-xl overflow-hidden bg-gradient-to-b from-[#2a3a2a] to-[#1a2a1a] border border-[var(--color-border-subtle)]">
+    <div className="texture-noise h-full relative rounded-xl overflow-hidden bg-gradient-to-b from-[#2a3a2a] to-[#1a2a1a] border border-[var(--color-border-subtle)]">
       {/* Sky gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-sky-900/30 via-transparent to-transparent" />
 
@@ -706,10 +706,14 @@ export function MockGameScreen() {
           <MockMapSidebar />
         </div>
 
-        {/* Center: World + Social */}
+        {/* Center: World + Social - balanced proportions */}
         <div className="flex-1 flex flex-col p-3 gap-3 min-w-0 overflow-hidden">
-          <MockWorldView />
-          <div className="h-52 shrink-0">
+          {/* Zone content - constrained height, not taking all space */}
+          <div className="h-64 shrink-0">
+            <MockWorldView />
+          </div>
+          {/* Social/Chat - takes remaining space */}
+          <div className="flex-1 min-h-0">
             <MockSocialSidebar />
           </div>
         </div>

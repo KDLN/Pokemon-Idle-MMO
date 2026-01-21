@@ -1,0 +1,139 @@
+{
+  "version": 1,
+  "updated": 1737360330000,
+  "naming": {
+    "exports": {
+      "dominant": "camelCase",
+      "count": 285,
+      "percentage": 72,
+      "notes": "Functions use camelCase (getPlayerByUserId, updatePlayerZone), types/interfaces use PascalCase (Player, Pokemon, GuildBank)"
+    },
+    "types": {
+      "dominant": "PascalCase",
+      "count": 180,
+      "percentage": 95,
+      "notes": "TypeScript interfaces and types consistently use PascalCase"
+    }
+  },
+  "directories": {
+    "apps/game-server/src": {
+      "purpose": "Backend game server - WebSocket hub, game logic, database queries",
+      "files": 6
+    },
+    "apps/web/src/components/game": {
+      "purpose": "Game UI components - panels, modals, displays",
+      "files": 45
+    },
+    "apps/web/src/components/game/social": {
+      "purpose": "Social features - chat, friends, trade UI",
+      "files": 12
+    },
+    "apps/web/src/components/game/guild": {
+      "purpose": "Guild system UI - members, bank, quests, shop",
+      "files": 8
+    },
+    "apps/web/src/components/game/world": {
+      "purpose": "World view and sprite rendering",
+      "files": 6
+    },
+    "apps/web/src/components/game/map": {
+      "purpose": "Interactive map component",
+      "files": 3
+    },
+    "apps/web/src/components/ui": {
+      "purpose": "Reusable UI primitives - Card, Badge, Button, ProgressBar",
+      "files": 5
+    },
+    "apps/web/src/stores": {
+      "purpose": "Zustand state management",
+      "files": 1
+    },
+    "apps/web/src/lib/ws": {
+      "purpose": "WebSocket client and message handlers",
+      "files": 1
+    },
+    "apps/web/src/lib/supabase": {
+      "purpose": "Supabase client utilities (SSR and browser)",
+      "files": 2
+    },
+    "apps/web/src/lib/utils": {
+      "purpose": "Utility functions",
+      "files": 3
+    },
+    "apps/web/src/lib/time": {
+      "purpose": "Time-of-day calculations for visual effects",
+      "files": 1
+    },
+    "apps/web/src/lib/sprites": {
+      "purpose": "Sprite generation and customization",
+      "files": 2
+    },
+    "apps/web/src/types": {
+      "purpose": "Frontend TypeScript type definitions",
+      "files": 4
+    },
+    "apps/web/src/app": {
+      "purpose": "Next.js App Router pages",
+      "files": 6
+    },
+    "packages/shared/src": {
+      "purpose": "Shared code between frontend and backend",
+      "files": 2
+    },
+    "packages/shared/src/types": {
+      "purpose": "Shared TypeScript types for game entities",
+      "files": 9
+    }
+  },
+  "suffixes": {
+    ".tsx": {
+      "purpose": "React components",
+      "count": 65
+    },
+    ".ts": {
+      "purpose": "TypeScript modules",
+      "count": 45
+    }
+  },
+  "patterns": {
+    "barrel_exports": {
+      "description": "Index files re-export from subdirectories",
+      "examples": ["components/ui/index.ts", "components/game/guild/index.ts", "packages/shared/src/types/index.ts"]
+    },
+    "store_pattern": {
+      "description": "Single Zustand store with persist middleware",
+      "location": "apps/web/src/stores/gameStore.ts"
+    },
+    "websocket_singleton": {
+      "description": "GameSocket class as singleton for WebSocket management",
+      "location": "apps/web/src/lib/ws/gameSocket.ts"
+    },
+    "type_reexports": {
+      "description": "Frontend types extend shared types for UI-specific additions",
+      "examples": ["apps/web/src/types/game.ts imports from @pokemon-idle/shared"]
+    },
+    "supabase_ssr": {
+      "description": "Separate Supabase clients for server and browser contexts",
+      "locations": ["apps/web/src/lib/supabase/client.ts", "apps/web/src/lib/supabase/server.ts"]
+    }
+  },
+  "architecture": {
+    "monorepo": {
+      "structure": "apps/web, apps/game-server, packages/shared",
+      "package_manager": "npm workspaces"
+    },
+    "communication": {
+      "protocol": "WebSocket with JSON messages",
+      "pattern": "Message types: { type: string, payload: unknown }",
+      "auth": "JWT token validation via Supabase JWKS"
+    },
+    "state_management": {
+      "frontend": "Zustand with persist middleware",
+      "backend": "In-memory session state per WebSocket connection"
+    },
+    "database": {
+      "provider": "Supabase PostgreSQL",
+      "access_pattern": "Service key on backend, RLS policies scope user data"
+    }
+  }
+}
