@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 
 ## Current Position
 
-Phase: 16 - Layout Migration
-Plan: 01 of 2 complete
-Status: In progress
-Last activity: 2026-01-21 - Completed 16-01-PLAN.md (Desktop center column layout)
+Phase: 16 - Layout Migration (COMPLETE)
+Plan: 02 of 2 complete
+Status: Phase complete
+Last activity: 2026-01-21 - Completed 16-02-PLAN.md (Mobile and tablet layout verification)
 
-Progress: v1.0 + v1.1 shipped, v1.2 plan 1/~12 complete
+Progress: v1.0 + v1.1 shipped, v1.2 plan 2/~12 complete
 
 ## Milestones
 
@@ -26,9 +26,9 @@ Progress: v1.0 + v1.1 shipped, v1.2 plan 1/~12 complete
 
 ## Next Steps
 
-Run `/gsd:execute-phase 16` to continue with:
-1. Execute 16-02-PLAN.md (remaining layout migration tasks)
-2. Complete Phase 16 layout migration
+Phase 16 Layout Migration complete. Continue with:
+1. Plan Phase 17 (Theme Colors) or next v1.2 phase
+2. Run `/gsd:plan-phase 17` to begin next phase
 
 ## Accumulated Context
 
@@ -42,10 +42,12 @@ All v1.0 and v1.1 decisions documented in PROJECT.md Key Decisions table.
 - Balance zone content vs social area (constrained zone, expanded social)
 - User approved MockGameScreen layout: "This looks so good!"
 
-**16-01 Decisions:**
-- Zone content constrained to h-64 (256px) matching MockGameScreen proportions
-- Social area uses flex-1 to fill remaining vertical space
-- 12px gap (gap-3) between zone and social sections for visual separation
+**Phase 16 Decisions:**
+- Desktop: Zone content constrained to h-64 (256px) matching MockGameScreen proportions
+- Desktop: Social area uses flex-1 to fill remaining vertical space
+- Desktop: 12px gap (gap-3) between zone and social sections for visual separation
+- Mobile: NO h-64 constraint - zone content fills available space (primary focus on mobile)
+- Breakpoint: 1024px boundary in both JS and CSS (<=1024 = mobile, >=1025 = desktop)
 
 ### Open Items
 
@@ -55,7 +57,7 @@ All v1.0 and v1.1 decisions documented in PROJECT.md Key Decisions table.
 
 ### Blockers/Concerns
 
-None - Phase 16 progressing smoothly
+None - Phase 16 complete
 
 Production migration notes (apply if not already done):
 - 031_fix_quest_details.sql
@@ -64,8 +66,8 @@ Production migration notes (apply if not already done):
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 16-01-PLAN.md
-Resume file: .planning/phases/16-layout-migration/16-02-PLAN.md
+Stopped at: Completed 16-02-PLAN.md (Phase 16 complete)
+Resume file: None - ready for Phase 17 planning
 
 ---
-*State updated: 2026-01-21 after completing 16-01-PLAN.md*
+*State updated: 2026-01-21 after completing 16-02-PLAN.md*
