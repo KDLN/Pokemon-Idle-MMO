@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useRef, KeyboardEvent } from 'react'
-import type { ChatChannel, ChatMessageData } from '@/types/chat'
+import type { ChatChannel } from '@/types/chat'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import { useGameStore } from '@/stores/gameStore'
+import { BeveledButton } from '@/components/ui/Button'
 
 interface ChatInputProps {
   channel: ChatChannel
@@ -286,13 +287,11 @@ export function ChatInput({
             onKeyDown={handleKeyDown}
             placeholder={getPlaceholder()}
             disabled={disabled || isSystemChannel}
+            autoComplete="off"
             className={`
-              w-full px-3 py-2 rounded-lg text-sm
-              bg-[#0f0f1a] border border-[#2a2a4a]
-              text-white placeholder-[#606080]
-              focus:outline-none focus:border-[#5B6EEA]
+              input-inset w-full px-3 py-2 rounded-lg text-sm
+              text-[var(--color-text-primary)]
               disabled:opacity-50 disabled:cursor-not-allowed
-              transition-colors
               ${message.startsWith('/') ? 'border-purple-500/50' : ''}
             `}
           />
@@ -309,20 +308,16 @@ export function ChatInput({
           )}
         </div>
 
-        <button
+        <BeveledButton
+          hue={240}
+          saturation={60}
+          lightness={45}
           onClick={handleSend}
           disabled={disabled || isSystemChannel || !message.trim()}
-          className={`
-            px-4 py-2 rounded-lg text-sm font-medium
-            transition-all duration-200
-            ${message.trim() && !disabled && !isSystemChannel
-              ? 'bg-[#3B4CCA] text-white hover:bg-[#5B6EEA]'
-              : 'bg-[#2a2a4a] text-[#606080] cursor-not-allowed'
-            }
-          `}
+          className="px-4 py-2 text-sm font-medium"
         >
           Send
-        </button>
+        </BeveledButton>
       </div>
 
       {isSystemChannel && (

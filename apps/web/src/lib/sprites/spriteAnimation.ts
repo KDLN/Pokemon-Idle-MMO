@@ -97,11 +97,10 @@ export const POKEMON_SPRITE = {
  */
 export function getTrainerWalkConfig(
   spriteSheetUrl: string,
-  direction: SpriteDirection = 'down',
+  _direction: SpriteDirection = 'down',
   scale: number = 2
 ): SpriteSheetConfig {
   const { frameWidth, frameHeight, framesPerDirection, walkFps } = TRAINER_SPRITE
-  const row = DIRECTION_ROW[direction]
 
   return {
     image: spriteSheetUrl,
@@ -122,7 +121,7 @@ export function getTrainerWalkConfig(
  */
 export function getTrainerIdleConfig(
   spriteSheetUrl: string,
-  direction: SpriteDirection = 'down',
+  _direction: SpriteDirection = 'down',
   scale: number = 2
 ): SpriteSheetConfig {
   const { frameWidth, frameHeight, idleFps } = TRAINER_SPRITE

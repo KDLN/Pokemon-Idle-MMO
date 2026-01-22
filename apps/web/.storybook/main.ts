@@ -2,7 +2,8 @@ import type { StorybookConfig } from "@storybook/nextjs-vite";
 
 const config: StorybookConfig = {
   stories: [
-    "../src/**/*.mdx",
+    // Temporarily exclude MDX due to Vite build issues with @storybook/blocks resolution
+    // "../src/**/*.mdx",
     "../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"
   ],
   addons: [
@@ -13,7 +14,7 @@ const config: StorybookConfig = {
     name: "@storybook/nextjs-vite",
     options: {},
   },
-  staticDirs: ["../public"],
+  // staticDirs removed - causes recursive copy error when outputDir is public/storybook
 };
 
 export default config;

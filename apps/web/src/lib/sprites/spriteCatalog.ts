@@ -5,7 +5,7 @@
  * Each item specifies its sprite sheet path and metadata.
  */
 
-import type { SpriteLayerType, SpriteSheetMeta } from './layeredSprite'
+import type { SpriteLayerType } from './layeredSprite'
 
 // Rarity levels for cosmetics
 export type CosmeticRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'event'

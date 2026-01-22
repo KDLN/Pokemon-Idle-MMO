@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 
 interface BackgroundLayerProps {
-  zoneType: 'route' | 'town' | 'forest'
+  zoneType: 'route' | 'town' | 'forest' | 'cave' | 'water'
   zoneName?: string
   isAnimated?: boolean
 }
@@ -12,8 +12,11 @@ interface BackgroundLayerProps {
 function RouteBackground({ isAnimated }: { isAnimated: boolean }) {
   return (
     <div className="absolute inset-0 overflow-hidden">
-      {/* Base grass color */}
-      <div className="absolute inset-0 bg-gradient-to-b from-green-800 to-green-900" />
+      {/* Base grass color - zone-specific gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#2a3a2a] to-[#1a2a1a]" />
+
+      {/* Sky gradient overlay at top */}
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-900/30 via-transparent to-transparent" />
 
       {/* Dirt path */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-full bg-gradient-to-t from-amber-800/60 to-amber-900/40" />
@@ -87,8 +90,11 @@ function GrassTuft() {
 function TownBackground({ zoneName }: { zoneName?: string }) {
   return (
     <div className="absolute inset-0 overflow-hidden">
-      {/* Sky gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-sky-300 to-sky-100" />
+      {/* Base town gradient - neutral dark tones */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#2a2a3a] to-[#1a1a2a]" />
+
+      {/* Sky gradient overlay at top */}
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-900/30 via-transparent to-transparent" />
 
       {/* Ground */}
       <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-b from-amber-200 to-amber-300" />
@@ -137,13 +143,6 @@ function TownBackground({ zoneName }: { zoneName?: string }) {
       <div className="absolute bottom-1/3 right-4">
         <Tree />
       </div>
-
-      {/* Zone name */}
-      {zoneName && (
-        <div className="absolute top-4 left-4 bg-white/80 px-3 py-1 rounded-full text-sm font-medium text-gray-800 shadow">
-          {zoneName}
-        </div>
-      )}
     </div>
   )
 }
@@ -182,8 +181,14 @@ function ForestTree({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
 function ForestBackground({ zoneName, isAnimated }: { zoneName?: string; isAnimated: boolean }) {
   return (
     <div className="absolute inset-0 overflow-hidden">
-      {/* Dark forest sky - barely visible through canopy */}
-      <div className="absolute inset-0 bg-gradient-to-b from-green-950 via-green-900 to-green-950" />
+      {/* Dark forest gradient - green tones matching Mock */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#2a3a2a] to-[#1a2a1a]" />
+
+      {/* Sky gradient overlay at top */}
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-900/30 via-transparent to-transparent" />
+
+      {/* Forest floor gradient at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-green-900/40 to-transparent" />
 
       {/* Fog/mist effect */}
       <div className="absolute inset-0 bg-gradient-to-t from-green-900/50 via-transparent to-green-950/30" />
@@ -262,13 +267,48 @@ function ForestBackground({ zoneName, isAnimated }: { zoneName?: string; isAnima
           style={{ left: '80%', top: '-10%' }}
         />
       </div>
+    </div>
+  )
+}
 
-      {/* Zone name */}
-      {zoneName && (
-        <div className="absolute top-4 left-4 bg-green-950/80 px-3 py-1 rounded-full text-sm font-medium text-green-200 shadow border border-green-800">
-          {zoneName}
-        </div>
-      )}
+// Cave background with dark atmosphere
+function CaveBackground({ zoneName }: { zoneName?: string }) {
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {/* Cave gradient - dark gray/purple tones */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#2a2a3a] to-[#1a1a2a]" />
+
+      {/* Dim lighting from above */}
+      <div className="absolute inset-0 bg-gradient-to-b from-purple-950/20 via-transparent to-transparent" />
+
+      {/* Rock formations on sides */}
+      <div className="absolute bottom-0 left-0 w-24 h-full bg-gradient-to-r from-stone-900/60 to-transparent" />
+      <div className="absolute bottom-0 right-0 w-24 h-full bg-gradient-to-l from-stone-900/60 to-transparent" />
+
+      {/* Stalactites at top */}
+      <div className="absolute top-0 left-1/4 w-4 h-12 bg-gradient-to-b from-stone-800 to-transparent rounded-b-full opacity-40" />
+      <div className="absolute top-0 left-1/2 w-6 h-16 bg-gradient-to-b from-stone-800 to-transparent rounded-b-full opacity-50" />
+      <div className="absolute top-0 right-1/4 w-3 h-10 bg-gradient-to-b from-stone-800 to-transparent rounded-b-full opacity-35" />
+    </div>
+  )
+}
+
+// Water background with ocean/lake feel
+function WaterBackground({ zoneName }: { zoneName?: string }) {
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {/* Water gradient - blue tones */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#2a3a4a] to-[#1a2a3a]" />
+
+      {/* Sky gradient overlay at top */}
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-900/30 via-transparent to-transparent" />
+
+      {/* Water surface shimmer */}
+      <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-blue-900/40 via-blue-800/20 to-transparent" />
+
+      {/* Wave lines */}
+      <div className="absolute bottom-1/3 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent" />
+      <div className="absolute bottom-1/4 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-300/20 to-transparent" />
     </div>
   )
 }
@@ -280,6 +320,14 @@ export function BackgroundLayer({ zoneType, zoneName, isAnimated = true }: Backg
 
   if (zoneType === 'forest') {
     return <ForestBackground zoneName={zoneName} isAnimated={isAnimated} />
+  }
+
+  if (zoneType === 'cave') {
+    return <CaveBackground zoneName={zoneName} />
+  }
+
+  if (zoneType === 'water') {
+    return <WaterBackground zoneName={zoneName} />
   }
 
   return <RouteBackground isAnimated={isAnimated} />

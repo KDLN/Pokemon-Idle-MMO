@@ -137,18 +137,6 @@ export function SpriteTrainer({
     >
       {/* Main sprite container */}
       <div className="relative" style={{ width, height }}>
-        {/* Shadow */}
-        <div
-          className="absolute rounded-full bg-black/25"
-          style={{
-            width: width * 0.7,
-            height: height * 0.12,
-            left: width * 0.15,
-            bottom: -height * 0.02,
-            filter: 'blur(2px)',
-          }}
-        />
-
         {/* Base sprite */}
         <div
           style={{

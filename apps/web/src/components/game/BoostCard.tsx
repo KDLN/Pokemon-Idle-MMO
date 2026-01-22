@@ -89,10 +89,10 @@ export function BoostCard({ buff, onExpire }: BoostCardProps) {
   return (
     <div
       className={cn(
-        "p-3 rounded-xl border transition-all duration-300",
+        "texture-noise p-2.5 rounded-lg border transition-all duration-300",
         countdown.isUrgent
           ? "border-red-500/50 bg-red-500/10"
-          : "border-[#2a2a4a] bg-[#1a1a2e]/80"
+          : "bg-gradient-to-r from-purple-900/30 to-purple-800/20 border-purple-500/30"
       )}
     >
       <div className="flex items-center justify-between gap-2">

@@ -24,7 +24,8 @@ function StarIcon({ filled, className = '' }: { filled: boolean; className?: str
     <svg
       className={className}
       viewBox="0 0 24 24"
-      fill="currentColor"
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor"
       aria-hidden="true"
     >
       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -58,7 +59,7 @@ export function PartyPanel() {
   }
 
   return (
-    <Card variant="glass" padding="none" className="p-2 sm:p-3">
+    <Card variant="glass" padding="none" className="texture-noise p-2 sm:p-3">
       {/* Header */}
       <CardHeader
         icon={<PokeballIcon className="w-4 h-4 sm:w-5 sm:h-5" />}
@@ -72,11 +73,11 @@ export function PartyPanel() {
                 <StarIcon
                   key={star}
                   filled={star <= powerStars}
-                  className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${star <= powerStars ? 'text-[#FFDE00]' : 'text-[#2a2a4a]'}`}
+                  className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${star <= powerStars ? 'text-[var(--color-brand-accent)]' : 'text-[var(--color-border-subtle)]'}`}
                 />
               ))}
             </div>
-            <span className="text-[10px] sm:text-xs text-[#a0a0c0] font-mono">
+            <span className="text-[10px] sm:text-xs text-[var(--color-text-secondary)] font-mono">
               {totalLevel}
             </span>
           </div>

@@ -23,27 +23,27 @@ export function Header() {
     <>
       <header className="relative">
         {/* Top red bar - Pokeball style */}
-        <div className="h-1.5 bg-gradient-to-r from-[#EE1515] via-[#FF4444] to-[#EE1515]" />
+        <div className="h-1.5 bg-gradient-to-r from-[var(--color-brand-secondary)] via-[var(--color-brand-secondary-light)] to-[var(--color-brand-secondary)]" />
 
-        <div className="glass border-b border-[#2a2a4a] px-4 py-2">
+        <div className="glass border-b border-[var(--color-border-subtle)] px-4 py-2">
           <div className="flex items-center justify-between max-w-7xl mx-auto gap-4">
             {/* Logo / Title */}
             <div className="flex items-center gap-3 shrink-0">
               {/* Pokeball Logo */}
               <div className="relative w-9 h-9">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-b from-[#EE1515] to-[#CC0000] overflow-hidden">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-b from-[var(--color-brand-secondary)] to-[var(--color-brand-secondary-dark)] overflow-hidden">
                   <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-b from-[#f0f0f0] to-[#d0d0d0]" />
-                  <div className="absolute top-1/2 left-0 right-0 h-1 bg-[#1a1a2e] -translate-y-1/2" />
-                  <div className="absolute top-1/2 left-1/2 w-3.5 h-3.5 bg-[#f0f0f0] rounded-full -translate-x-1/2 -translate-y-1/2 border-2 border-[#1a1a2e]">
+                  <div className="absolute top-1/2 left-0 right-0 h-1 bg-[var(--color-surface-base)] -translate-y-1/2" />
+                  <div className="absolute top-1/2 left-1/2 w-3.5 h-3.5 bg-[#f0f0f0] rounded-full -translate-x-1/2 -translate-y-1/2 border-2 border-[var(--color-surface-base)]">
                     <div className="absolute inset-0.5 bg-white rounded-full" />
                   </div>
                 </div>
               </div>
               <div className="hidden sm:block">
-                <h1 className="font-pixel text-xs text-white tracking-wider">
+                <h1 className="font-pixel text-xs text-[var(--color-text-primary)] tracking-wider">
                   POKEMON
                 </h1>
-                <p className="text-[9px] text-[#a0a0c0] tracking-widest uppercase">
+                <p className="text-[9px] text-[var(--color-text-secondary)] tracking-widest uppercase">
                   Idle MMO
                 </p>
               </div>
@@ -54,7 +54,7 @@ export function Header() {
               {/* Pokedex Button */}
               <button
                 onClick={() => setShowPokedex(true)}
-                className="group flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-b from-[#CC0000] to-[#990000] border border-[#FF4444]/30 hover:from-[#EE1515] hover:to-[#CC0000] transition-all duration-200 shadow-lg shadow-red-900/30"
+                className="group flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-b from-[var(--color-brand-secondary-dark)] to-[#990000] border border-[var(--color-brand-secondary-light)]/30 hover:from-[var(--color-brand-secondary)] hover:to-[var(--color-brand-secondary-dark)] transition-all duration-200 shadow-lg shadow-red-900/30"
               >
                 <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
@@ -74,16 +74,16 @@ export function Header() {
               </button>
 
               {/* Divider */}
-              <div className="w-px h-6 bg-[#2a2a4a]" />
+              <div className="w-px h-6 bg-[var(--color-border-subtle)]" />
 
               {/* Badge Case */}
               <div className="flex items-center gap-1">
-                <span className="text-xs text-[#606080] mr-1">Badges:</span>
+                <span className="text-xs text-[var(--color-text-muted)] mr-1">Badges:</span>
                 <BadgeCase earnedBadges={badges} />
               </div>
 
               {/* Divider */}
-              <div className="w-px h-6 bg-[#2a2a4a]" />
+              <div className="w-px h-6 bg-[var(--color-border-subtle)]" />
 
               {/* Season Progress */}
               <BattlePassProgress progress={seasonProgress} compact />
@@ -97,13 +97,13 @@ export function Header() {
                   className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`}
                   title={isConnected ? 'Connected' : 'Disconnected'}
                 />
-                <span className="hidden sm:inline text-xs text-[#a0a0c0] ml-1.5">
+                <span className="hidden sm:inline text-xs text-[var(--color-text-secondary)] ml-1.5">
                   {isConnected ? 'Online' : 'Offline'}
                 </span>
               </div>
 
               {/* Divider */}
-              <div className="hidden sm:block w-px h-6 bg-[#2a2a4a]" />
+              <div className="hidden sm:block w-px h-6 bg-[var(--color-border-subtle)]" />
 
               {/* Currency Display */}
               <CurrencyDisplay compact />
@@ -111,10 +111,10 @@ export function Header() {
               {/* User Profile - Click to customize */}
               {player && (
                 <>
-                  <div className="hidden sm:block w-px h-6 bg-[#2a2a4a]" />
+                  <div className="hidden sm:block w-px h-6 bg-[var(--color-border-subtle)]" />
                   <button
                     onClick={() => setShowCustomizer(true)}
-                    className="flex items-center gap-2 pl-1 pr-3 py-0.5 rounded-full bg-gradient-to-r from-[#3B4CCA]/20 to-[#3B4CCA]/10 border border-[#3B4CCA]/30 hover:border-[#5B6EEA]/50 hover:from-[#3B4CCA]/30 transition-all duration-200 group"
+                    className="flex items-center gap-2 pl-1 pr-3 py-0.5 rounded-full bg-gradient-to-r from-[var(--color-brand-primary)]/20 to-[var(--color-brand-primary)]/10 border border-[var(--color-brand-primary)]/30 hover:border-[var(--color-brand-primary-light)]/50 hover:from-[var(--color-brand-primary)]/30 transition-all duration-200 group"
                     title="Customize your trainer"
                     aria-label="Open trainer customization"
                   >
@@ -129,8 +129,8 @@ export function Header() {
                       </div>
                     </div>
                     <div className="hidden md:flex flex-col items-start">
-                      <span className="text-white font-medium text-xs leading-tight">{player.username}</span>
-                      <span className="text-[9px] text-[#5B6EEA] group-hover:text-[#7B8EFA] transition-colors">Customize</span>
+                      <span className="text-[var(--color-text-primary)] font-medium text-xs leading-tight">{player.username}</span>
+                      <span className="text-[9px] text-[var(--color-brand-primary-light)] group-hover:text-[#7B8EFA] transition-colors">Customize</span>
                     </div>
                   </button>
                 </>
@@ -160,7 +160,7 @@ export function Header() {
         </div>
 
         {/* Bottom accent line */}
-        <div className="h-px bg-gradient-to-r from-transparent via-[#3B4CCA]/50 to-transparent" />
+        <div className="h-px bg-gradient-to-r from-transparent via-[var(--color-brand-primary)]/50 to-transparent" />
       </header>
 
       {/* Pokedex Modal */}

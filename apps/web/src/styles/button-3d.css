@@ -21,6 +21,12 @@
   border: none;
   background: transparent;
   padding: 0;
+  /* Account for transform-based visual overflow:
+     - Front layer shifts up 4px (visual top extends above element)
+     - Shadow layer shifts down 2-4px (visual bottom extends below element)
+     Add padding to reserve space for these visual extensions */
+  padding-bottom: 4px; /* Space for shadow transform */
+  margin-top: 4px; /* Space for front layer lift */
   cursor: pointer;
   outline-offset: 4px;
   transition: filter 250ms;
@@ -43,7 +49,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  border-radius: 12px;
+  border-radius: 10px;
   background: hsl(0deg 0% 0% / 0.25);
   will-change: transform;
   transform: translateY(2px);
@@ -57,7 +63,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  border-radius: 12px;
+  border-radius: 10px;
   background: linear-gradient(
     to left,
     hsl(var(--btn-hue) calc(var(--btn-saturation) * 0.8) calc(var(--btn-lightness) * 0.6)) 0%,
@@ -71,9 +77,9 @@
 .btn-3d-front {
   display: block;
   position: relative;
-  padding: 12px 42px;
-  border-radius: 12px;
-  font-size: 1rem;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: white;
   background: hsl(var(--btn-hue) var(--btn-saturation) var(--btn-lightness));

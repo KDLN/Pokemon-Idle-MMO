@@ -10,9 +10,11 @@ import { getTimeOfDay, formatGameTime, type TimeOfDay } from '@/lib/time/timeOfD
 
 interface WorldViewProps {
   className?: string
+  /** Remove border and rounding when embedded in a container */
+  embedded?: boolean
 }
 
-export function WorldView({ className = '' }: WorldViewProps) {
+export function WorldView({ className = '', embedded = false }: WorldViewProps) {
   const currentZone = useGameStore((state) => state.currentZone)
   const party = useGameStore((state) => state.party)
   const isConnected = useGameStore((state) => state.isConnected)
@@ -25,15 +27,20 @@ export function WorldView({ className = '' }: WorldViewProps) {
   const [trainerPosition, setTrainerPosition] = useState(50) // Position percentage
 
   // Derived state - determine visual zone type
-  const getVisualZoneType = (): 'town' | 'route' | 'forest' => {
+  const getVisualZoneType = (): 'town' | 'route' | 'forest' | 'cave' | 'water' => {
     if (!currentZone) return 'route'
     if (currentZone.zone_type === 'town') return 'town'
+    const nameLower = currentZone.name.toLowerCase()
     // Special visual for forest zones
-    if (currentZone.name.toLowerCase().includes('forest')) return 'forest'
+    if (nameLower.includes('forest')) return 'forest'
+    // Special visual for cave zones
+    if (nameLower.includes('cave') || nameLower.includes('tunnel') || nameLower.includes('rock')) return 'cave'
+    // Special visual for water zones
+    if (nameLower.includes('sea') || nameLower.includes('lake') || nameLower.includes('river') || nameLower.includes('beach') || nameLower.includes('ocean')) return 'water'
     return 'route'
   }
   const zoneType = getVisualZoneType()
-  const isRoute = zoneType === 'route' || zoneType === 'forest'
+  const isRoute = zoneType === 'route' || zoneType === 'forest' || zoneType === 'cave' || zoneType === 'water'
   const isWalking = isConnected && isRoute
 
   // Get lead Pokemon
@@ -78,10 +85,12 @@ export function WorldView({ className = '' }: WorldViewProps) {
     return () => clearInterval(interval)
   }, [isWalking, walkDirection])
 
+  const baseClasses = embedded
+    ? 'texture-noise relative w-full h-full overflow-hidden'
+    : 'texture-noise relative w-full h-full rounded-xl overflow-hidden border border-[var(--color-border-subtle)]'
+
   return (
-    <div
-      className={`relative w-full h-48 md:h-56 rounded-xl overflow-hidden poke-border ${className}`}
-    >
+    <div className={`${baseClasses} ${className}`}>
       {/* Background layer */}
       <BackgroundLayer
         zoneType={zoneType}
@@ -146,20 +155,43 @@ export function WorldView({ className = '' }: WorldViewProps) {
         )}
       </div>
 
-      {/* Status overlay */}
-      <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end pointer-events-none">
-        {/* Zone info */}
-        <div className="bg-black/50 backdrop-blur-sm px-3 py-1 rounded-lg text-sm">
-          <div className="text-white font-medium">{currentZone?.name}</div>
+      {/* Ambient particles - only on routes/forests */}
+      {isRoute && (
+        <>
+          <div className="absolute top-6 left-8 w-1 h-1 rounded-full bg-green-300/50 animate-pulse" aria-hidden="true" />
+          <div className="absolute top-12 right-12 w-1.5 h-1.5 rounded-full bg-yellow-300/40 animate-pulse" aria-hidden="true" />
+          <div className="absolute bottom-16 left-16 w-1 h-1 rounded-full bg-green-400/50 animate-pulse" aria-hidden="true" />
+          <div className="absolute top-20 left-1/4 w-1 h-1 rounded-full bg-emerald-300/40 animate-pulse" aria-hidden="true" />
+          <div className="absolute bottom-12 right-1/4 w-1.5 h-1.5 rounded-full bg-lime-300/30 animate-pulse" aria-hidden="true" />
+        </>
+      )}
+
+      {/* Town particles - golden sparkles for magical/settled feel */}
+      {zoneType === 'town' && (
+        <>
+          <div className="absolute top-8 left-12 w-1 h-1 rounded-full bg-yellow-300/40 animate-pulse" aria-hidden="true" />
+          <div className="absolute top-16 right-16 w-1.5 h-1.5 rounded-full bg-amber-300/30 animate-pulse" aria-hidden="true" />
+          <div className="absolute bottom-20 left-20 w-1 h-1 rounded-full bg-yellow-200/35 animate-pulse" aria-hidden="true" />
+          <div className="absolute top-24 left-1/3 w-1 h-1 rounded-full bg-amber-200/40 animate-pulse" aria-hidden="true" />
+          <div className="absolute bottom-16 right-1/3 w-1.5 h-1.5 rounded-full bg-yellow-300/30 animate-pulse" aria-hidden="true" />
+        </>
+      )}
+
+      {/* Status overlay - top left zone name, bottom right time */}
+      <div className="absolute top-2 left-2 pointer-events-none">
+        <div className="bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+          <div className="font-pixel text-sm text-white">{currentZone?.name}</div>
           {isRoute && currentZone && 'level_range' in currentZone && (
-            <div className="text-gray-300 text-xs">
+            <div className="text-gray-300 text-[10px]">
               Lv. {(currentZone as { level_range?: { min: number; max: number } }).level_range?.min}-
               {(currentZone as { level_range?: { min: number; max: number } }).level_range?.max}
             </div>
           )}
         </div>
+      </div>
 
-        {/* Time display */}
+      {/* Time display - bottom right */}
+      <div className="absolute bottom-2 right-2 pointer-events-none">
         <div className="bg-black/50 backdrop-blur-sm px-3 py-1 rounded-lg text-sm text-white">
           {gameTime}
         </div>

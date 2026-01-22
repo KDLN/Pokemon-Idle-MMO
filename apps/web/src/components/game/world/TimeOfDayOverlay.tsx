@@ -1,10 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getTimeOfDay, TIME_COLORS, type TimeOfDay } from '@/lib/time/timeOfDay'
+import { getTimeOfDay, type TimeOfDay } from '@/lib/time/timeOfDay'
 
 interface TimeOfDayOverlayProps {
   className?: string
+}
+
+// Sky gradients for each time period - matching Mock style
+const SKY_GRADIENTS: Record<TimeOfDay, string> = {
+  dawn: 'from-orange-900/40 via-pink-900/20 to-transparent',
+  day: 'from-sky-900/30 via-transparent to-transparent',
+  dusk: 'from-orange-900/40 via-purple-900/20 to-transparent',
+  night: 'from-indigo-950/60 via-purple-950/30 to-transparent',
 }
 
 export function TimeOfDayOverlay({ className = '' }: TimeOfDayOverlayProps) {
@@ -22,15 +30,9 @@ export function TimeOfDayOverlay({ className = '' }: TimeOfDayOverlayProps) {
     return () => clearInterval(interval)
   }, [])
 
-  const colors = TIME_COLORS[timeOfDay]
-
   return (
     <div
-      className={`pointer-events-none absolute inset-0 transition-all duration-[30000ms] ${className}`}
-      style={{
-        background: colors.gradient,
-        boxShadow: `inset 0 0 100px ${colors.overlay}`,
-      }}
+      className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${SKY_GRADIENTS[timeOfDay]} transition-colors duration-1000 ${className}`}
     >
       {/* Stars for night time - fixed positions */}
       {timeOfDay === 'night' && (
@@ -56,10 +58,10 @@ export function TimeOfDayOverlay({ className = '' }: TimeOfDayOverlayProps) {
 
       {/* Sun/Moon indicator */}
       <div className="absolute top-4 right-4 text-2xl opacity-60">
-        {timeOfDay === 'night' && '🌙'}
-        {timeOfDay === 'morning' && '🌅'}
-        {timeOfDay === 'day' && '☀️'}
-        {timeOfDay === 'evening' && '🌇'}
+        {timeOfDay === 'night' && '\uD83C\uDF19'}
+        {timeOfDay === 'dawn' && '\uD83C\uDF05'}
+        {timeOfDay === 'day' && '\u2600\uFE0F'}
+        {timeOfDay === 'dusk' && '\uD83C\uDF07'}
       </div>
     </div>
   )

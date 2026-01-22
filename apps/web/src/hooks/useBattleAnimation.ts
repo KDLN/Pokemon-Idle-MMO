@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useReducer, useEffect, useCallback, useRef } from 'react'
 import { useGameStore } from '@/stores/gameStore'
 import { gameSocket } from '@/lib/ws/gameSocket'
 import type { BattleTurn } from '@pokemon-idle/shared'
@@ -66,11 +66,99 @@ function describeTurn(turn: BattleTurn): string {
   return [`${turn.attacker_name} used ${turn.move_name}!`, effectiveness].filter(Boolean).join(' ')
 }
 
+type BattleAnimationAction =
+  | { type: 'START_BATTLE'; playerHP: number; wildHP: number; playerMaxHP: number; wildMaxHP: number; wildPokemonName: string }
+  | { type: 'SET_PHASE'; phase: BattlePhase; updates?: Partial<BattleAnimationState> }
+  | { type: 'PROCESS_TURN'; turn: BattleTurn; playerHP: number; wildHP: number; canCatch: boolean }
+  | { type: 'PROCESS_CATCH_RESULT'; shakeCount: number; success: boolean; isNewPokedexEntry: boolean }
+  | { type: 'SHOW_SUMMARY'; message: string }
+  | { type: 'RESET' }
+
+function battleAnimationReducer(state: BattleAnimationState, action: BattleAnimationAction): BattleAnimationState {
+  switch (action.type) {
+    case 'START_BATTLE':
+      return {
+        phase: 'appear',
+        currentTurn: null,
+        playerHP: action.playerHP,
+        wildHP: action.wildHP,
+        playerMaxHP: action.playerMaxHP,
+        wildMaxHP: action.wildMaxHP,
+        currentShake: 0,
+        totalShakes: 3,
+        messageText: `Wild ${action.wildPokemonName} appeared!`,
+        showDamageNumber: false,
+        damageAmount: 0,
+        damageTarget: 'wild',
+        isCritical: false,
+        isAnimating: true,
+        canCatch: false,
+        catchSuccess: null,
+        isNewPokedexEntry: false
+      }
+    case 'SET_PHASE':
+      return { ...state, phase: action.phase, ...action.updates }
+    case 'PROCESS_TURN': {
+      const damageTarget = action.turn.attacker === 'player' ? 'wild' : 'player'
+      return {
+        ...state,
+        phase: 'turn_active',
+        currentTurn: action.turn,
+        messageText: describeTurn(action.turn),
+        showDamageNumber: true,
+        damageAmount: action.turn.damage_dealt,
+        damageTarget,
+        isCritical: action.turn.is_critical,
+        playerHP: action.playerHP,
+        wildHP: action.wildHP,
+        canCatch: action.canCatch
+      }
+    }
+    case 'PROCESS_CATCH_RESULT':
+      return {
+        ...state,
+        phase: 'catch_throw',
+        totalShakes: action.shakeCount,
+        catchSuccess: action.success,
+        isNewPokedexEntry: action.isNewPokedexEntry
+      }
+    case 'SHOW_SUMMARY':
+      return {
+        ...state,
+        phase: 'summary',
+        messageText: action.message,
+        isAnimating: true
+      }
+    case 'RESET':
+      return {
+        phase: 'idle',
+        currentTurn: null,
+        playerHP: 0,
+        wildHP: 0,
+        playerMaxHP: 0,
+        wildMaxHP: 0,
+        currentShake: 0,
+        totalShakes: 3,
+        messageText: '',
+        showDamageNumber: false,
+        damageAmount: 0,
+        damageTarget: 'wild',
+        isCritical: false,
+        isAnimating: false,
+        canCatch: false,
+        catchSuccess: null,
+        isNewPokedexEntry: false
+      }
+    default:
+      return state
+  }
+}
+
 export function useBattleAnimation(onComplete: () => void) {
   const activeBattle = useGameStore((state) => state.activeBattle)
   const clearActiveBattle = useGameStore((state) => state.clearActiveBattle)
 
-  const [state, setState] = useState<BattleAnimationState>({
+  const [state, dispatch] = useReducer(battleAnimationReducer, {
     phase: 'idle',
     currentTurn: null,
     playerHP: 0,
@@ -107,7 +195,7 @@ export function useBattleAnimation(onComplete: () => void) {
   ) => {
     clearPendingTimeout()
     timeoutRef.current = setTimeout(() => {
-      setState(prev => ({ ...prev, phase: nextPhase, ...updates }))
+      dispatch({ type: 'SET_PHASE', phase: nextPhase, updates })
     }, delay)
   }, [clearPendingTimeout])
 
@@ -116,25 +204,13 @@ export function useBattleAnimation(onComplete: () => void) {
     if (activeBattle && activeBattle !== battleRef.current && activeBattle.status === 'intro') {
       battleRef.current = activeBattle
       clearPendingTimeout()
-
-      setState({
-        phase: 'appear',
-        currentTurn: null,
+      dispatch({
+        type: 'START_BATTLE',
         playerHP: activeBattle.playerHP,
         wildHP: activeBattle.wildHP,
         playerMaxHP: activeBattle.playerMaxHP,
         wildMaxHP: activeBattle.wildMaxHP,
-        currentShake: 0,
-        totalShakes: 3,
-        messageText: `Wild ${activeBattle.wildPokemon.species.name} appeared!`,
-        showDamageNumber: false,
-        damageAmount: 0,
-        damageTarget: 'wild',
-        isCritical: false,
-        isAnimating: true,
-        canCatch: false,
-        catchSuccess: null,
-        isNewPokedexEntry: false
+        wildPokemonName: activeBattle.wildPokemon.species.name
       })
     }
 
@@ -146,35 +222,25 @@ export function useBattleAnimation(onComplete: () => void) {
   useEffect(() => {
     if (!activeBattle?.currentTurn || state.phase !== 'waiting_for_turn') return
 
-    const turn = activeBattle.currentTurn
-    const damageTarget = turn.attacker === 'player' ? 'wild' : 'player'
-
-    setState(prev => ({
-      ...prev,
-      phase: 'turn_active',
-      currentTurn: turn,
-      messageText: describeTurn(turn),
-      showDamageNumber: true,
-      damageAmount: turn.damage_dealt,
-      damageTarget,
-      isCritical: turn.is_critical,
+    dispatch({
+      type: 'PROCESS_TURN',
+      turn: activeBattle.currentTurn,
       playerHP: activeBattle.playerHP,
       wildHP: activeBattle.wildHP,
       canCatch: activeBattle.canCatch
-    }))
-  }, [activeBattle?.currentTurn, state.phase])
+    })
+  }, [activeBattle?.currentTurn, activeBattle?.playerHP, activeBattle?.wildHP, activeBattle?.canCatch, state.phase])
 
   // Handle catch result from server
   useEffect(() => {
     if (!activeBattle?.catchResult || state.phase !== 'waiting_for_catch') return
 
-    setState(prev => ({
-      ...prev,
-      phase: 'catch_throw',
-      totalShakes: activeBattle.catchResult!.shakeCount,
-      catchSuccess: activeBattle.catchResult!.success,
-      isNewPokedexEntry: activeBattle.catchResult!.isNewPokedexEntry
-    }))
+    dispatch({
+      type: 'PROCESS_CATCH_RESULT',
+      shakeCount: activeBattle.catchResult.shakeCount,
+      success: activeBattle.catchResult.success,
+      isNewPokedexEntry: activeBattle.catchResult.isNewPokedexEntry
+    })
   }, [activeBattle?.catchResult, state.phase])
 
   // State machine transitions
@@ -266,7 +332,7 @@ export function useBattleAnimation(onComplete: () => void) {
 
       case 'fade_out':
         timeoutRef.current = setTimeout(() => {
-          setState(prev => ({ ...prev, phase: 'idle', isAnimating: false }))
+          dispatch({ type: 'SET_PHASE', phase: 'idle', updates: { isAnimating: false } })
           clearActiveBattle()
           onComplete()
         }, PHASE_DURATIONS.fade_out)
@@ -284,12 +350,10 @@ export function useBattleAnimation(onComplete: () => void) {
   // Handle battle summary (timeout/reconnect)
   useEffect(() => {
     if (activeBattle?.battleSummary && state.phase !== 'summary') {
-      setState(prev => ({
-        ...prev,
-        phase: 'summary',
-        messageText: activeBattle.battleSummary!.message,
-        isAnimating: true
-      }))
+      dispatch({
+        type: 'SHOW_SUMMARY',
+        message: activeBattle.battleSummary.message
+      })
     }
   }, [activeBattle?.battleSummary, state.phase])
 

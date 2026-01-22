@@ -5,16 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-01-21)
 
 **Core value:** Guilds give players a reason to come back daily and feel part of something bigger than their solo grind.
-**Current focus:** Planning next milestone
+**Current focus:** v1.2 Theme Finalization
 
 ## Current Position
 
-Phase: Ready for v1.2 planning
-Plan: Not started
-Status: MILESTONE COMPLETE — v1.1 shipped
-Last activity: 2026-01-21 — v1.1 milestone archived
+Phase: 19 - Cleanup & Polish (IN PROGRESS)
+Plan: 02 of ~3 complete
+Status: In progress
+Last activity: 2026-01-21 - Completed 19-02-PLAN.md (Storybook production integration)
 
-Progress: v1.0 + v1.1 shipped, next milestone undefined
+Progress: v1.0 + v1.1 shipped, v1.2 plan 11/~12 complete
+[###########-------] 92%
 
 ## Milestones
 
@@ -22,43 +23,108 @@ Progress: v1.0 + v1.1 shipped, next milestone undefined
 |-----------|--------|--------|-------|---------|
 | v1.0 Guilds | SHIPPED | 1-7 | 27 | 2026-01-19 |
 | v1.1 UI/UX Polish | SHIPPED | 8-15 | 37 | 2026-01-21 |
-| v1.2 | Not started | — | — | — |
+| v1.2 Theme Finalization | IN PROGRESS | 16-19 | ~12 | - |
 
 ## Next Steps
 
-Run `/gsd:new-milestone` to:
-1. Define v1.2 scope through questioning
-2. Research relevant patterns/technologies
-3. Create REQUIREMENTS.md for v1.2
-4. Create ROADMAP.md for v1.2
+Phase 18 complete. Ready for Phase 19 (final polish/cleanup).
 
 ## Accumulated Context
 
 ### Decisions
 
 All v1.0 and v1.1 decisions documented in PROJECT.md Key Decisions table.
-Summary archived in `.planning/milestones/v1.1-ROADMAP.md`.
+
+**v1.2 Direction:**
+- Apply Modern theme from MockGameScreen to production game
+- Keep two-sidebar layout (party/inventory left, zone info/actions right)
+- Balance zone content vs social area (constrained zone, expanded social)
+- User approved MockGameScreen layout: "This looks so good!"
+
+**Phase 16 Decisions:**
+- Desktop: Zone content constrained to h-64 (256px) matching MockGameScreen proportions
+- Desktop: Social area uses flex-1 to fill remaining vertical space
+- Desktop: 12px gap (gap-3) between zone and social sections for visual separation
+- Mobile: NO h-64 constraint - zone content fills available space (primary focus on mobile)
+- Breakpoint: 1024px boundary in both JS and CSS (<=1024 = mobile, >=1025 = desktop)
+
+**Phase 17-01 Decisions:**
+- Enabled Modern theme globally at body element for automatic cascade
+- Preserved unique Pokedex/Leaderboard button gradients as brand identity elements
+- Preserved Pokeball red in loading spinner as brand color
+- Preserved dynamic type colors from speciesData.color
+- Preserved shiny Pokemon #FFD700 as visual identity color
+
+**Phase 17-02 Decisions:**
+- Type-colored background overlay uses 20% opacity for subtle effect
+- Sidebar gradients use CSS variables (--color-surface-elevated to --color-surface-base)
+- Ambient particles only visible on route/forest zones, not towns
+- Particles use green/yellow/emerald/lime color mix for natural atmosphere
+
+**Phase 17-03 Decisions:**
+- Shop buttons use green (hue=120) to indicate positive commerce action
+- Gym buttons use red (hue=0) to indicate combat/challenging action
+- Pokemon Center uses blue (hue=200) for healing/utility action
+- Locked town actions keep muted dashed border style, not beveled
+- Disabled shop buy buttons use flat gray, not beveled (no tactile feel when unusable)
+- Input inset shadow creates pressed-in appearance matching beveled buttons
+
+**Phase 18-01 Decisions:**
+- Header already matches MockHeader - no changes needed (verification only)
+- Ticker simplified to horizontal event list with LIVE indicator
+- Map device wrapper uses red/yellow/green indicator dots for retro handheld feel
+- Travel buttons get texture-noise class and updated hover states
+
+**Phase 18-02 Decisions:**
+- Time-of-day system: 4 periods (dawn, day, dusk, night) based on server time
+- Zone gradients: forest=green, cave=gray, water=blue shades
+- PokemonCard styling matches Mock with HP bar color states
+
+**Phase 18-03 Decisions:**
+- Guild leader usernames: text-yellow-400 (gold)
+- Officer usernames: text-blue-400
+- Member usernames: text-purple-400
+- BeveledButton hue=240 for Send button
+- Mobile tab order: Zone / Party / Social / Map
+- Tab underline uses brand-primary color
+
+**Phase 19-01 Decisions:**
+- useReducer pattern for complex state management with atomic updates
+- Seeded random functions (Math.sin-based) for deterministic render-time calculations
+- setTimeout(..., 0) pattern for queuing state updates outside effect body
+- Removed experimental MockGameScreen and /theme-compare route after Modern theme adoption complete
+
+**Phase 19-02 Decisions:**
+- Exclude MDX files from Storybook build due to @storybook/blocks Vite resolution issue
+- Output Storybook to public/storybook instead of default storybook-static
+- Remove staticDirs from Storybook config to prevent recursive copy error
+- Add Storybook output to gitignore - regenerates during deploy
+- Component documentation served at /storybook via Next.js static file serving
 
 ### Open Items
 
-- Theme decision pending: Use `/theme-compare` to evaluate "Pokemon Clean Modern" direction
-- Sound/audio system: Consider for v1.2
+- Sound/audio system: Consider for v1.3
 - Map zone positions: Currently hardcoded, consider server-side zone_positions table
 - Empty slot drag support needed for party reordering (identified gap from 12-03)
 
 ### Blockers/Concerns
 
-None — milestone complete
+None - Codebase clean and production-ready
 
 Production migration notes (apply if not already done):
 - 031_fix_quest_details.sql
 - 032_zone_directions.sql
 
+**Code Quality Status:**
+- ESLint: 0 errors (only acceptable img element warnings)
+- TypeScript build: Passing
+- React 19 strict mode: Compliant
+
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: v1.1 milestone completion
-Resume file: None — start fresh with `/gsd:new-milestone`
+Stopped at: Completed 19-02-PLAN.md (Storybook Production Integration)
+Resume file: None
 
 ---
-*State updated: 2026-01-21 after v1.1 milestone completion*
+*State updated: 2026-01-21 after completing 19-02-PLAN.md*

@@ -1,5 +1,5 @@
 declare module 'react-responsive-spritesheet' {
-  import { Component, CSSProperties, RefObject } from 'react'
+  import { Component, CSSProperties } from 'react'
 
   export interface SpritesheetInstance {
     play: () => void

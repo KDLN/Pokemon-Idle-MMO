@@ -30,7 +30,7 @@ import { GuildPanel } from './guild'
 import { PlayerActionModal } from './PlayerActionModal'
 import { BoostCard } from './BoostCard'
 import { BoostExpiredToast } from './BoostExpiredToast'
-import { InteractiveMap } from './map'
+import { MiniMap } from './map/MiniMap'
 import type { GuildBuffType } from '@pokemon-idle/shared'
 
 // ============================================================================
@@ -71,8 +71,10 @@ function MapSidebar({ className = '' }: { className?: string }) {
 
   return (
     <div className={`map-sidebar ${className}`}>
-      {/* Interactive Map - replaces static map-canvas */}
-      <InteractiveMap />
+      {/* Static Mini Map showing whole world */}
+      <div className="px-3 pt-3">
+        <MiniMap />
+      </div>
 
       <div className="current-location">
         <div className="location-label">Current Location</div>
@@ -82,21 +84,27 @@ function MapSidebar({ className = '' }: { className?: string }) {
       <div className="travel-section">
         <div className="section-label">Travel to</div>
         <div className="travel-list">
-          {sortedConnectedZones.map(zone => (
-            <button
-              key={zone.id}
-              className="travel-btn"
-              onClick={() => gameSocket.moveToZone(zone.id)}
-            >
-              {zone.direction && (
-                <span className="direction-arrow text-[#a0a0c0]">
-                  {DIRECTION_ARROWS[zone.direction]}
-                </span>
-              )}
-              <span className="zone-icon">{zone.zone_type === 'town' ? '🏠' : '🌿'}</span>
-              <span className="zone-name">{zone.name}</span>
-            </button>
-          ))}
+          {sortedConnectedZones.length === 0 ? (
+            <div className="text-xs text-[var(--color-text-muted)] py-2 px-3">
+              No connected routes available
+            </div>
+          ) : (
+            sortedConnectedZones.map(zone => (
+              <button
+                key={zone.id}
+                className="travel-btn texture-noise"
+                onClick={() => gameSocket.moveToZone(zone.id)}
+              >
+                {zone.direction && (
+                  <span className="direction-arrow text-[var(--color-text-muted)]">
+                    {DIRECTION_ARROWS[zone.direction]}
+                  </span>
+                )}
+                <span className="zone-icon">{zone.zone_type === 'town' ? '🏠' : '🌿'}</span>
+                <span className="zone-name">{zone.name}</span>
+              </button>
+            ))
+          )}
         </div>
       </div>
 
@@ -106,7 +114,7 @@ function MapSidebar({ className = '' }: { className?: string }) {
         <div className="section-label">News & Events</div>
         <div className="news-list">
           {NEWS_ITEMS.map(item => (
-            <div key={item.id} className={`news-item ${item.type}`}>
+            <div key={item.id} className={`news-item texture-noise ${item.type}`}>
               <div className="news-icon">
                 {item.type === 'event' ? '🎉' : item.type === 'news' ? '📰' : '🔧'}
               </div>
@@ -177,7 +185,7 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
       <div className="social-tabs" role="tablist" aria-label="Social sections">
         <button
           id="social-tab-chat"
-          className={`stab ${tab === 'chat' ? 'active' : ''}`}
+          className={`stab ${tab === 'chat' ? 'active border-b-2 border-[var(--color-brand-primary)]' : ''}`}
           onClick={() => setTab('chat')}
           onKeyDown={(e) => handleTabKeyDown(e, 'chat')}
           role="tab"
@@ -185,11 +193,11 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
           aria-controls="social-panel-chat"
           tabIndex={tab === 'chat' ? 0 : -1}
         >
-          💬 Chat
+          {'\uD83D\uDCAC'} Chat
         </button>
         <button
           id="social-tab-friends"
-          className={`stab ${tab === 'friends' ? 'active' : ''}`}
+          className={`stab ${tab === 'friends' ? 'active border-b-2 border-[var(--color-brand-primary)]' : ''}`}
           onClick={() => setTab('friends')}
           onKeyDown={(e) => handleTabKeyDown(e, 'friends')}
           role="tab"
@@ -197,14 +205,14 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
           aria-controls="social-panel-friends"
           tabIndex={tab === 'friends' ? 0 : -1}
         >
-          👥 <span className="friend-count">{onlineCount}</span>
+          {'\uD83D\uDC65'} <span className="friend-count">{onlineCount}</span>
           {friendRequestCount > 0 && (
             <span className="trade-count ml-1">{friendRequestCount}</span>
           )}
         </button>
         <button
           id="social-tab-trades"
-          className={`stab ${tab === 'trades' ? 'active' : ''}`}
+          className={`stab ${tab === 'trades' ? 'active border-b-2 border-[var(--color-brand-primary)]' : ''}`}
           onClick={() => setTab('trades')}
           onKeyDown={(e) => handleTabKeyDown(e, 'trades')}
           role="tab"
@@ -212,14 +220,14 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
           aria-controls="social-panel-trades"
           tabIndex={tab === 'trades' ? 0 : -1}
         >
-          🔄 Trades
+          {'\uD83D\uDD04'} Trades
           {tradeRequestCount > 0 && (
             <span className="trade-count">{tradeRequestCount}</span>
           )}
         </button>
         <button
           id="social-tab-guild"
-          className={`stab ${tab === 'guild' ? 'active' : ''}`}
+          className={`stab ${tab === 'guild' ? 'active border-b-2 border-[var(--color-brand-primary)]' : ''}`}
           onClick={() => setTab('guild')}
           onKeyDown={(e) => handleTabKeyDown(e, 'guild')}
           role="tab"
@@ -306,11 +314,15 @@ function SocialSidebar({ onOpenTrade }: { onOpenTrade: (trade: ActiveTradeSessio
 }
 
 // ===== PARTY COLUMN COMPONENT =====
+type PartyColumnTab = 'party' | 'box'
+
 function PartyColumn({ className = '' }: { className?: string }) {
+  const [activeTab, setActiveTab] = useState<PartyColumnTab>('party')
   const worldLog = useGameStore((state) => state.worldLog)
   const guildActiveBuffs = useGameStore((state) => state.guildActiveBuffs)
   const addExpiredBoost = useGameStore((state) => state.addExpiredBoost)
   const clearExpiredBuff = useGameStore((state) => state.clearExpiredBuff)
+  const box = useGameStore((state) => state.box)
 
   const handleBoostExpire = (buffType: GuildBuffType) => {
     addExpiredBoost(buffType)
@@ -325,62 +337,98 @@ function PartyColumn({ className = '' }: { className?: string }) {
 
   return (
     <div className={`party-column ${className}`}>
-      <div className="party-header">
-        <span>{'\u2694\uFE0F'}</span>
-        <span className="party-title">Party</span>
-      </div>
-      <div className="party-content">
-        <PartyPanel />
+      {/* Tab Header */}
+      <div className="flex border-b border-[var(--color-border-subtle)]">
+        <button
+          onClick={() => setActiveTab('party')}
+          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-pixel uppercase tracking-wider transition-colors ${
+            activeTab === 'party'
+              ? 'text-[var(--color-text-primary)] border-b-2 border-[var(--color-brand-primary)] bg-[var(--color-surface-hover)]/50'
+              : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
+          }`}
+        >
+          <span>{'\u2694\uFE0F'}</span>
+          <span>Party</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('box')}
+          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-pixel uppercase tracking-wider transition-colors ${
+            activeTab === 'box'
+              ? 'text-[var(--color-text-primary)] border-b-2 border-[var(--color-brand-primary)] bg-[var(--color-surface-hover)]/50'
+              : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
+          }`}
+        >
+          <span>{'\uD83D\uDCE6'}</span>
+          <span>Box</span>
+          {box.length > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-[var(--color-brand-primary)]/20 text-[var(--color-brand-primary)] text-[10px]">
+              {box.length}
+            </span>
+          )}
+        </button>
       </div>
 
-      <div className="buffs-section">
-        <div className="buffs-header">
-          <span>{'\u26A1'}</span>
-          <span className="buffs-title">Boosts</span>
-        </div>
-        <div className="buffs-list">
-          {guildActiveBuffs && (
-            <>
-              {guildActiveBuffs.xp_bonus && (
-                <BoostCard
-                  key="xp_bonus"
-                  buff={guildActiveBuffs.xp_bonus}
-                  onExpire={() => handleBoostExpire('xp_bonus')}
-                />
-              )}
-              {guildActiveBuffs.catch_rate && (
-                <BoostCard
-                  key="catch_rate"
-                  buff={guildActiveBuffs.catch_rate}
-                  onExpire={() => handleBoostExpire('catch_rate')}
-                />
-              )}
-              {guildActiveBuffs.encounter_rate && (
-                <BoostCard
-                  key="encounter_rate"
-                  buff={guildActiveBuffs.encounter_rate}
-                  onExpire={() => handleBoostExpire('encounter_rate')}
-                />
-              )}
-            </>
-          )}
-          {!hasActiveBoosts && (
-            <div className="text-xs text-[#606080] text-center py-4">
-              Use a boost from your guild shop to enhance your training!
+      {/* Tab Content */}
+      {activeTab === 'party' ? (
+        <>
+          <div className="party-content">
+            <PartyPanel />
+          </div>
+
+          <div className="buffs-section">
+            <div className="buffs-header">
+              <span>{'\u26A1'}</span>
+              <span className="buffs-title">Boosts</span>
             </div>
-          )}
-        </div>
-      </div>
+            <div className="buffs-list">
+              {guildActiveBuffs && (
+                <>
+                  {guildActiveBuffs.xp_bonus && (
+                    <BoostCard
+                      key="xp_bonus"
+                      buff={guildActiveBuffs.xp_bonus}
+                      onExpire={() => handleBoostExpire('xp_bonus')}
+                    />
+                  )}
+                  {guildActiveBuffs.catch_rate && (
+                    <BoostCard
+                      key="catch_rate"
+                      buff={guildActiveBuffs.catch_rate}
+                      onExpire={() => handleBoostExpire('catch_rate')}
+                    />
+                  )}
+                  {guildActiveBuffs.encounter_rate && (
+                    <BoostCard
+                      key="encounter_rate"
+                      buff={guildActiveBuffs.encounter_rate}
+                      onExpire={() => handleBoostExpire('encounter_rate')}
+                    />
+                  )}
+                </>
+              )}
+              {!hasActiveBoosts && (
+                <div className="text-xs text-[var(--color-text-muted)] text-center py-4">
+                  Use a boost from your guild shop to enhance your training!
+                </div>
+              )}
+            </div>
+          </div>
 
-      <div className="activity-section">
-        <div className="activity-header">
-          <span>{'\uD83D\uDCCB'}</span>
-          <span className="activity-title">Activity</span>
+          <div className="activity-section">
+            <div className="activity-header">
+              <span>{'\uD83D\uDCCB'}</span>
+              <span className="activity-title">Activity</span>
+            </div>
+            <div className="activity-log">
+              <WorldLog entries={worldLog} />
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="flex-1 overflow-hidden">
+          <BoxPanel embedded />
         </div>
-        <div className="activity-log">
-          <WorldLog entries={worldLog} />
-        </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -399,36 +447,37 @@ function MobileTabBar({
 }) {
   return (
     <div className="mobile-tab-bar">
-      <button
-        className={activeTab === 'map' ? 'active' : ''}
-        onClick={() => onTabChange('map')}
-      >
-        <span className="tab-icon">🗺️</span>
-        <span>Map</span>
-      </button>
+      {/* Tab order: Zone / Party / Social / Map per CONTEXT.md */}
       <button
         className={activeTab === 'game' ? 'active' : ''}
         onClick={() => onTabChange('game')}
       >
-        <span className="tab-icon">🎮</span>
-        <span>Game</span>
+        <span className="tab-icon">{'\uD83D\uDDFA\uFE0F'}</span>
+        <span>Zone</span>
       </button>
       <button
         className={activeTab === 'party' ? 'active' : ''}
         onClick={() => onTabChange('party')}
       >
-        <span className="tab-icon">⚔️</span>
+        <span className="tab-icon">{'\u2694\uFE0F'}</span>
         <span>Party</span>
       </button>
       <button
         className={`relative ${activeTab === 'social' ? 'active' : ''}`}
         onClick={() => onTabChange('social')}
       >
-        <span className="tab-icon">💬</span>
+        <span className="tab-icon">{'\uD83D\uDCAC'}</span>
         <span>Social</span>
         {(badges.friends > 0 || badges.trades > 0) && (
           <span className="tab-badge">{badges.friends + badges.trades}</span>
         )}
+      </button>
+      <button
+        className={activeTab === 'map' ? 'active' : ''}
+        onClick={() => onTabChange('map')}
+      >
+        <span className="tab-icon">{'\uD83C\uDFAE'}</span>
+        <span>Map</span>
       </button>
     </div>
   )
@@ -447,7 +496,6 @@ export function GameShell({ accessToken }: GameShellProps) {
   const worldEvents = useGameStore((state) => state.worldEvents)
   const incomingFriendRequests = useGameStore((state) => state.incomingFriendRequests)
   const incomingTradeRequests = useGameStore((state) => state.incomingTradeRequests)
-  const outgoingTradeRequests = useGameStore((state) => state.outgoingTradeRequests)
   const isTradeModalOpen = useGameStore((state) => state.isTradeModalOpen)
   const setActiveTrade = useGameStore((state) => state.setActiveTrade)
   const setTradeModalOpen = useGameStore((state) => state.setTradeModalOpen)
@@ -509,18 +557,18 @@ export function GameShell({ accessToken }: GameShellProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen min-h-[100dvh] bg-[#0f0f1a] flex items-center justify-center p-4">
+      <div className="min-h-screen min-h-[100dvh] bg-[var(--color-surface-base)] flex items-center justify-center p-4">
         <div className="text-center">
           {/* Pokeball loading spinner */}
           <div className="relative w-16 h-16 mx-auto mb-6">
             <div className="absolute inset-0 rounded-full bg-gradient-to-b from-[#EE1515] to-[#CC0000] overflow-hidden animate-spin">
               <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-b from-[#f0f0f0] to-[#d0d0d0]" />
-              <div className="absolute top-1/2 left-0 right-0 h-1 bg-[#1a1a2e] -translate-y-1/2" />
-              <div className="absolute top-1/2 left-1/2 w-4 h-4 bg-[#f0f0f0] rounded-full -translate-x-1/2 -translate-y-1/2 border-2 border-[#1a1a2e]" />
+              <div className="absolute top-1/2 left-0 right-0 h-1 bg-[var(--color-surface-elevated)] -translate-y-1/2" />
+              <div className="absolute top-1/2 left-1/2 w-4 h-4 bg-[#f0f0f0] rounded-full -translate-x-1/2 -translate-y-1/2 border-2 border-[var(--color-surface-elevated)]" />
             </div>
           </div>
-          <div className="font-pixel text-sm text-white tracking-wider mb-2">LOADING</div>
-          <div className="text-[#606080] text-sm">Connecting to server...</div>
+          <div className="font-pixel text-sm text-[var(--color-text-primary)] tracking-wider mb-2">LOADING</div>
+          <div className="text-[var(--color-text-muted)] text-sm">Connecting to server...</div>
         </div>
       </div>
     )
@@ -602,13 +650,24 @@ export function GameShell({ accessToken }: GameShellProps) {
 
         {/* Center: World + Social */}
         <div className="center-column">
-          <div className="game-world">
-            {!hasEncounter ? <WorldView /> : <EncounterDisplay />}
-            {isInTown && !hasEncounter && <TownMenu />}
-          </div>
+          {/* Inner flex wrapper */}
+          <div className="flex flex-col p-3 gap-3 h-full min-h-0">
+            {/* Zone container - world view + town buttons in one box */}
+            <div className="poke-border rounded-xl overflow-hidden flex-none flex flex-col" style={{ minHeight: '400px' }}>
+              {/* WorldView fills available space */}
+              <div className="flex-1">
+                {!hasEncounter ? <WorldView embedded /> : <EncounterDisplay />}
+              </div>
+              {/* TownMenu buttons at bottom */}
+              {isInTown && !hasEncounter && <TownMenu />}
+            </div>
 
-          <div className="social-section">
-            <SocialSidebar onOpenTrade={handleOpenTrade} />
+            {/* Social - fills remaining space */}
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <div className="social-section h-full">
+                <SocialSidebar onOpenTrade={handleOpenTrade} />
+              </div>
+            </div>
           </div>
         </div>
 

@@ -12,9 +12,6 @@ import {
   sortByGrade,
   filterByMinGrade,
   filterHasPerfectIV,
-  getIVGrade,
-  type IVStats,
-  type IVGrade,
 } from '@/lib/ivUtils'
 
 type SortOption = 'default' | 'total_ivs' | 'grade' | 'hp_iv' | 'attack_iv' | 'defense_iv' | 'sp_attack_iv' | 'sp_defense_iv' | 'speed_iv'
@@ -75,7 +72,12 @@ function applyFiltering(pokemon: Pokemon[], filter: FilterOption): Pokemon[] {
   }
 }
 
-export function BoxPanel() {
+interface BoxPanelProps {
+  /** If true, renders inline in the sidebar without the floating button and modal */
+  embedded?: boolean
+}
+
+export function BoxPanel({ embedded = false }: BoxPanelProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedPokemon, setSelectedPokemon] = useState<string | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null)
@@ -121,12 +123,141 @@ export function BoxPanel() {
     }
   }
 
+  // Embedded mode - render inline in sidebar
+  if (embedded) {
+    return (
+      <div className="h-full flex flex-col">
+        {/* Sort & Filter Controls */}
+        <div className="px-3 py-2 border-b border-[var(--color-border-subtle)] flex gap-2">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="flex-1 px-2 py-1 text-[10px] rounded-lg bg-[var(--color-surface-base)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] focus:border-[var(--color-brand-primary)] focus:outline-none"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filterBy}
+            onChange={(e) => setFilterBy(e.target.value as FilterOption)}
+            className="flex-1 px-2 py-1 text-[10px] rounded-lg bg-[var(--color-surface-base)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] focus:border-[var(--color-brand-primary)] focus:outline-none"
+          >
+            {FILTER_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Swap UI */}
+        {selectedPokemon && (
+          <div className="p-2 bg-[var(--color-brand-primary)]/10 border-b border-[var(--color-brand-primary)]/30">
+            <p className="text-[10px] text-[var(--color-text-secondary)] mb-2">Swap to party slot:</p>
+            <div className="flex gap-1 flex-wrap mb-2">
+              {[1, 2, 3, 4, 5, 6].map((slot) => {
+                const partyPokemon = party[slot - 1]
+                return (
+                  <button
+                    key={slot}
+                    onClick={() => setSelectedSlot(slot)}
+                    className={`
+                      px-2 py-1 rounded text-[10px] font-medium transition-all
+                      ${selectedSlot === slot
+                        ? 'bg-[var(--color-brand-primary)] text-white'
+                        : 'bg-[var(--color-surface-base)] text-[var(--color-text-muted)] border border-[var(--color-border-subtle)] hover:border-[var(--color-brand-primary)]'
+                      }
+                    `}
+                  >
+                    {partyPokemon ? slot : `${slot}*`}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="flex gap-1">
+              <button
+                onClick={handleSwap}
+                disabled={!selectedSlot}
+                className="flex-1 px-2 py-1 rounded text-[10px] bg-green-600 text-white hover:bg-green-500 disabled:bg-[var(--color-surface-base)] disabled:text-[var(--color-text-muted)] transition-colors"
+              >
+                Swap
+              </button>
+              <button
+                onClick={() => {
+                  const pokemon = box.find(p => p.id === selectedPokemon)
+                  if (pokemon) setDetailPokemon(pokemon)
+                }}
+                className="px-2 py-1 rounded text-[10px] bg-[var(--color-surface-base)] border border-[var(--color-brand-primary)] text-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary)]/10"
+              >
+                Stats
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedPokemon(null)
+                  setSelectedSlot(null)
+                }}
+                className="px-2 py-1 rounded text-[10px] bg-[var(--color-surface-base)] border border-[var(--color-border-subtle)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Box Contents */}
+        <div className="flex-1 overflow-y-auto p-2">
+          {box.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="w-12 h-12 mb-2 rounded-xl bg-[var(--color-surface-base)] border-2 border-dashed border-[var(--color-border-subtle)] flex items-center justify-center">
+                <svg className="w-6 h-6 text-[var(--color-text-muted)]" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20 3H4a2 2 0 00-2 2v2a2 2 0 001 1.72V19a2 2 0 002 2h14a2 2 0 002-2V8.72A2 2 0 0022 7V5a2 2 0 00-2-2zM4 5h16v2H4V5zm1 14V9h14v10H5z"/>
+                </svg>
+              </div>
+              <p className="text-xs text-[var(--color-text-muted)]">Box empty</p>
+              <p className="text-[10px] text-[var(--color-text-muted)]">Catch Pokemon to fill it!</p>
+            </div>
+          ) : displayedBox.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <p className="text-xs text-[var(--color-text-muted)]">No matches</p>
+              <p className="text-[10px] text-[var(--color-text-muted)]">Try a different filter</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {displayedBox.map((pokemon) => (
+                <PokemonCard
+                  key={pokemon.id}
+                  pokemon={pokemon}
+                  selected={selectedPokemon === pokemon.id}
+                  onClick={() => handlePokemonClick(pokemon)}
+                  compact
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Pokemon Detail Panel */}
+        {detailPokemon && (
+          <PokemonDetailPanel
+            pokemon={detailPokemon}
+            isOpen={!!detailPokemon}
+            onClose={() => setDetailPokemon(null)}
+          />
+        )}
+      </div>
+    )
+  }
+
+  // Standard mode - floating button and slide-over modal
   return (
     <>
-      {/* Toggle Button */}
+      {/* Toggle Button - hidden on desktop (lg:) since Box is now in sidebar tabs */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 lg:bottom-4 right-4 group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-b from-[#3B4CCA] to-[#2A3A99] border border-[#5B6EEA]/30 shadow-lg shadow-[#3B4CCA]/30 hover:from-[#4B5CDA] hover:to-[#3A4AA9] transition-all duration-200 hover:scale-105"
+        className="fixed bottom-20 right-4 lg:hidden group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-b from-[#3B4CCA] to-[#2A3A99] border border-[#5B6EEA]/30 shadow-lg shadow-[#3B4CCA]/30 hover:from-[#4B5CDA] hover:to-[#3A4AA9] transition-all duration-200 hover:scale-105"
       >
         {/* Box icon */}
         <div className="w-6 h-6 rounded-lg bg-[#1a1a2e] border border-[#2a2a4a] flex items-center justify-center">

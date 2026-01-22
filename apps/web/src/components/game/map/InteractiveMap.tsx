@@ -120,13 +120,13 @@ export function InteractiveMap({ className }: InteractiveMapProps) {
   const initialPos = getInitialPosition()
 
   return (
-    <MapFrame className={cn('w-full max-h-[440px]', className)}>
+    <MapFrame className={cn('w-full max-h-[200px]', className)}>
       <div
         ref={containerRef}
         className={cn(
           'relative w-full',
-          // Aspect ratio 16:10 with max height (excluding header)
-          'aspect-[16/10] max-h-[400px]',
+          // Compact height for sidebar fit
+          'h-[160px]',
           // Container styling
           'overflow-hidden'
         )}
